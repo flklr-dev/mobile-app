@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FaChevronLeft} from 'react-icons/fa';
 import axios from 'axios'; 
 
 const AddRecipeScreen = () => {
@@ -33,7 +34,11 @@ const AddRecipeScreen = () => {
     setInstructions(instructions.map((item, i) => (i === index ? text : item)));
   const deleteInstruction = (index) =>
     setInstructions(instructions.filter((_, i) => i !== index));
-  
+
+  const goBack = () => {
+    navigate(-1); // Go back to the previous screen
+  };
+
   const saveRecipe = async () => {
     if (!recipeTitle || !description || !category || !servingSize) {
         alert("All required fields must be filled!");
@@ -88,14 +93,11 @@ const AddRecipeScreen = () => {
   return (
     <div className="flex flex-col bg-gray-100 min-h-screen">
       {/* Header Section */}
-      <div className="fixed top-0 left-0 w-full z-10 flex items-center p-3 bg-orange-500 shadow-lg">
-        <button
-          onClick={() => navigate('/home')}
-          className="text-white text-2xl font-bold mr-4"
-        >
-          ←
+      <div className="fixed top-0 p-4 left-0 w-full z-10 flex items-center bg-orange-500 shadow-lg">
+      <button onClick={goBack} className="text-white text-2xl">
+          <FaChevronLeft />
         </button>
-        <h1 className="text-white text-2xl font-bold">Create Recipe</h1>
+        <h1 className="text-white ml-4 text-xl font-bold">Create Recipe</h1>
       </div>
 
       <div className="px-4 py-6 mt-16">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaHome, FaSearch, FaCalendarAlt, FaHamburger, FaPlus } from 'react-icons/fa';
+import { FaHome, FaSearch, FaUserAlt, FaHamburger, FaPlus } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const BottomNavbar = () => {
@@ -17,8 +17,8 @@ const BottomNavbar = () => {
       case '/add-recipe':
         setActiveIcon('plus');
         break;
-      case '/calendar':
-        setActiveIcon('calendar');
+      case '/profile':
+        setActiveIcon('profile');
         break;
       case '/hamburger':
         setActiveIcon('hamburger');
@@ -41,8 +41,8 @@ const BottomNavbar = () => {
       case 'plus':
         navigate('/add-recipe'); // Navigate to the AddRecipeScreen
         break;
-      case 'calendar':
-        navigate('/calendar'); // Navigate to the CalendarScreen
+      case 'profile':
+        navigate('/profile'); // Navigate to the ProfileScreen
         break;
       case 'hamburger':
         navigate('/hamburger'); // Navigate to the HamburgerScreen
@@ -60,6 +60,11 @@ const BottomNavbar = () => {
   const handleSearchClick = () => {
     setActiveIcon('search'); // Set the active icon state
     navigate('/search'); // Navigate to the SearchScreen
+  };
+
+  const handleProfileClick = () => {
+    setActiveIcon('profile'); // Set the active icon state
+    navigate('/profile'); // Navigate to the SearchScreen
   };
 
   return (
@@ -90,20 +95,20 @@ const BottomNavbar = () => {
           <FaPlus size={24} />
         </button>
 
-        {/* Calendar */}
-        <button 
-          className={`flex flex-col items-center ${activeIcon === 'calendar' ? 'bg-white text-orange-500 border-2 border-orange-500 p-2 rounded-full' : 'text-white p-2'}`}
-          onClick={() => handleIconClick('calendar')}
-        >
-          <FaCalendarAlt size={24} />
-        </button>
-
         {/* Hamburger */}
         <button 
           className={`flex flex-col items-center ${activeIcon === 'hamburger' ? 'bg-white text-orange-500 border-2 border-orange-500 p-2 rounded-full' : 'text-white p-2'}`}
           onClick={() => handleIconClick('hamburger')}
         >
           <FaHamburger size={24} />
+        </button>
+
+        {/* Profile */}
+        <button 
+          className={`flex flex-col items-center ${activeIcon === '[profile]' ? 'bg-white text-orange-500 border-2 border-orange-500 p-2 rounded-full' : 'text-white p-2'}`}
+          onClick={handleProfileClick}
+        >
+          <FaUserAlt size={24} />
         </button>
       </div>
     </div>
