@@ -33,7 +33,7 @@ const RegisterScreen = () => {
         password,
       });
       setSuccessMessage("Registration successful! Redirecting to login...");
-      setTimeout(() => (window.location.href = "/login"), 3000); // Redirect after 3 seconds
+      setTimeout(() => (window.location.href = "/login"));
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed.");
     }

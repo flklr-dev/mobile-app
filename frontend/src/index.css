@@ -6,8 +6,7 @@
     display: none; /* Hide scrollbar for WebKit-based browsers */
   }
   
-  .no-scrollbar {
-    -ms-overflow-style: none; /* Hide scrollbar for IE and Edge */
-    scrollbar-width: none; /* Hide scrollbar for Firefox */
-  }
-  
+.no-scrollbar {
+  -ms-overflow-style: none; /* Hide scrollbar for IE and Edge */
+  scrollbar-width: none; /* Hide scrollbar for Firefox */
+}

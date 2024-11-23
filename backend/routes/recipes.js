@@ -67,7 +67,7 @@ router.get("/category/:category", async (req, res) => {
     try {
         const recipes = await Recipe.find({ category, isPublic: true })
             .limit(10)
-            .populate("user", "name email"); // Optional: Include user details
+            .populate("user", "name email profilePicture"); 
         res.status(200).json(recipes);
     } catch (error) {
         res.status(500).json({ message: error.message });

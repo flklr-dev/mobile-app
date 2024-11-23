@@ -112,15 +112,17 @@ const HomeScreen = () => {
                 </div>
                 <div className="flex justify-between p-4">
                   <div className="flex items-center space-x-2">
-                    <FaHeart size={15} className="text-white" />
-                    <span className="text-white">{recipe.likes}</span>
+                    <FaHeart size={16} className="text-white" />
+                    <span className="text-white font-semibold">{recipe.likes}</span>
                   </div>
                   <div className="flex items-center">
-                    <FaUser size={15} className="text-white" />
+                    <FaUser size={16} className="text-white" />
                   </div>
                 </div>
-                <div className="p-4">
-                  <h3 className="text-white font-bold text-lg mb-6 -mt-5">{recipe.title}</h3>
+                <div className="p-4 flex flex-col justify-between" style={{ minHeight: "130px" }}>
+                  <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">
+                    {recipe.title}
+                  </h3>
                   <button className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-4 w-full">
                     Add to Meal Plan
                   </button>
@@ -166,53 +168,61 @@ const HomeScreen = () => {
 
         {/* Breakfast */}
         <div className="mt-10 px-4">
-        <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Breakfast</h2>
-        <div className="flex space-x-4 overflow-x-auto scroll-smooth mt-4 no-scrollbar">
-          {breakfastRecipes.map((recipe, index) => (
-            <div
-              key={recipe.id}
-              className="bg-[#463C33] rounded-lg w-60 shadow-md overflow-hidden flex-shrink-0"
-              style={{ marginRight: index === breakfastRecipes.length - 1 ? "0" : "1rem" }} // Removes white space on the last card
-            >
-              <div className="relative">
-                <img
-                  src={`http://localhost:5000/${recipe.image}`}
-                  alt={recipe.title}
-                  className="w-full h-56 object-cover"
-                />
-                <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
-                  {recipe.time}
-                </span>
-                <button
-                  className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
-                  onClick={() => toggleHeart(index)}
-                >
-                  {heartStates[index] ? (
-                    <FaHeart size={20} className="text-orange-500" />
-                  ) : (
-                    <FaHeart size={20} className="text-white" />
-                  )}
-                </button>
-              </div>
-              <div className="flex justify-between p-4">
-                <div className="flex items-center space-x-2">
-                  <FaHeart size={15} className="text-white" />
-                  <span className="text-white">{recipe.likes}</span>
+          <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Breakfast</h2>
+          <div className="flex space-x-4 overflow-x-auto scroll-smooth mt-4 no-scrollbar">
+            {breakfastRecipes.map((recipe, index) => (
+              <div
+                key={recipe.id}
+                className="bg-[#463C33] rounded-lg w-60 shadow-md overflow-hidden flex-shrink-0"
+                style={{ marginRight: index === breakfastRecipes.length - 1 ? "0" : "1rem" }} // Removes white space on the last card
+              >
+                <div className="relative">
+                  <img
+                    src={`http://localhost:5000/${recipe.image}`}
+                    alt={recipe.title}
+                    className="w-full h-56 object-cover"
+                  />
+                  <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
+                    {recipe.time}
+                  </span>
+                  <button
+                    className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
+                    onClick={() => toggleHeart(index)}
+                  >
+                    {heartStates[index] ? (
+                      <FaHeart size={20} className="text-orange-500" />
+                    ) : (
+                      <FaHeart size={20} className="text-white" />
+                    )}
+                  </button>
                 </div>
-                <div className="flex items-center">
-                  <FaUser size={15} className="text-white" />
+                <div className="flex justify-between p-4">
+                  <div className="flex items-center space-x-2">
+                    <FaHeart size={16} className="text-white" />
+                    <span className="text-white">{recipe.likes}</span>
+                  </div>
+                  <div className="flex items-center">
+                  <img
+                    src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                    alt={recipe.user.name}
+                    className="w-8 h-8 rounded-full object-cover border-2 border-white"
+                  />
+                  </div>
+                </div>
+                <div className="p-4 flex flex-col justify-between" style={{ minHeight: "130px" }}>
+                  <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">
+                    {recipe.title}
+                  </h3>
+                  {/* Reduced space above button */}
+                  <button className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-3 w-full">
+                    Add to Meal Plan
+                  </button>
                 </div>
               </div>
-              <div className="p-4">
-                <h3 className="text-white font-bold text-lg mb-6 -mt-5">{recipe.title}</h3>
-                <button className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-4 w-full">
-                  Add to Meal Plan
-                </button>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+
 
         {/* Lunch */}
         <div className="mt-10 px-4">
@@ -246,15 +256,19 @@ const HomeScreen = () => {
               </div>
               <div className="flex justify-between p-4">
                 <div className="flex items-center space-x-2">
-                  <FaHeart size={15} className="text-white" />
+                  <FaHeart size={16} className="text-white" />
                   <span className="text-white">{recipe.likes}</span>
                 </div>
                 <div className="flex items-center">
-                  <FaUser size={15} className="text-white" />
+                <img
+                    src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                    alt={recipe.user.name}
+                    className="w-8 h-8 rounded-full object-cover border-2 border-white"
+                  />
                 </div>
               </div>
-              <div className="p-4">
-                <h3 className="text-white font-bold text-lg mb-6 -mt-5">{recipe.title}</h3>
+              <div className="p-4 flex flex-col justify-between" style={{ minHeight: "130px" }}>
+                <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">{recipe.title}</h3>
                 <button className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-4 w-full">
                   Add to Meal Plan
                 </button>
@@ -296,15 +310,21 @@ const HomeScreen = () => {
               </div>
               <div className="flex justify-between p-4">
                 <div className="flex items-center space-x-2">
-                  <FaHeart size={15} className="text-white" />
+                  <FaHeart size={16} className="text-white" />
                   <span className="text-white">{recipe.likes}</span>
                 </div>
                 <div className="flex items-center">
-                  <FaUser size={15} className="text-white" />
+                <img
+                    src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                    alt={recipe.user.name}
+                    className="w-8 h-8 rounded-full object-cover border-2 border-white"
+                  />
                 </div>
               </div>
-              <div className="p-4">
-                <h3 className="text-white font-bold text-lg mb-6 -mt-5">{recipe.title}</h3>
+              <div className="p-4 flex flex-col justify-between" style={{ minHeight: "130px" }}>
+                <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">
+                  {recipe.title}
+                </h3>
                 <button className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-4 w-full">
                   Add to Meal Plan
                 </button>
@@ -382,15 +402,21 @@ const HomeScreen = () => {
               </div>
               <div className="flex justify-between p-4">
                 <div className="flex items-center space-x-2">
-                  <FaHeart size={15} className="text-white" />
+                  <FaHeart size={16} className="text-white" />
                   <span className="text-white">{recipe.likes}</span>
                 </div>
                 <div className="flex items-center">
-                  <FaUser size={15} className="text-white" />
+                <img
+                    src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                    alt={recipe.user.name}
+                    className="w-8 h-8 rounded-full object-cover border-2 border-white"
+                  />
                 </div>
               </div>
-              <div className="p-4">
-                <h3 className="text-white font-bold text-lg mb-6 -mt-5">{recipe.title}</h3>
+              <div className="p-4 flex flex-col justify-between" style={{ minHeight: "130px" }}>
+                <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">
+                  {recipe.title}
+                </h3>
                 <button className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-4 w-full">
                   Add to Meal Plan
                 </button>
@@ -432,15 +458,21 @@ const HomeScreen = () => {
               </div>
               <div className="flex justify-between p-4">
                 <div className="flex items-center space-x-2">
-                  <FaHeart size={15} className="text-white" />
+                  <FaHeart size={16} className="text-white" />
                   <span className="text-white">{recipe.likes}</span>
                 </div>
                 <div className="flex items-center">
-                  <FaUser size={15} className="text-white" />
+                <img
+                    src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                    alt={recipe.user.name}
+                    className="w-8 h-8 rounded-full object-cover border-2 border-white"
+                  />
                 </div>
               </div>
-              <div className="p-4">
-                <h3 className="text-white font-bold text-lg mb-6 -mt-5">{recipe.title}</h3>
+              <div className="p-4 flex flex-col justify-between" style={{ minHeight: "130px" }}>
+                  <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">
+                    {recipe.title}
+                  </h3>
                 <button className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-4 w-full">
                   Add to Meal Plan
                 </button>

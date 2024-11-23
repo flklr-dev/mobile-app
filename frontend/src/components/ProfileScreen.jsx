@@ -1,13 +1,46 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaChevronLeft, FaRegHeart, FaStore, FaClipboardList, FaCog, FaPhone, FaRegCommentDots, FaInfoCircle, FaSignOutAlt } from 'react-icons/fa'; // Importing icons
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { FaChevronLeft, FaRegHeart, FaClipboardList, FaStore, FaCog, FaPhone, FaRegCommentDots, FaInfoCircle, FaSignOutAlt } from "react-icons/fa";
 
 const ProfileScreen = () => {
   const navigate = useNavigate();
+  const [user, setUser] = useState({ name: "", profilePicture: "" });
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const { data } = await axios.get("http://192.168.1.118:5000/auth/profile", {
+          headers: { Authorization: token },
+        });
+        setUser(data);
+      } catch (err) {
+        setError("Failed to fetch user profile. Please log in again.");
+        console.error(err);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   const goBack = () => {
-    navigate(-1); // Go back to the previous screen
+    navigate(-1);
   };
+
+  // Handle "Edit Profile" button click
+  const handleEditProfile = () => {
+    navigate("/edit-profile"); // This will navigate to the EditProfileScreen
+  };
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-red-500">
+        {error}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -23,14 +56,14 @@ const ProfileScreen = () => {
       <div className="mt-20 px-6 text-center">
         <div className="flex justify-center mb-4">
           <img
-            src="https://via.placeholder.com/150"
+            src={`http://192.168.1.118:5000/${user.profilePicture}`}  // Assuming the image path is served from the backend
             alt="User Avatar"
             className="w-32 h-32 object-cover rounded-full border-4 border-orange-500"
           />
         </div>
-        <h2 className="text-2xl font-bold mb-2">John Doe</h2>
+        <h2 className="text-2xl font-bold mb-2">{user.name || "Loading..."}</h2>
         <button
-          onClick={() => alert("Edit Profile clicked")}
+          onClick={handleEditProfile}
           className="text-orange-500 text-sm underline"
         >
           Edit Profile
