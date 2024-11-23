@@ -60,6 +60,21 @@ router.post("/", verifyToken, upload.single("image"), async (req, res) => {
     }
 });
 
+// Get recipes by category (with a limit of 10 per category)
+router.get("/category/:category", async (req, res) => {
+    const { category } = req.params;
+
+    try {
+        const recipes = await Recipe.find({ category, isPublic: true })
+            .limit(10)
+            .populate("user", "name email"); // Optional: Include user details
+        res.status(200).json(recipes);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+
 // Get all public recipes (for the search)
 router.get("/", async (req, res) => {
     try {
