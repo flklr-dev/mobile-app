@@ -15,6 +15,8 @@ const AddRecipeScreen = () => {
   const [authorNotes, setAuthorNotes] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [coverImage, setCoverImage] = useState(null);
+  const [hours, setHours] = useState(""); // New state for hours
+  const [minutes, setMinutes] = useState("");
 
   const handleImagePick = (e) => {
     const file = e.target.files[0];  // Get the first selected file
@@ -45,6 +47,21 @@ const AddRecipeScreen = () => {
         return;
     }
 
+    const totalMinutes = parseInt(hours || 0) * 60 + parseInt(minutes || 0);
+
+    // Format time string based on input
+    let timeString = "";
+    if (totalMinutes >= 60) {
+        const formattedHours = Math.floor(totalMinutes / 60);
+        const formattedMinutes = totalMinutes % 60;
+        timeString =
+            formattedMinutes > 0
+                ? `${formattedHours} hr ${formattedMinutes} min`
+                : `${formattedHours} hr`;
+    } else {
+        timeString = `${totalMinutes} min`;
+    }
+
     // Prepare the form data
     const formData = new FormData();
     formData.append("title", recipeTitle);
@@ -55,9 +72,9 @@ const AddRecipeScreen = () => {
     formData.append("cookingInstructions", JSON.stringify(instructions));
     formData.append("authorNotes", authorNotes);
     formData.append("isPublic", isPublic);
+    formData.append("time", timeString); // Save time in the formatted string
     if (coverImage) formData.append("image", coverImage);
 
-    // Retrieve the token from localStorage
     const token = localStorage.getItem("token");
     if (!token) {
         alert("You must be logged in to save a recipe!");
@@ -65,21 +82,18 @@ const AddRecipeScreen = () => {
     }
 
     try {
-        // Make the API call
         const response = await axios.post("http://localhost:5000/recipes", formData, {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem("token")}`,
-                "Content-Type": "multipart/form-data", // Required for file upload
+                "Content-Type": "multipart/form-data",
             },
         });
 
-        // Handle success
         if (response.status === 201) {
             alert("Recipe saved successfully!");
-            navigate("/home"); // Redirect to home or another page
+            navigate("/home");
         }
     } catch (error) {
-        // Handle errors
         console.error("Error saving recipe:", error);
         if (error.response && error.response.data) {
             alert(`Failed to save recipe: ${error.response.data.message}`);
@@ -88,7 +102,6 @@ const AddRecipeScreen = () => {
         }
     }
 };
-
 
   return (
     <div className="flex flex-col bg-gray-100 min-h-screen">
@@ -182,6 +195,25 @@ const AddRecipeScreen = () => {
               <option value="10">10</option>
             </select>
           </div>
+        </div>
+
+        {/* Time Input */}
+        <label className="text-orange-500 font-bold mb-2">Cooking Time</label>
+        <div className="flex gap-4 mb-4">
+          <input
+            type="number"
+            placeholder="Hours"
+            value={hours}
+            onChange={(e) => setHours(e.target.value)}
+            className="w-1/2 p-3 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+          />
+          <input
+            type="number"
+            placeholder="Minutes"
+            value={minutes}
+            onChange={(e) => setMinutes(e.target.value)}
+            className="w-1/2 p-3 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+          />
         </div>
 
         {/* Ingredients */}

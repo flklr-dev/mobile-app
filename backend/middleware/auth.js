@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-const verifyToken = (req, res, next) => {
+const authenticateToken = (req, res, next) => {
     const token = req.header("Authorization")?.split(" ")[1]; // Ensure 'Bearer' is removed
     console.log("Received token:", req.header("Authorization"));
     if (!token) return res.status(403).json({ message: "Access denied" });
@@ -15,5 +15,4 @@ const verifyToken = (req, res, next) => {
     }
 };
 
-
-module.exports = { verifyToken };
+module.exports = { authenticateToken };

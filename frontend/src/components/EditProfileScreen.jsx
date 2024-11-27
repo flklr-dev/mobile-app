@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FaPen } from "react-icons/fa"; // Pencil icon for editing the profile picture
+import { FaPen, FaChevronLeft } from "react-icons/fa"; // Pencil icon for editing the profile picture
 
 const EditProfileScreen = () => {
   const navigate = useNavigate();
@@ -14,13 +14,12 @@ const EditProfileScreen = () => {
   const [successMessage, setSuccessMessage] = useState(""); // Success message state
   const [errorMessage, setErrorMessage] = useState(""); // Error message state
 
-  // Fetch user data from the backend on load
   useEffect(() => {
     const fetchUserProfile = async () => {
       const token = localStorage.getItem("token");
       try {
         const { data } = await axios.get("http://192.168.1.118:5000/auth/profile", {
-          headers: { Authorization: token },
+          headers: { Authorization: `Bearer ${token}` }, // Update header format
         });
 
         // Populate all fields from the fetched data
@@ -32,7 +31,11 @@ const EditProfileScreen = () => {
         setImagePreview(`http://192.168.1.118:5000/${data.profilePicture}`);
       } catch (error) {
         console.error(error);
-        setErrorMessage("Failed to fetch profile details. Please try again.");
+        setErrorMessage(
+          error.response?.status === 401
+            ? "Your session has expired. Please log in again."
+            : "Failed to fetch profile details. Please try again."
+        );
       }
     };
 
@@ -70,8 +73,8 @@ const EditProfileScreen = () => {
 
     const token = localStorage.getItem("token");
     try {
-      await axios.put("http://192.168.1.118:5000/auth/update", formData, {
-        headers: { Authorization: token },
+      await axios.put("http://172.10.59.220:5000/auth/update", formData, {
+        headers: { Authorization: `Bearer ${token}` }, // Update header format
       });
       setSuccessMessage("Profile updated successfully!"); // Set success message
       setErrorMessage(""); // Clear any previous error
@@ -81,7 +84,11 @@ const EditProfileScreen = () => {
       }, 1000);
     } catch (error) {
       console.error("Error saving profile", error);
-      setErrorMessage("Failed to update profile. Please try again.");
+      setErrorMessage(
+        error.response?.status === 401
+          ? "Unauthorized access. Please log in again."
+          : "Failed to update profile. Please try again."
+      );
       setSuccessMessage(""); // Clear success message in case of an error
     }
   };
@@ -94,8 +101,8 @@ const EditProfileScreen = () => {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <div className="fixed top-0 left-0 w-full z-10 flex items-center p-4 bg-orange-500 shadow-lg">
-        <button onClick={goBack} className="text-white text-2xl">
-          &lt;
+      <button onClick={goBack} className="text-white text-2xl">
+          <FaChevronLeft />
         </button>
         <h1 className="text-white ml-4 flex justify-center items-center text-xl font-bold">Edit Profile</h1>
         <button onClick={handleSave} className="text-white ml-auto text-lg font-semibold">

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
+import { toast, ToastContainer } from "react-toastify"; // Import toast components
+import "react-toastify/dist/ReactToastify.css"
 import { FaGoogle, FaFacebook, FaInstagram } from "react-icons/fa";
 
 const LoginScreen = () => {
@@ -22,23 +24,34 @@ const LoginScreen = () => {
         // Save token to localStorage
         localStorage.setItem("token", token);
 
-        alert("Login successful!");
-        setTimeout(() => (window.location.href = "/home"), 500); // Redirect after some delay
-      }
+        // Show success toast
+        toast.success("Login successful!", {
+          position: "top-center",
+          autoClose: 1000,
+        });
+
+        // Redirect to Home after a short delay
+        setTimeout(() => (window.location.href = "/home"), 1000);
+
+        }
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Login failed. Please try again."
+      // Show error toast
+      toast.error(
+        err.response?.data?.message || "Login failed. Please try again.",
+        {
+          position: "top-center",
+          autoClose: 3000,
+        }
       );
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center mx-4 min-h-screen bg-white px-4">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">Welcome Back</h1>
-        <p className="text-gray-600 mb-6">
+        <ToastContainer />
+      <div className="text-center">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h1>
+        <p className="text-gray-600 mb-4">
           Log in to unlock a world of shared recipes and pantry creativity!
         </p>
       </div>

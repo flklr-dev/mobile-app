@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { toast, ToastContainer } from "react-toastify"; // Import toast and ToastContainer
+import "react-toastify/dist/ReactToastify.css";
 import { FaChevronLeft, FaRegHeart, FaClipboardList, FaStore, FaCog, FaPhone, FaRegCommentDots, FaInfoCircle, FaSignOutAlt } from "react-icons/fa";
 
 const ProfileScreen = () => {
@@ -12,8 +14,10 @@ const ProfileScreen = () => {
     const fetchUserProfile = async () => {
       try {
         const token = localStorage.getItem("token");
+        if (!token) throw new Error("No token found");
+  
         const { data } = await axios.get("http://192.168.1.118:5000/auth/profile", {
-          headers: { Authorization: token },
+          headers: { Authorization: `Bearer ${token}` }, // Add 'Bearer' prefix
         });
         setUser(data);
       } catch (err) {
@@ -21,17 +25,28 @@ const ProfileScreen = () => {
         console.error(err);
       }
     };
-
+  
     fetchUserProfile();
   }, []);
+  
 
   const goBack = () => {
-    navigate(-1);
+    navigate("/home");
   };
 
   // Handle "Edit Profile" button click
   const handleEditProfile = () => {
     navigate("/edit-profile"); // This will navigate to the EditProfileScreen
+  };
+
+  // Logout Functionality with Toast
+  const handleLogout = () => {
+    localStorage.removeItem("token"); // Clear the authentication token
+    toast.success("Logged out successfully!", {
+      position: "top-center",
+      autoClose: 1000,
+    });
+    setTimeout(() => navigate("/login"), 1000); // Redirect after showing toast
   };
 
   if (error) {
@@ -41,125 +56,140 @@ const ProfileScreen = () => {
       </div>
     );
   }
-
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <div className="fixed top-0 left-0 w-full z-10 flex items-center p-4 bg-orange-500 shadow-lg">
-        <button onClick={goBack} className="text-white text-2xl">
-          <FaChevronLeft />
-        </button>
-        <h1 className="text-white ml-4 flex justify-center items-center text-xl font-bold">Profile</h1>
-      </div>
-
-      {/* User Profile Section */}
-      <div className="mt-20 px-6 text-center">
-        <div className="flex justify-center mb-4">
-          <img
-            src={`http://192.168.1.118:5000/${user.profilePicture}`}  // Assuming the image path is served from the backend
-            alt="User Avatar"
-            className="w-32 h-32 object-cover rounded-full border-4 border-orange-500"
-          />
+    <div className="min-h-screen bg-gray-50">
+      <ToastContainer />
+      
+      {/* Header - Simplified with gradient */}
+      <div className="fixed top-0 left-0 w-full z-10 bg-orange-500 shadow-md">
+        <div className="flex items-center p-4">
+          <button onClick={goBack} className="text-white">
+            <FaChevronLeft size={24} />
+          </button>
+          <h1 className="text-white ml-4 text-xl font-bold">Profile</h1>
         </div>
-        <h2 className="text-2xl font-bold mb-2">{user.name || "Loading..."}</h2>
-        <button
-          onClick={handleEditProfile}
-          className="text-orange-500 text-sm underline"
-        >
-          Edit Profile
-        </button>
       </div>
 
-      {/* Profile Sections */}
-      <div className="mt-8 px-6 space-y-4 pb-10">
-        {/* Saved Recipes & My Recipes - 2 Columns */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Saved Recipes */}
+      {/* Profile Content */}
+      <div className="pt-16 px-4">
+        {/* User Profile Card */}
+        <div className="mt-4 bg-white rounded-2xl shadow-sm p-6">
+          <div className="flex flex-col items-center">
+            <div className="relative">
+              <img
+                src={`http://localhost:5000/${user.profilePicture}`}
+                alt="User Avatar"
+                className="w-24 h-24 object-cover rounded-full ring-4 ring-orange-500/20"
+              />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mt-4">{user.name || "Loading..."}</h2>
+            <button
+              onClick={handleEditProfile}
+              className="mt-2 text-orange-500 text-sm font-medium hover:text-orange-600 transition-colors"
+            >
+              Edit Profile
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Actions Grid */}
+        <div className="mt-6 grid grid-cols-2 gap-4">
           <div
-            onClick={() => alert("Saved Recipes clicked")}
-            className="bg-orange-500 p-4 rounded-lg shadow-md flex flex-col items-center cursor-pointer hover:shadow-xl"
+            onClick={() => navigate('/favorites')}
+            className="bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group"
           >
-            <FaRegHeart className="text-white text-3xl mb-2" />
-            <h3 className="text-lg font-semibold text-white">Saved Recipes</h3>
+            <div className="flex flex-col items-center">
+              <div className="bg-orange-50 p-3 rounded-full group-hover:bg-orange-100 transition-colors">
+                <FaRegHeart className="text-orange-500 text-2xl" />
+              </div>
+              <h3 className="mt-3 text-gray-800 font-semibold">Saved Recipes</h3>
+            </div>
           </div>
 
-          {/* My Recipes */}
           <div
             onClick={() => alert("My Recipes clicked")}
-            className="bg-orange-500 p-4 rounded-lg shadow-md flex flex-col items-center cursor-pointer hover:shadow-xl"
+            className="bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group"
           >
-            <FaClipboardList className="text-white text-3xl mb-2" />
-            <h3 className="text-lg font-semibold text-white">My Recipes</h3>
+            <div className="flex flex-col items-center">
+              <div className="bg-orange-50 p-3 rounded-full group-hover:bg-orange-100 transition-colors">
+                <FaClipboardList className="text-orange-500 text-2xl" />
+              </div>
+              <h3 className="mt-3 text-gray-800 font-semibold">My Recipes</h3>
+            </div>
           </div>
         </div>
 
-        {/* My Food Preferences - Full Width */}
-        <div
-          onClick={() => alert("Food Preferences clicked")}
-          className="bg-orange-100 p-4 rounded-lg shadow-md flex flex-col items-center cursor-pointer hover:shadow-xl"
-        >
-          <FaStore className="text-orange-600 text-3xl mb-2" />
-          <h3 className="text-lg font-semibold text-orange-600">My Food Preferences</h3>
-          <p className="text-gray-500">Customize your food preferences.</p>
-        </div>
+        {/* Settings Sections */}
+        <div className="mt-6 space-y-3">
+          {/* Food Preferences */}
+          <div
+            onClick={() => alert("Food Preferences clicked")}
+            className="bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+          >
+            <div className="flex items-center">
+              <div className="bg-orange-50 p-3 rounded-full">
+                <FaStore className="text-orange-500 text-xl" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-gray-800 font-semibold">My Food Preferences</h3>
+                <p className="text-gray-500 text-sm">Customize your food preferences</p>
+              </div>
+            </div>
+          </div>
 
-        {/* Settings Section */}
-        <div className="space-y-4 mt-6">
           {/* Pantry */}
           <div
             onClick={() => alert("Pantry clicked")}
-            className="bg-orange-100 p-4 rounded-lg shadow-md flex flex-col items-center cursor-pointer hover:shadow-xl"
+            className="bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
           >
-            <FaStore className="text-orange-600 text-3xl mb-2" />
-            <h3 className="text-lg font-semibold text-orange-600">Pantry</h3>
-            <p className="text-gray-500">22 products</p>
+            <div className="flex items-center">
+              <div className="bg-orange-50 p-3 rounded-full">
+                <FaStore className="text-orange-500 text-xl" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-gray-800 font-semibold">Pantry</h3>
+                <p className="text-gray-500 text-sm">22 products</p>
+              </div>
+            </div>
           </div>
 
-          {/* Settings */}
-          <div
-            onClick={() => alert("Settings clicked")}
-            className="bg-orange-500 p-4 rounded-lg shadow-md flex items-center cursor-pointer"
-          >
-            <FaCog className="text-white text-3xl mr-4" />
-            <h3 className="text-lg font-semibold text-white">Settings</h3>
+          {/* Settings List */}
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            {[
+              { icon: FaCog, text: "Settings" },
+              { icon: FaPhone, text: "Contact Support" },
+              { icon: FaRegCommentDots, text: "Submit Feedback" },
+              { icon: FaInfoCircle, text: "About PantryPals" },
+            ].map((item, index) => (
+              <div
+                key={index}
+                onClick={() => alert(`${item.text} clicked`)}
+                className="flex items-center p-4 hover:bg-gray-50 cursor-pointer transition-colors border-b last:border-b-0 border-gray-100"
+              >
+                <div className="bg-orange-50 p-2 rounded-full">
+                  <item.icon className="text-orange-500 text-lg" />
+                </div>
+                <span className="ml-4 text-gray-700 font-medium">{item.text}</span>
+              </div>
+            ))}
           </div>
 
-          {/* Contact Support */}
+          {/* Logout Button */}
           <div
-            onClick={() => alert("Contact Support clicked")}
-            className="bg-orange-500 p-4 rounded-lg shadow-md flex items-center cursor-pointer"
+            onClick={handleLogout}
+            className="bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group"
           >
-            <FaPhone className="text-white text-3xl mr-4" />
-            <h3 className="text-lg font-semibold text-white">Contact Support</h3>
-          </div>
-
-          {/* Submit Feedback */}
-          <div
-            onClick={() => alert("Submit Feedback clicked")}
-            className="bg-orange-500 p-4 rounded-lg shadow-md flex items-center cursor-pointer hover:shadow-xl"
-          >
-            <FaRegCommentDots className="text-white text-3xl mr-4" />
-            <h3 className="text-lg font-semibold text-white">Submit Feedback</h3>
-          </div>
-
-          {/* About PantryPals */}
-          <div
-            onClick={() => alert("About PantryPals clicked")}
-            className="bg-orange-500 p-4 rounded-lg shadow-md flex items-center cursor-pointer hover:shadow-xl"
-          >
-            <FaInfoCircle className="text-white text-3xl mr-4" />
-            <h3 className="text-lg font-semibold text-white">About PantryPals</h3>
-          </div>
-
-          {/* Logout */}
-          <div
-            onClick={() => alert("Logout clicked")}
-            className="bg-red-500 p-4 rounded-lg shadow-md flex items-center cursor-pointer hover:shadow-xl"
-          >
-            <FaSignOutAlt className="text-white text-3xl mr-4" />
-            <h3 className="text-lg font-semibold text-white">Logout</h3>
+            <div className="flex items-center">
+              <div className="bg-red-50 p-3 rounded-full group-hover:bg-red-100 transition-colors">
+                <FaSignOutAlt className="text-red-500 text-xl" />
+              </div>
+              <span className="ml-4 text-red-500 font-medium">Logout</span>
+            </div>
           </div>
         </div>
+
+        {/* Bottom Spacing */}
+        <div className="h-20" />
       </div>
     </div>
   );

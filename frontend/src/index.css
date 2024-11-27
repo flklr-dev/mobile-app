@@ -10,3 +10,13 @@
   -ms-overflow-style: none; /* Hide scrollbar for IE and Edge */
   scrollbar-width: none; /* Hide scrollbar for Firefox */
 }
+
+.slick-slide {
+  transform: scale(0.9);
+  transition: transform 0.3s ease-in-out;
+  padding: 0 4px; /* Reduced gaps between cards */
+}
+
+.slick-center {
+  transform: scale(1.1);
+}

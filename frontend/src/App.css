@@ -1,8 +1,14 @@
 #root {
+  width: 100%;
   max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+  margin: 0;
+  padding: 0; /* Reduced padding to 1rem */
   text-align: center;
+}
+
+* {
+  padding: 0;
+  margin: 0;
 }
 
 .logo {
@@ -41,4 +47,34 @@
 
 .read-the-docs {
   color: #888;
+}
+
+.slick-center {
+  transform: scale(1.1);
+}
+
+.slick-dots {
+  bottom: -10px; /* Adjust the positioning of dots */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.slick-dots li {
+  margin: 0 2px; /* Reduce spacing between dots */
+}
+
+.slick-dots li button:before {
+  font-size: 10px;
+  color: #ccc; /* Default dot color */
+}
+
+.slick-dots li.slick-active button:before {
+  color: #ff7f50; /* Active dot color (orange) */
+  opacity: 1;
+}
+
+* {
+  padding: 0;
+  margin: 0;
 }

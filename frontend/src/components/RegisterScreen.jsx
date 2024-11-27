@@ -1,5 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
+import { toast, ToastContainer } from "react-toastify"; // Import toast components
+import "react-toastify/dist/ReactToastify.css";
 import { FaFacebook, FaGoogle, FaInstagram } from "react-icons/fa";
 
 const RegisterScreen = () => {
@@ -8,21 +10,23 @@ const RegisterScreen = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isChecked, setIsChecked] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [error, setError] = useState("");
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccessMessage("");
 
     if (!isChecked) {
-      setError("Please agree to the terms and conditions.");
+      toast.error("Please agree to the terms and conditions.", {
+        position: "top-center",
+        autoClose: 1000,
+      });
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      toast.error("Passwords do not match.", {
+        position: "top-center",
+        autoClose: 3000,
+      });
       return;
     }
 
@@ -32,22 +36,32 @@ const RegisterScreen = () => {
         email,
         password,
       });
-      setSuccessMessage("Registration successful! Redirecting to login...");
-      setTimeout(() => (window.location.href = "/login"));
+
+      // Show success toast and redirect
+      toast.success("Registration successful! Redirecting to login...", {
+        position: "top-center",
+        autoClose: 2000,
+      });
+      setTimeout(() => (window.location.href = "/login"), 1000);
     } catch (err) {
-      setError(err.response?.data?.message || "Registration failed.");
+      // Show error toast
+      toast.error(err.response?.data?.message || "Registration failed.", {
+        position: "top-center",
+        autoClose: 3000,
+      });
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen mx-4 bg-white px-4 py-8 md:py-16">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">Create an Account</h1>
-        <p className="text-gray-600 mb-4">
+      <ToastContainer />
+      <div className="text-center">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Create an Account</h1>
+        <p className="text-gray-600 mb-2">
           Get started with PantryPals – your cooking community.
         </p>
       </div>
-      <form onSubmit={handleRegister} className="w-full max-w-md space-y-6">
+      <form onSubmit={handleRegister} className="w-full max-w-md space-y-4">
         <div>
           <label className="block text-orange-500 font-bold mb-2">Full Name</label>
           <input
@@ -96,7 +110,7 @@ const RegisterScreen = () => {
           />
         </div>
 
-        <div className="flex items-center mb-4">
+        <div className="flex items-center mb-2">
           <input
             type="checkbox"
             className="w-5 h-5 mr-3"
@@ -105,9 +119,6 @@ const RegisterScreen = () => {
           />
           <span className="text-gray-700">Agree to Terms & Conditions</span>
         </div>
-
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-        {successMessage && <p className="text-green-500 text-sm mb-4">{successMessage}</p>}
 
         <button
           type="submit"
@@ -119,7 +130,7 @@ const RegisterScreen = () => {
       </form>
 
       {/* OR Separator and Social Icons in One Row */}
-      <div className="my-6 flex items-center justify-center w-full max-w-md">
+      <div className="my-4 flex items-center justify-center w-full max-w-md">
         <span className="h-px bg-gray-300 flex-1"></span>
         <span className="px-4 text-gray-500 text-sm">or</span>
         <span className="h-px bg-gray-300 flex-1"></span>

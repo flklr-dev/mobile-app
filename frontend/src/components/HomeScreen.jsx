@@ -2,21 +2,75 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import BottomNavbar from "./BottomNavbar";
 import Header from '../components/Header';
-import {FaHeart, FaUser } from "react-icons/fa";
+import { toast, ToastContainer } from "react-toastify"; // Import toast and ToastContainer
+import "react-toastify/dist/ReactToastify.css"; 
+import {FaHeart,  FaRegHeart } from "react-icons/fa";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+import { Link, useNavigate } from "react-router-dom";
+import Slider from "react-slick";
 
 const HomeScreen = () => {
-  const [breakfastRecipes, setBreakfastRecipes] = useState([]);
-  const [lunchRecipes, setLunchRecipes] = useState([]);
-  const [dinnerRecipes, setDinnerRecipes] = useState([]);
-  const [snackRecipes, setSnackRecipes] = useState([]);
-  const [dessertRecipes, setDessertRecipes] = useState([]);
-  
+  const navigate = useNavigate();
+
+  const [recipes, setRecipes] = useState({
+    breakfast: [],
+    lunch: [],
+    dinner: [],
+    snacks: [],
+    desserts: [],
+    trendings: [],
+  });
+
+  const [trendingRecipes, setTrendingRecipes] = useState([]);  
   const [heartStates, setHeartStates] = useState({});
 
-  const toggleHeart = (index) => {
-    setHeartStates((prev) => ({ ...prev, [index]: !prev[index] }));
+  // Function to toggle like and update the UI
+  const toggleHeart = async (recipeId, category) => {
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/recipes/like/${recipeId}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+
+      // Toggle the heart state
+      setHeartStates((prev) => ({
+        ...prev,
+        [recipeId]: !prev[recipeId],
+      }));
+
+    // Update the specific category's state
+    if (category === "trending") {
+      setTrendingRecipes((prevRecipes) =>
+        prevRecipes.map((recipe) =>
+          recipe._id === recipeId ? { ...recipe, likes: response.data.recipeLikes } : recipe
+        )
+      );
+    } else {
+      setRecipes((prev) => ({
+        ...prev,
+        [category]: prev[category].map((recipe) =>
+          recipe._id === recipeId ? { ...recipe, likes: response.data.recipeLikes } : recipe
+        ),
+      }));
+
+      // Show success toast for action
+      toast.success(
+        heartStates[recipeId]
+          ? "Recipe removed from favorites!"
+          : "Recipe added to favorites!",
+        { position: "top-center", autoClose: 2000 }
+      );
+    }
+    } catch (error) {
+      console.error("Error toggling like state:", error.message);
+    }
   };
 
+  
   const categories = [
     { id: 1, name: "Egg", image: "src/assets/images/egg.png" },
     { id: 2, name: "Chicken", image: "src/assets/images/chicken.png" },
@@ -45,93 +99,194 @@ const HomeScreen = () => {
     { id: 6, name: "Alice Johnson", image: "src/assets/27.png" },
   ];
 
-  const lunch = [
-    { id: 1, title: "Fish Tacos", image: "src/assets/fish-tacos.png", time: "45min", likes: "6.12k" },
-    { id: 2, title: "Caesar Salad", image: "src/assets/caesar-salad.png", time: "25min", likes: "5.34k" },
-    { id: 3, title: "Tapsilog", image: "src/assets/tapsilog.png", time: "30min", likes: "2.99k" },
-    { id: 4, title: "Fish Tacos", image: "src/assets/fish-tacos.png", time: "45min", likes: "6.12k" },
-    { id: 5, title: "Caesar Salad", image: "src/assets/caesar-salad.png", time: "25min", likes: "5.34k" },
-    { id: 6, title: "Tapsilog", image: "src/assets/tapsilog.png", time: "30min", likes: "2.99k" },
-  ];
-
-  // Fetch recipes from the backend
   useEffect(() => {
-    const fetchRecipes = async (category, setState) => {
+    const fetchRecipes = async (category) => {
       try {
-        const response = await axios.get(
-          `http://localhost:5000/recipes/category/${category}`
-        );
-        setState(response.data);
+          const response = await axios.get(
+              `http://localhost:5000/recipes/category/${category}`,
+              {
+                  headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+              }
+          );
+          return response.data; // Prioritized recipes with `isLiked` flag
       } catch (error) {
-        console.error(`Error fetching ${category} recipes:`, error);
+          console.error(`Error fetching ${category} recipes:`, error);
+          return [];
       }
+  };
+  
+    const fetchAllRecipes = async () => {
+      const categories = ["breakfast", "lunch", "dinner", "snacks", "desserts"];
+      const results = await Promise.all(categories.map(fetchRecipes));
+      setRecipes({
+        breakfast: results[0],
+        lunch: results[1],
+        dinner: results[2],
+        snacks: results[3],
+        desserts: results[4],
+      });
+
+      const userResponse = await axios.get("http://localhost:5000/auth/profile", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      const likedRecipes = userResponse.data.likedRecipes.reduce((state, id) => {
+        state[id] = true;
+        return state;
+      }, {});
+      setHeartStates(likedRecipes);
     };
 
-    fetchRecipes("breakfast", setBreakfastRecipes);
-    fetchRecipes("lunch", setLunchRecipes);
-    fetchRecipes("dinner", setDinnerRecipes);
-    fetchRecipes("snacks", setSnackRecipes);
-    fetchRecipes("desserts", setDessertRecipes);
+    fetchAllRecipes();
+
+    const initializeRecipes = async () => {
+      const categories = ["breakfast", "lunch", "dinner", "snacks", "desserts"];
+      const updatedRecipes = {};
+
+      for (const category of categories) {
+          const data = await fetchRecipes(category);
+          updatedRecipes[category] = data;
+
+          // Update heartStates for each recipe
+          setHeartStates((prev) => ({
+              ...prev,
+              ...data.reduce((acc, recipe) => {
+                  acc[recipe._id] = recipe.isLiked;
+                  return acc;
+              }, {}),
+          }));
+      }
+
+      setRecipes(updatedRecipes);
+  };
+
+  initializeRecipes();
+
+  const fetchTrendingRecipes = async () => {
+      try {
+          const response = await axios.get("http://localhost:5000/recipes/trending");
+          setTrendingRecipes(response.data);
+      } catch (error) {
+          console.error("Error fetching trending recipes:", error);
+      }
+  };
+  fetchRecipes();
+  fetchTrendingRecipes();
+
+  const initializeData = async () => {
+      try {
+          const response = await axios.get("http://localhost:5000/recipes/trending", {
+              headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          });
+          setTrendingRecipes(response.data);
+      } catch (error) {
+          console.error("Error fetching trending recipes:", error);
+      }
+  };
+
+  initializeData();
   }, []);
+
+  const sliderSettings = {
+    centerMode: true,
+    centerPadding: "5px", // Reduced padding to minimize gaps between cards
+    slidesToShow: 3,
+    infinite: true,
+    arrows: false,
+    speed: 500,
+    swipeToSlide: true,
+    touchThreshold: 8,
+    focusOnSelect: true, 
+    responsive: [
+        {
+            breakpoint: 768,
+            settings: {
+                slidesToShow: 1,
+                centerPadding: "60px", // Small padding for mobile
+            },
+        },
+        {
+            breakpoint: 1024,
+            settings: {
+                slidesToShow: 3,
+                centerPadding: "10px",
+            },
+        },
+    ],
+};
 
   return (
     <div className="flex flex-col bg-white w-full pb-24">
+      <ToastContainer />
       <Header />
 
-        {/* Trending Recipes */}
-        <div className="mt-24 px-4">
-          <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Trending Recipes</h2>
-          <div className="flex space-x-4 overflow-x-auto scroll-smooth mt-4 w-full no-scrollbar">
-            {lunch.map((recipe, index) => (
-              <div
-                key={recipe.id}
-                className="bg-[#463C33] rounded-lg w-60 shadow-md overflow-hidden flex-shrink-0"
-                style={{ 
-                  marginRight: index === lunch.length - 1 ? "0" : "0", 
-                }} // Removes white space on the last card
-              >
-                <div className="relative">
-                  <img
-                    src={recipe.image}
-                    alt={recipe.title}
-                    className="w-full h-56 object-cover"
-                  />
-                  <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
-                    {recipe.time}
-                  </span>
-                  <button
-                    className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
-                    onClick={() => toggleHeart(index)}
-                  >
-                    {heartStates[index] ? (
-                      <FaHeart size={20} className="text-orange-500" />
-                    ) : (
-                      <FaHeart size={20} className="text-white" />
-                    )}
-                  </button>
+      <div className="mt-24">
+        <h2 className="text-2xl font-extrabold text-orange-500 mb-6 text-center">Trending Recipes</h2>
+        <Slider {...sliderSettings}>
+            {trendingRecipes.map((recipe, index) => (
+                <div
+                    key={recipe._id}
+                    className={`transition-transform duration-300 ease-in-out ${
+                        index === Math.floor(trendingRecipes.length / 2)
+                            ? "scale-90"
+                            : "scale-90"
+                    }`}
+                >
+                    <div className="bg-[#463C33] rounded-lg shadow-md overflow-hidden flex-shrink-0 w-60">
+                        <div className="relative">
+                            <img
+                                src={`http://localhost:5000/${recipe.image}`}
+                                alt={recipe.title}
+                                className="w-full h-56 object-cover"
+                            />
+                            <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
+                                {recipe.time}
+                            </span>
+                            <button
+                              className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
+                              onClick={() => toggleHeart(recipe._id, "trending")}
+                            >
+                              {heartStates[recipe._id] ? (
+                                <FaHeart size={20} className="text-white" />
+                              ) : (
+                                <FaRegHeart size={20} className="text-white" />
+                              )}
+                            </button>
+                        </div>
+                        <div className="flex justify-between p-4">
+                            <div className="flex items-center space-x-2">
+                                <FaHeart size={16} className="text-white" />
+                                <span className="text-white">{recipe.likes}</span>
+                            </div>
+                            <img
+                                src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                                alt={recipe.user.name}
+                                className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  navigate(`/user/${recipe.user._id}`);
+                                }}
+                            />
+                        </div>
+                        <div className="p-4 flex flex-col justify-between" style={{ minHeight: "130px" }}>
+                            <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">{recipe.title}</h3>
+                            <button 
+                              className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-3 w-full"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                navigate('/add-to-meal-plan', { state: { recipe } });
+                              }}
+                            >
+                              Add to Meal Plan
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div className="flex justify-between p-4">
-                  <div className="flex items-center space-x-2">
-                    <FaHeart size={16} className="text-white" />
-                    <span className="text-white font-semibold">{recipe.likes}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <FaUser size={16} className="text-white" />
-                  </div>
-                </div>
-                <div className="p-4 flex flex-col justify-between" style={{ minHeight: "130px" }}>
-                  <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">
-                    {recipe.title}
-                  </h3>
-                  <button className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-4 w-full">
-                    Add to Meal Plan
-                  </button>
-                </div>
-              </div>
             ))}
-          </div>
-        </div>
-        
+        </Slider>
+    </div>
+
         {/* Categories Section (Horizontally Swipable, 4 Items Per View) */}
         <div className="mt-10 px-4">
           <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Categories</h2>
@@ -167,320 +322,371 @@ const HomeScreen = () => {
         </div>
 
         {/* Breakfast */}
-        <div className="mt-10 px-4">
+        <div className="mt-10 pl-4">
           <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Breakfast</h2>
-          <div className="flex space-x-4 overflow-x-auto scroll-smooth mt-4 no-scrollbar">
-            {breakfastRecipes.map((recipe, index) => (
-              <div
-                key={recipe.id}
-                className="bg-[#463C33] rounded-lg w-60 shadow-md overflow-hidden flex-shrink-0"
-                style={{ marginRight: index === breakfastRecipes.length - 1 ? "0" : "1rem" }} // Removes white space on the last card
-              >
+          <div className="flex gap-4 overflow-x-auto scroll-smooth mt-4 no-scrollbar">
+            {recipes.breakfast?.map((recipe) => (
+              <div key={recipe._id} className="bg-[#463C33] rounded-lg w-60 shadow-md overflow-hidden flex-shrink-0">
                 <div className="relative">
-                  <img
-                    src={`http://localhost:5000/${recipe.image}`}
-                    alt={recipe.title}
-                    className="w-full h-56 object-cover"
-                  />
-                  <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
-                    {recipe.time}
-                  </span>
+                  <Link to={`/recipes/${recipe._id}`}>
+                    <img
+                      src={`http://localhost:5000/${recipe.image}`}
+                      alt={recipe.title}
+                      className="w-full h-56 object-cover"
+                    />
+                    <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
+                      {recipe.time}
+                    </span>
+                  </Link>
                   <button
                     className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
-                    onClick={() => toggleHeart(index)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleHeart(recipe._id, "breakfast");
+                    }}
                   >
-                    {heartStates[index] ? (
-                      <FaHeart size={20} className="text-orange-500" />
-                    ) : (
+                    {heartStates[recipe._id] ? (
                       <FaHeart size={20} className="text-white" />
+                    ) : (
+                      <FaRegHeart size={20} className="text-white" />
                     )}
                   </button>
                 </div>
-                <div className="flex justify-between p-4">
-                  <div className="flex items-center space-x-2">
-                    <FaHeart size={16} className="text-white" />
-                    <span className="text-white">{recipe.likes}</span>
+                <Link to={`/recipes/${recipe._id}`}>
+                  <div className="flex justify-between p-4">
+                    <div className="flex items-center space-x-2">
+                      <FaHeart size={16} className="text-white" />
+                      <span className="text-white">{recipe.likes}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <img
+                        src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                        alt={recipe.user.name}
+                        className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          navigate(`/user/${recipe.user._id}`);
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center">
-                  <img
-                    src={`http://localhost:5000/${recipe.user.profilePicture}`}
-                    alt={recipe.user.name}
-                    className="w-8 h-8 rounded-full object-cover border-2 border-white"
-                  />
+                  <div
+                    className="p-4 flex flex-col justify-between"
+                    style={{ minHeight: "130px" }}
+                  >
+                    <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">
+                      {recipe.title}
+                    </h3>
+                    <button 
+                      className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-3 w-full"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        navigate('/add-to-meal-plan', { state: { recipe } });
+                      }}
+                    >
+                      Add to Meal Plan
+                    </button>
                   </div>
-                </div>
-                <div className="p-4 flex flex-col justify-between" style={{ minHeight: "130px" }}>
-                  <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">
-                    {recipe.title}
-                  </h3>
-                  {/* Reduced space above button */}
-                  <button className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-3 w-full">
-                    Add to Meal Plan
-                  </button>
-                </div>
+                </Link>
               </div>
             ))}
           </div>
         </div>
 
-
         {/* Lunch */}
-        <div className="mt-10 px-4">
-        <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Lunch</h2>
-        <div className="flex space-x-4 overflow-x-auto scroll-smooth mt-4 no-scrollbar">
-          {lunchRecipes.map((recipe, index) => (
-            <div
-              key={recipe.id}
-              className="bg-[#463C33] rounded-lg w-60 shadow-md overflow-hidden flex-shrink-0"
-              style={{ marginRight: index === lunchRecipes.length - 1 ? "0" : "1rem" }} // Removes white space on the last card
-            >
-              <div className="relative">
-                <img
-                  src={`http://localhost:5000/${recipe.image}`}
-                  alt={recipe.title}
-                  className="w-full h-56 object-cover"
-                />
-                <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
-                  {recipe.time}
-                </span>
-                <button
-                  className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
-                  onClick={() => toggleHeart(index)}
-                >
-                  {heartStates[index] ? (
-                    <FaHeart size={20} className="text-orange-500" />
-                  ) : (
-                    <FaHeart size={20} className="text-white" />
-                  )}
-                </button>
-              </div>
-              <div className="flex justify-between p-4">
-                <div className="flex items-center space-x-2">
-                  <FaHeart size={16} className="text-white" />
-                  <span className="text-white">{recipe.likes}</span>
+        <div className="mt-10 pl-4">
+          <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Lunch</h2>
+          <div className="flex gap-4 overflow-x-auto scroll-smooth mt-4 no-scrollbar">
+            {recipes.lunch?.map((recipe) => (
+              <div key={recipe._id} className="bg-[#463C33] rounded-lg w-60 shadow-md overflow-hidden flex-shrink-0">
+                <div className="relative">
+                  <Link to={`/recipes/${recipe._id}`}>
+                    <img
+                      src={`http://localhost:5000/${recipe.image}`}
+                      alt={recipe.title}
+                      className="w-full h-56 object-cover"
+                    />
+                    <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
+                      {recipe.time}
+                    </span>
+                  </Link>
+                  <button
+                    className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleHeart(recipe._id, "lunch");
+                    }}
+                  >
+                    {heartStates[recipe._id] ? (
+                      <FaHeart size={20} className="text-white" />
+                    ) : (
+                      <FaRegHeart size={20} className="text-white" />
+                    )}
+                  </button>
                 </div>
-                <div className="flex items-center">
-                <img
-                    src={`http://localhost:5000/${recipe.user.profilePicture}`}
-                    alt={recipe.user.name}
-                    className="w-8 h-8 rounded-full object-cover border-2 border-white"
-                  />
-                </div>
+                <Link to={`/recipes/${recipe._id}`}>
+                  <div className="flex justify-between p-4">
+                    <div className="flex items-center space-x-2">
+                      <FaHeart size={16} className="text-white" />
+                      <span className="text-white">{recipe.likes}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <img
+                        src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                        alt={recipe.user.name}
+                        className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          navigate(`/user/${recipe.user._id}`);
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div
+                    className="p-4 flex flex-col justify-between"
+                    style={{ minHeight: "130px" }}
+                  >
+                    <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">
+                      {recipe.title}
+                    </h3>
+                    <button 
+                      className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-3 w-full"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        navigate('/add-to-meal-plan', { state: { recipe } });
+                      }}
+                    >
+                      Add to Meal Plan
+                    </button>
+                  </div>
+                </Link>
               </div>
-              <div className="p-4 flex flex-col justify-between" style={{ minHeight: "130px" }}>
-                <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">{recipe.title}</h3>
-                <button className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-4 w-full">
-                  Add to Meal Plan
-                </button>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
         {/* Dinner */}
-        <div className="mt-10 px-4">
-        <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Dinner</h2>
-        <div className="flex space-x-4 overflow-x-auto scroll-smooth mt-4 no-scrollbar">
-          {dinnerRecipes.map((recipe, index) => (
-            <div
-              key={recipe.id}
-              className="bg-[#463C33] rounded-lg w-60 shadow-md overflow-hidden flex-shrink-0"
-              style={{ marginRight: index === dinnerRecipes.length - 1 ? "0" : "1rem" }} // Removes white space on the last card
-            >
-              <div className="relative">
-                <img
-                  src={`http://localhost:5000/${recipe.image}`}
-                  alt={recipe.title}
-                  className="w-full h-56 object-cover"
-                />
-                <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
-                  {recipe.time}
-                </span>
-                <button
-                  className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
-                  onClick={() => toggleHeart(index)}
-                >
-                  {heartStates[index] ? (
-                    <FaHeart size={20} className="text-orange-500" />
-                  ) : (
-                    <FaHeart size={20} className="text-white" />
-                  )}
-                </button>
-              </div>
-              <div className="flex justify-between p-4">
-                <div className="flex items-center space-x-2">
-                  <FaHeart size={16} className="text-white" />
-                  <span className="text-white">{recipe.likes}</span>
+        <div className="mt-10 pl-4">
+          <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Dinner</h2>
+          <div className="flex gap-4 overflow-x-auto scroll-smooth mt-4 no-scrollbar">
+            {recipes.dinner?.map((recipe) => (
+              <div key={recipe._id} className="bg-[#463C33] rounded-lg w-60 shadow-md overflow-hidden flex-shrink-0">
+                <div className="relative">
+                  <Link to={`/recipes/${recipe._id}`}>
+                    <img
+                      src={`http://localhost:5000/${recipe.image}`}
+                      alt={recipe.title}
+                      className="w-full h-56 object-cover"
+                    />
+                    <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
+                      {recipe.time}
+                    </span>
+                  </Link>
+                  <button
+                    className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleHeart(recipe._id, "dinner");
+                    }}
+                  >
+                    {heartStates[recipe._id] ? (
+                      <FaHeart size={20} className="text-white" />
+                    ) : (
+                      <FaRegHeart size={20} className="text-white" />
+                    )}
+                  </button>
                 </div>
-                <div className="flex items-center">
-                <img
-                    src={`http://localhost:5000/${recipe.user.profilePicture}`}
-                    alt={recipe.user.name}
-                    className="w-8 h-8 rounded-full object-cover border-2 border-white"
-                  />
-                </div>
+                <Link to={`/recipes/${recipe._id}`}>
+                  <div className="flex justify-between p-4">
+                    <div className="flex items-center space-x-2">
+                      <FaHeart size={16} className="text-white" />
+                      <span className="text-white">{recipe.likes}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <img
+                        src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                        alt={recipe.user.name}
+                        className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          navigate(`/user/${recipe.user._id}`);
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div
+                    className="p-4 flex flex-col justify-between"
+                    style={{ minHeight: "130px" }}
+                  >
+                    <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">
+                      {recipe.title}
+                    </h3>
+                    <button 
+                      className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-3 w-full"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        navigate('/add-to-meal-plan', { state: { recipe } });
+                      }}
+                    >
+                      Add to Meal Plan
+                    </button>
+                  </div>
+                </Link>
               </div>
-              <div className="p-4 flex flex-col justify-between" style={{ minHeight: "130px" }}>
-                <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">
-                  {recipe.title}
-                </h3>
-                <button className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-4 w-full">
-                  Add to Meal Plan
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-        {/* Users */}
-        <div className="mt-10 px-4">
-          <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Best Recipes From</h2>
-          <div className="overflow-x-auto scroll-smooth no-scrollbar mt-4">
-            <div
-              className="flex"
-              style={{
-                gap: "1rem", // Space between user cards
-              }}
-            >
-              {users.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex flex-col items-center justify-center flex-shrink-0"
-                  style={{
-                    width: "calc(25% - 1rem)", // Dynamically fits 4 users in the viewport
-                    height: "auto",
-                  }}
-                >
-                  {/* User Image */}
-                  <img
-                    src={user.image}
-                    alt={user.name}
-                    className="w-18 h-18 md:w-20 md:h-20 rounded-full"
-                  />
-
-                  {/* User Name */}
-                  <span className="text-[#463C33] text-sm font-bold mt-2 text-center overflow-hidden text-ellipsis whitespace-nowrap">
-                    {user.name}
-                  </span>
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
 
         {/* Snacks */}
-        <div className="mt-10 px-4">
-        <h2 className="text-2xl font-extrabold text-orange-500 mb-6 no-scrollbar">Snacks</h2>
-        <div className="flex space-x-4 overflow-x-auto scroll-smooth mt-4">
-          {snackRecipes.map((recipe, index) => (
-            <div
-              key={recipe.id}
-              className="bg-[#463C33] rounded-lg w-60 shadow-md overflow-hidden flex-shrink-0"
-              style={{ marginRight: index === snackRecipes.length - 1 ? "0" : "1rem" }} // Removes white space on the last card
-            >
-              <div className="relative">
-                <img
-                  src={`http://localhost:5000/${recipe.image}`}
-                  alt={recipe.title}
-                  className="w-full h-56 object-cover"
-                />
-                <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
-                  {recipe.time}
-                </span>
-                <button
-                  className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
-                  onClick={() => toggleHeart(index)}
-                >
-                  {heartStates[index] ? (
-                    <FaHeart size={20} className="text-orange-500" />
-                  ) : (
-                    <FaHeart size={20} className="text-white" />
-                  )}
-                </button>
-              </div>
-              <div className="flex justify-between p-4">
-                <div className="flex items-center space-x-2">
-                  <FaHeart size={16} className="text-white" />
-                  <span className="text-white">{recipe.likes}</span>
+        <div className="mt-10 pl-4">
+          <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Snacks</h2>
+          <div className="flex gap-4 overflow-x-auto scroll-smooth mt-4 no-scrollbar">
+            {recipes.snacks?.map((recipe) => (
+              <div key={recipe._id} className="bg-[#463C33] rounded-lg w-60 shadow-md overflow-hidden flex-shrink-0">
+                <div className="relative">
+                <Link to={`/recipes/${recipe._id}`}>
+                    <img
+                      src={`http://localhost:5000/${recipe.image}`}
+                      alt={recipe.title}
+                      className="w-full h-56 object-cover"
+                    />
+                    <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
+                      {recipe.time}
+                    </span>
+                  </Link>
+                  <button
+                    className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
+                    onClick={() => toggleHeart(recipe._id, "snacks")}
+                  >
+                    {heartStates[recipe._id] ? (
+                      <FaHeart size={20} className="text-white" />
+                    ) : (
+                      <FaRegHeart size={20} className="text-white" />
+                    )}
+                  </button>
                 </div>
-                <div className="flex items-center">
-                <img
-                    src={`http://localhost:5000/${recipe.user.profilePicture}`}
-                    alt={recipe.user.name}
-                    className="w-8 h-8 rounded-full object-cover border-2 border-white"
-                  />
-                </div>
+                <Link to={`/recipes/${recipe._id}`}>
+                  <div className="flex justify-between p-4">
+                    <div className="flex items-center space-x-2">
+                      <FaHeart size={16} className="text-white" />
+                      <span className="text-white">{recipe.likes}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <img
+                        src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                        alt={recipe.user.name}
+                        className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          navigate(`/user/${recipe.user._id}`);
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div
+                    className="p-4 flex flex-col justify-between"
+                    style={{ minHeight: "130px" }}
+                  >
+                    <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">
+                      {recipe.title}
+                    </h3>
+                    <button 
+                      className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-3 w-full"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        navigate('/add-to-meal-plan', { state: { recipe } });
+                      }}
+                    >
+                      Add to Meal Plan
+                    </button>
+                  </div>
+                </Link>
               </div>
-              <div className="p-4 flex flex-col justify-between" style={{ minHeight: "130px" }}>
-                <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">
-                  {recipe.title}
-                </h3>
-                <button className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-4 w-full">
-                  Add to Meal Plan
-                </button>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
         {/* Desserts */}
-        <div className="mt-10 px-4">
-        <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Desserts</h2>
-        <div className="flex space-x-4 overflow-x-auto scroll-smooth mt-4 no-scrollbar">
-          {dessertRecipes.map((recipe, index) => (
-            <div
-              key={recipe.id}
-              className="bg-[#463C33] rounded-lg w-60 shadow-md overflow-hidden flex-shrink-0"
-              style={{ marginRight: index === dessertRecipes.length - 1 ? "0" : "1rem" }} // Removes white space on the last card
-            >
-              <div className="relative">
-                <img
-                  src={`http://localhost:5000/${recipe.image}`}
-                  alt={recipe.title}
-                  className="w-full h-56 object-cover"
-                />
-                <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
-                  {recipe.time}
-                </span>
-                <button
-                  className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
-                  onClick={() => toggleHeart(index)}
-                >
-                  {heartStates[index] ? (
-                    <FaHeart size={20} className="text-orange-500" />
-                  ) : (
-                    <FaHeart size={20} className="text-white" />
-                  )}
-                </button>
-              </div>
-              <div className="flex justify-between p-4">
-                <div className="flex items-center space-x-2">
-                  <FaHeart size={16} className="text-white" />
-                  <span className="text-white">{recipe.likes}</span>
+        <div className="mt-10 pl-4">
+          <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Desserts</h2>
+          <div className="flex gap-4 overflow-x-auto scroll-smooth mt-4 no-scrollbar">
+            {recipes.desserts?.map((recipe) => (
+              <div key={recipe._id} className="bg-[#463C33] rounded-lg w-60 shadow-md overflow-hidden flex-shrink-0">
+                <div className="relative">
+                <Link to={`/recipes/${recipe._id}`}>
+                    <img
+                      src={`http://localhost:5000/${recipe.image}`}
+                      alt={recipe.title}
+                      className="w-full h-56 object-cover"
+                    />
+                    <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
+                      {recipe.time}
+                    </span>
+                  </Link>
+                  <button
+                    className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
+                    onClick={() => toggleHeart(recipe._id, "desserts")}
+                  >
+                    {heartStates[recipe._id] ? (
+                      <FaHeart size={20} className="text-white" />
+                    ) : (
+                      <FaRegHeart size={20} className="text-white" />
+                    )}
+                  </button>
                 </div>
-                <div className="flex items-center">
-                <img
-                    src={`http://localhost:5000/${recipe.user.profilePicture}`}
-                    alt={recipe.user.name}
-                    className="w-8 h-8 rounded-full object-cover border-2 border-white"
-                  />
-                </div>
+                <Link to={`/recipes/${recipe._id}`}>
+                  <div className="flex justify-between p-4">
+                    <div className="flex items-center space-x-2">
+                      <FaHeart size={16} className="text-white" />
+                      <span className="text-white">{recipe.likes}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <img
+                        src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                        alt={recipe.user.name}
+                        className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          navigate(`/user/${recipe.user._id}`);
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div
+                    className="p-4 flex flex-col justify-between"
+                    style={{ minHeight: "130px" }}
+                  >
+                    <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">
+                      {recipe.title}
+                    </h3>
+                    <button 
+                      className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-3 w-full"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        navigate('/add-to-meal-plan', { state: { recipe } });
+                      }}
+                    >
+                      Add to Meal Plan
+                    </button>
+                  </div>
+                </Link>
               </div>
-              <div className="p-4 flex flex-col justify-between" style={{ minHeight: "130px" }}>
-                  <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">
-                    {recipe.title}
-                  </h3>
-                <button className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-4 w-full">
-                  Add to Meal Plan
-                </button>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
       {/* Quick Links For You */}
       <div className="mt-6 px-4">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaHome, FaSearch, FaUserAlt, FaHamburger, FaPlus } from 'react-icons/fa';
+import { FaHome, FaSearch, FaUserAlt, FaUtensils, FaPlus } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const BottomNavbar = () => {
@@ -20,8 +20,8 @@ const BottomNavbar = () => {
       case '/profile':
         setActiveIcon('profile');
         break;
-      case '/hamburger':
-        setActiveIcon('hamburger');
+      case '/meal-plan':
+        setActiveIcon('meal-plan');
         break;
       default:
         setActiveIcon('home');
@@ -44,8 +44,8 @@ const BottomNavbar = () => {
       case 'profile':
         navigate('/profile'); // Navigate to the ProfileScreen
         break;
-      case 'hamburger':
-        navigate('/hamburger'); // Navigate to the HamburgerScreen
+      case 'meal-plan':
+        navigate('/meal-plan');
         break;
       default:
         break;
@@ -95,12 +95,12 @@ const BottomNavbar = () => {
           <FaPlus size={24} />
         </button>
 
-        {/* Hamburger */}
+        {/* Meal Plan (updated icon and active state name) */}
         <button 
-          className={`flex flex-col items-center ${activeIcon === 'hamburger' ? 'bg-white text-orange-500 border-2 border-orange-500 p-2 rounded-full' : 'text-white p-2'}`}
-          onClick={() => handleIconClick('hamburger')}
+          className={`flex flex-col items-center ${activeIcon === 'meal-plan' ? 'bg-white text-orange-500 border-2 border-orange-500 p-2 rounded-full' : 'text-white p-2'}`}
+          onClick={() => handleIconClick('meal-plan')}
         >
-          <FaHamburger size={24} />
+          <FaUtensils size={24} />
         </button>
 
         {/* Profile */}
