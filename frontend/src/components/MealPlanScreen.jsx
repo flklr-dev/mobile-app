@@ -20,6 +20,8 @@ const MealPlanScreen = () => {
   });
   const [showMealSelector, setShowMealSelector] = useState(false);
   const [recipeToAdd, setRecipeToAdd] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [mealToDelete, setMealToDelete] = useState(null);
 
   useEffect(() => {
     fetchMealPlans();
@@ -74,39 +76,42 @@ const MealPlanScreen = () => {
   };
 
   const handleDeleteMeal = async (mealType, index, planId) => {
-    // Show confirmation dialog
-    const isConfirmed = window.confirm('Are you sure you want to delete this meal from your plan?');
-    
-    if (isConfirmed) {
-      try {
-        const token = localStorage.getItem('token');
-        const dateStr = selectedDay.toISOString().split('T')[0];
+    setMealToDelete({ mealType, index, planId });
+    setShowDeleteModal(true);
+  };
 
-        // Delete from backend using planId instead of mealId
-        await axios.delete(
-          `http://localhost:5000/auth/meal-plans/${dateStr}/${planId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
+  const handleDeleteConfirm = async () => {
+    if (!mealToDelete) return;
 
-        // Update local state
-        setMealPlan(prev => ({
-          ...prev,
-          [mealType]: prev[mealType].filter((_, i) => i !== index)
-        }));
-        
-        toast.success('Meal removed from plan', {
-          position: "top-center",
-          autoClose: 2000
-        });
-      } catch (error) {
-        console.error('Error deleting meal:', error);
-        toast.error('Failed to remove meal from plan', {
-          position: "top-center",
-          autoClose: 2000
-        });
-      }
+    try {
+      const token = localStorage.getItem('token');
+      const dateStr = selectedDay.toISOString().split('T')[0];
+
+      await axios.delete(
+        `http://localhost:5000/auth/meal-plans/${dateStr}/${mealToDelete.planId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      setMealPlan(prev => ({
+        ...prev,
+        [mealToDelete.mealType]: prev[mealToDelete.mealType].filter((_, i) => i !== mealToDelete.index)
+      }));
+      
+      toast.success('Meal removed from plan', {
+        position: "top-center",
+        autoClose: 2000
+      });
+
+      setShowDeleteModal(false);
+      setMealToDelete(null);
+    } catch (error) {
+      console.error('Error deleting meal:', error);
+      toast.error('Failed to remove meal from plan', {
+        position: "top-center",
+        autoClose: 2000
+      });
     }
   };
 
@@ -202,7 +207,6 @@ const MealPlanScreen = () => {
                         />
                         <div>
                           <h4 className="font-medium text-gray-800">{meal.title}</h4>
-                          <p className="text-sm text-gray-500">{meal.calories} calories</p>
                         </div>
                       </div>
                       <button 
@@ -264,6 +268,37 @@ const MealPlanScreen = () => {
             >
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Add the Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Remove Meal
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to remove this meal from your plan?
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setMealToDelete(null);
+                }}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-full font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-full font-medium hover:bg-red-600 transition-colors"
+              >
+                Remove
+              </button>
+            </div>
           </div>
         </div>
       )}

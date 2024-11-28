@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import LoadingScreen from './components/LoadingScreen';
 import RegisterScreen from "./components/RegisterScreen";
 import LoginScreen from "./components/LoginScreen";
 import HomeScreen from "./components/HomeScreen";
@@ -17,7 +18,8 @@ const App = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<RegisterScreen />} />
+        <Route path="/" element={<LoadingScreen />} />
+        <Route path="/register" element={<RegisterScreen />} />
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/home" element={<HomeScreen />} />
         <Route path="/add-recipe" element={<AddRecipeScreen />} />

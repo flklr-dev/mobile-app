@@ -9,6 +9,7 @@ const ProfileScreen = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState({ name: "", profilePicture: "" });
   const [error, setError] = useState("");
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -16,7 +17,7 @@ const ProfileScreen = () => {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No token found");
   
-        const { data } = await axios.get("http://192.168.1.118:5000/auth/profile", {
+        const { data } = await axios.get("http://172.10.59.220:5000/auth/profile", {
           headers: { Authorization: `Bearer ${token}` }, // Add 'Bearer' prefix
         });
         setUser(data);
@@ -39,14 +40,19 @@ const ProfileScreen = () => {
     navigate("/edit-profile"); // This will navigate to the EditProfileScreen
   };
 
-  // Logout Functionality with Toast
-  const handleLogout = () => {
-    localStorage.removeItem("token"); // Clear the authentication token
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    localStorage.removeItem("token");
     toast.success("Logged out successfully!", {
       position: "top-center",
       autoClose: 1000,
     });
-    setTimeout(() => navigate("/login"), 1000); // Redirect after showing toast
+    setTimeout(() => {
+      navigate("/login");
+    }, 1000);
   };
 
   if (error) {
@@ -57,7 +63,7 @@ const ProfileScreen = () => {
     );
   }
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 relative">
       <ToastContainer />
       
       {/* Header - Simplified with gradient */}
@@ -176,7 +182,7 @@ const ProfileScreen = () => {
 
           {/* Logout Button */}
           <div
-            onClick={handleLogout}
+            onClick={handleLogoutClick}
             className="bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group"
           >
             <div className="flex items-center">
@@ -187,6 +193,34 @@ const ProfileScreen = () => {
             </div>
           </div>
         </div>
+
+        {/* Logout Confirmation Modal */}
+        {showLogoutModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Confirm Logout
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to logout?
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowLogoutModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-full font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleLogoutConfirm}
+                  className="flex-1 px-4 py-2 bg-red-500 text-white rounded-full font-medium hover:bg-red-600 transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Bottom Spacing */}
         <div className="h-20" />

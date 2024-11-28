@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaHeart, FaBell, FaChevronLeft } from 'react-icons/fa';
 import axios from 'axios';
+import logo from '../assets/pantrypals.png'; // Import the logo
+import { API_BASE_URL } from '../config';
 
 const Header = () => {
   const navigate = useNavigate();
@@ -12,19 +14,13 @@ const Header = () => {
   // Fetch the user's liked recipes count
   const fetchLikedCount = async () => {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          console.error("No token found");
-          return;
-        }
-    
-        const response = await axios.get("http://localhost:5000/auth/profile", {
-          headers: { Authorization: `Bearer ${token}` }, // Use Bearer token format
+        const response = await axios.get(`${API_BASE_URL}/auth/profile`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
     
         setLikedCount(response.data.likedRecipes.length); // Get the length of liked recipes array
       } catch (error) {
-        console.error("Error fetching liked count:", error.response?.data?.message || error.message);
+        console.error("Error fetching liked count:", error);
       }
     };
     
@@ -48,9 +44,12 @@ const Header = () => {
           <FaChevronLeft size={22} />
         </button>
       ) : (
-        <button className="bg-none text-white p-2">
-          <div>Logo</div>
-        </button>
+        <img 
+          src={logo} 
+          alt="PantryPals Logo" 
+          className="h-10 object-contain"
+          onClick={() => navigate('/home')}
+        />
       )}
       
       <div className="flex items-center space-x-5">

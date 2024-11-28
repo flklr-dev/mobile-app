@@ -303,4 +303,49 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
   }
 });
 
+// Add this new route for getting other user's profiles
+router.get('/profile/:userId', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId)
+      .select('name profilePicture aboutMe');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ message: 'Error fetching user data' });
+  }
+});
+
+router.put('/update-profile', authenticateToken, upload.single('profilePicture'), async (req, res) => {
+  try {
+    const updates = {
+      name: req.body.name,
+      aboutMe: req.body.aboutMe,
+    };
+
+    if (req.file) {
+      updates.profilePicture = req.file.path.replace(/\\/g, '/');
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      updates,
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ message: 'Error updating profile', error: error.message });
+  }
+});
+
 module.exports = router;

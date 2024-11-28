@@ -108,52 +108,46 @@ router.get("/", async (req, res) => {
     }
 });
 
-router.post("/like/:recipeId", authenticateToken, async (req, res) => {
+router.post('/like/:recipeId', authenticateToken, async (req, res) => {
   try {
-    const recipeId = req.params.recipeId;
-    const userId = req.user.userId;
-
-    // Find the user and the recipe
-    const user = await User.findById(userId);
-    const recipe = await Recipe.findById(recipeId);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    const recipe = await Recipe.findById(req.params.recipeId);
     if (!recipe) {
-      return res.status(404).json({ message: "Recipe not found" });
+      return res.status(404).json({ message: 'Recipe not found' });
     }
 
-    // Ensure likedRecipes is initialized
-    if (!user.likedRecipes) {
-      user.likedRecipes = [];
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    // Initialize likes if not already set
-    if (!recipe.likes) {
-      recipe.likes = 0;
-    }
+    const isLiked = user.likedRecipes.includes(recipe._id);
 
-    // Toggle the like: if the recipe is already liked, remove it, else add it
-    const index = user.likedRecipes.indexOf(recipeId);
-    if (index === -1) {
-      // Add to likedRecipes if not present
-      user.likedRecipes.push(recipeId);
-      recipe.likes += 1; // Increment the recipe's like count
+    if (isLiked) {
+      // Unlike the recipe
+      await User.findByIdAndUpdate(user._id, {
+        $pull: { likedRecipes: recipe._id }
+      });
+      recipe.likes = Math.max(0, recipe.likes - 1);
     } else {
-      // Remove from likedRecipes if already liked
-      user.likedRecipes.splice(index, 1);
-      recipe.likes -= 1; // Decrement the recipe's like count
+      // Like the recipe
+      await User.findByIdAndUpdate(user._id, {
+        $addToSet: { likedRecipes: recipe._id }
+      });
+      recipe.likes = (recipe.likes || 0) + 1;
     }
 
-    // Save both the user and the recipe
-    await user.save();
     await recipe.save();
 
-    res.status(200).json({ message: "Like status updated", recipeLikes: recipe.likes });
+    res.json({
+      recipeLikes: recipe.likes,
+      isLiked: !isLiked
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: error.message || "Failed to update like status" });
+    console.error('Error in like route:', error);
+    res.status(500).json({ 
+      message: 'Error processing like/unlike',
+      error: error.message 
+    });
   }
 });
 
@@ -200,11 +194,13 @@ router.get("/:recipeId", async (req, res) => {
 router.get('/user/:userId', authenticateToken, async (req, res) => {
   try {
     const recipes = await Recipe.find({ 
-      userId: req.params.userId,
-      isPublic: true  // Only get public recipes
+      $or: [
+        { user: req.params.userId },
+        { userId: req.params.userId }
+      ]
     })
     .sort({ createdAt: -1 })
-    .populate('userId', 'name profilePicture'); // Populate user details
+    .populate('userId', 'name profilePicture');
 
     res.json(recipes);
   } catch (error) {

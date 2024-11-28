@@ -2,19 +2,25 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
+const path = require('path');
 
 const app = express();
-app.use(cors());
-app.use(express.json());
 
+// Update CORS configuration
 const corsOptions = {
-  origin: "http://localhost:5173", // Allow requests from your frontend origin
+  origin: [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://192.168.1.118:3000",
+    "http://192.168.1.118:5173"
+  ],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  allowedHeaders: ["Content-Type", "Authorization"], // Include 'Authorization' for JWT
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"]
 };
 
 app.use(cors(corsOptions));
-
+app.use(express.json());
 
 const PORT = process.env.PORT || 5000;
 
@@ -30,7 +36,7 @@ mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopol
   app.use("/recipes", recipeRoutes); // Use recipe routes for search functionality
   
   // Serve static assets (images, etc.)
-  app.use("/uploads", express.static("uploads"));
+  app.use("/uploads", express.static(path.join(__dirname, "uploads")));
   
 
   

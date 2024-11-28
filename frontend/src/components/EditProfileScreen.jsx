@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FaPen, FaChevronLeft } from "react-icons/fa"; // Pencil icon for editing the profile picture
+import { FaPen, FaChevronLeft } from "react-icons/fa";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const EditProfileScreen = () => {
   const navigate = useNavigate();
@@ -11,31 +13,24 @@ const EditProfileScreen = () => {
     profilePicture: null,
   });
   const [imagePreview, setImagePreview] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(""); // Success message state
-  const [errorMessage, setErrorMessage] = useState(""); // Error message state
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       const token = localStorage.getItem("token");
       try {
-        const { data } = await axios.get("http://192.168.1.118:5000/auth/profile", {
-          headers: { Authorization: `Bearer ${token}` }, // Update header format
+        const { data } = await axios.get("http://localhost:5000/auth/profile", {
+          headers: { Authorization: `Bearer ${token}` },
         });
 
-        // Populate all fields from the fetched data
         setUserData({
           name: data.name,
-          aboutMe: data.aboutMe || "", // Use an empty string if aboutMe is missing
-          profilePicture: null, // Initialize as null for editing
+          aboutMe: data.aboutMe || "",
+          profilePicture: null,
         });
-        setImagePreview(`http://192.168.1.118:5000/${data.profilePicture}`);
+        setImagePreview(`http://localhost:5000/${data.profilePicture}`);
       } catch (error) {
         console.error(error);
-        setErrorMessage(
-          error.response?.status === 401
-            ? "Your session has expired. Please log in again."
-            : "Failed to fetch profile details. Please try again."
-        );
+        toast.error("Failed to fetch profile details");
       }
     };
 
@@ -44,8 +39,8 @@ const EditProfileScreen = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setUserData((prevData) => ({
-      ...prevData,
+    setUserData((prev) => ({
+      ...prev,
       [name]: value,
     }));
   };
@@ -53,77 +48,85 @@ const EditProfileScreen = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setUserData((prevData) => ({
-        ...prevData,
+      setUserData((prev) => ({
+        ...prev,
         profilePicture: file,
       }));
       setImagePreview(URL.createObjectURL(file));
     }
   };
 
-  const handleSave = async () => {
-    const formData = new FormData();
-    formData.append("name", userData.name);
-    formData.append("aboutMe", userData.aboutMe);
-
-    // Only append the profilePicture if it's not null or undefined
-    if (userData.profilePicture instanceof File) {
-      formData.append("profilePicture", userData.profilePicture);
-    }
-
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     const token = localStorage.getItem("token");
+    
     try {
-      await axios.put("http://172.10.59.220:5000/auth/update", formData, {
-        headers: { Authorization: `Bearer ${token}` }, // Update header format
-      });
-      setSuccessMessage("Profile updated successfully!"); // Set success message
-      setErrorMessage(""); // Clear any previous error
-      setTimeout(() => {
-        setSuccessMessage(""); // Clear the message after 3 seconds
-        navigate("/profile"); // Navigate back to the profile screen after saving
-      }, 1000);
-    } catch (error) {
-      console.error("Error saving profile", error);
-      setErrorMessage(
-        error.response?.status === 401
-          ? "Unauthorized access. Please log in again."
-          : "Failed to update profile. Please try again."
-      );
-      setSuccessMessage(""); // Clear success message in case of an error
-    }
-  };
+      const formData = new FormData();
+      formData.append("name", userData.name);
+      formData.append("aboutMe", userData.aboutMe);
+      if (userData.profilePicture) {
+        formData.append("profilePicture", userData.profilePicture);
+      }
 
-  const goBack = () => {
-    navigate(-1); // Go back to the previous screen
+      await axios.put(
+        "http://localhost:5000/auth/update-profile",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      toast.success("Profile updated successfully!", {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+
+      setTimeout(() => {
+        navigate("/profile");
+      }, 2000);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error(error.response?.data?.message || "Failed to update profile", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
+      <ToastContainer />
       {/* Header */}
-      <div className="fixed top-0 left-0 w-full z-10 flex items-center p-4 bg-orange-500 shadow-lg">
-      <button onClick={goBack} className="text-white text-2xl">
-          <FaChevronLeft />
-        </button>
-        <h1 className="text-white ml-4 flex justify-center items-center text-xl font-bold">Edit Profile</h1>
-        <button onClick={handleSave} className="text-white ml-auto text-lg font-semibold">
-          Save
-        </button>
+      <div className="fixed top-0 left-0 right-0 bg-orange-500 z-50">
+        <div className="flex justify-between items-center px-4 h-16">
+          <button
+            onClick={() => navigate(-1)}
+            className="text-white"
+          >
+            <FaChevronLeft size={24} />
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="text-white font-semibold"
+          >
+            Save
+          </button>
+        </div>
       </div>
 
-      {/* Profile Edit Form */}
-      <div className="mt-20 px-6 space-y-6 pb-10">
-        {/* Success or Error Message */}
-        {successMessage && (
-          <div className="bg-green-500 text-white text-center p-4 rounded-lg mb-4">
-            {successMessage}
-          </div>
-        )}
-        {errorMessage && (
-          <div className="bg-red-500 text-white text-center p-4 rounded-lg mb-4">
-            {errorMessage}
-          </div>
-        )}
-
+      {/* Form Content */}
+      <div className="pt-20 px-4 space-y-6">
         {/* Profile Picture */}
         <div className="flex justify-center mb-4">
           <div className="relative">
@@ -132,14 +135,13 @@ const EditProfileScreen = () => {
               alt="Profile"
               className="w-32 h-32 object-cover rounded-full border-4 border-orange-500"
             />
-            {/* Pencil icon for editing the profile picture */}
             <label className="absolute bottom-0 right-0 bg-orange-500 p-2 rounded-full cursor-pointer">
               <FaPen className="text-white" />
               <input
                 type="file"
                 onChange={handleImageChange}
                 accept="image/*"
-                className="absolute bottom-0 right-0 opacity-0 cursor-pointer"
+                className="hidden"
               />
             </label>
           </div>

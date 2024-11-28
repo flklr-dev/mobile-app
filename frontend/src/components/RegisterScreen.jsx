@@ -31,7 +31,7 @@ const RegisterScreen = () => {
     }
 
     try {
-      await axios.post("http://192.168.1.118:5000/auth/register", {
+      await axios.post("http://172.10.59.220:5000/auth/register", {
         name,
         email,
         password,

@@ -42,31 +42,36 @@ const HomeScreen = () => {
         [recipeId]: !prev[recipeId],
       }));
 
-    // Update the specific category's state
-    if (category === "trending") {
-      setTrendingRecipes((prevRecipes) =>
-        prevRecipes.map((recipe) =>
-          recipe._id === recipeId ? { ...recipe, likes: response.data.recipeLikes } : recipe
-        )
-      );
-    } else {
-      setRecipes((prev) => ({
-        ...prev,
-        [category]: prev[category].map((recipe) =>
-          recipe._id === recipeId ? { ...recipe, likes: response.data.recipeLikes } : recipe
-        ),
-      }));
+      // Update the specific category's state
+      if (category === "trending") {
+        setTrendingRecipes((prevRecipes) =>
+          prevRecipes.map((recipe) =>
+            recipe._id === recipeId 
+              ? { ...recipe, likes: response.data.recipeLikes } 
+              : recipe
+          )
+        );
+      } else {
+        setRecipes((prev) => ({
+          ...prev,
+          [category]: prev[category].map((recipe) =>
+            recipe._id === recipeId 
+              ? { ...recipe, likes: response.data.recipeLikes } 
+              : recipe
+          ),
+        }));
+      }
 
-      // Show success toast for action
+      // Show success toast
       toast.success(
         heartStates[recipeId]
           ? "Recipe removed from favorites!"
           : "Recipe added to favorites!",
         { position: "top-center", autoClose: 2000 }
       );
-    }
     } catch (error) {
       console.error("Error toggling like state:", error.message);
+      toast.error("Failed to update favorite status");
     }
   };
 
@@ -233,14 +238,16 @@ const HomeScreen = () => {
                 >
                     <div className="bg-[#463C33] rounded-lg shadow-md overflow-hidden flex-shrink-0 w-60">
                         <div className="relative">
-                            <img
-                                src={`http://localhost:5000/${recipe.image}`}
-                                alt={recipe.title}
-                                className="w-full h-56 object-cover"
-                            />
-                            <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
-                                {recipe.time}
-                            </span>
+                        <Link to={`/recipes/${recipe._id}`}>
+                          <img
+                            src={`http://localhost:5000/${recipe.image}`}
+                            alt={recipe.title}
+                            className="w-full h-56 object-cover"
+                          />
+                          <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
+                            {recipe.time}
+                          </span>
+                        </Link>
                             <button
                               className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
                               onClick={() => toggleHeart(recipe._id, "trending")}
@@ -565,7 +572,11 @@ const HomeScreen = () => {
                   </Link>
                   <button
                     className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
-                    onClick={() => toggleHeart(recipe._id, "snacks")}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleHeart(recipe._id, "breakfast");
+                    }}
                   >
                     {heartStates[recipe._id] ? (
                       <FaHeart size={20} className="text-white" />
@@ -636,7 +647,11 @@ const HomeScreen = () => {
                   </Link>
                   <button
                     className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
-                    onClick={() => toggleHeart(recipe._id, "desserts")}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleHeart(recipe._id, "breakfast");
+                    }}
                   >
                     {heartStates[recipe._id] ? (
                       <FaHeart size={20} className="text-white" />
