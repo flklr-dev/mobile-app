@@ -14,7 +14,7 @@ const LoginScreen = () => {
     setError("");
 
     try {
-      const response = await axios.post("http://172.10.59.220:5000/auth/login", {
+      const response = await axios.post("http://localhost:5000/auth/login", {
         email,
         password,
       });
@@ -23,7 +23,8 @@ const LoginScreen = () => {
         const { token } = response.data;
         // Save token to localStorage
         localStorage.setItem("token", token);
-
+        localStorage.setItem('userId', response.data.userId); // Add this line
+  
         // Show success toast
         toast.success("Login successful!", {
           position: "top-center",
@@ -49,31 +50,31 @@ const LoginScreen = () => {
   return (
     <div className="flex flex-col items-center justify-center mx-4 min-h-screen bg-white px-4">
         <ToastContainer />
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h1>
-        <p className="text-gray-600 mb-4">
+      <div className="w-full max-w-md mb-8">
+        <h1 className="text-3xl font-bold text-orange-500 mb-3">
+          Welcome Back
+        </h1>
+        <p className="text-gray-600 mb-6">
           Log in to unlock a world of shared recipes and pantry creativity!
         </p>
       </div>
-      <form onSubmit={handleLogin} className="w-full max-w-md">
-        <label className="block text-orange-500 font-bold mb-2">Email</label>
+      <form onSubmit={handleLogin} className="w-full max-w-md space-y-6">
         <input
           type="email"
           value={email}
-          placeholder="Enter your email"
+          placeholder="Email"
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="w-full px-4 py-2 mb-4 border border-orange-500 rounded-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          className="w-full px-4 py-2 border border-orange-500 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
         />
 
-        <label className="block text-orange-500 font-bold mb-2">Password</label>
         <input
           type="password"
           value={password}
-          placeholder="Enter your password"
+          placeholder="Password"
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="w-full px-4 py-2 mb-4 border border-orange-500 rounded-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          className="w-full px-4 py-2 border border-orange-500 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
         />
 
         <div className="text-right mb-4">
@@ -90,7 +91,7 @@ const LoginScreen = () => {
 
         <button
           type="submit"
-          className="w-full py-2 bg-orange-500 text-white rounded-full font-bold hover:bg-orange-600 transition"
+          className="w-full py-2 bg-orange-500 text-white rounded-lg font-bold hover:bg-orange-600 transition"
         >
           Log In
         </button>
@@ -103,25 +104,21 @@ const LoginScreen = () => {
       </div>
 
       <div className="w-full max-w-md flex flex-col gap-4">
-        <button className="flex items-center justify-center py-2 border rounded-full text-gray-700 hover:bg-gray-100 transition">
+        <button className="flex items-center justify-center py-2 border rounded-lg text-gray-700 hover:bg-gray-100 transition">
           <FaGoogle className="mr-2 text-red-500" size={20} />
           Continue with Google
         </button>
-        <button className="flex items-center justify-center py-2 border rounded-full text-gray-700 hover:bg-gray-100 transition">
+        <button className="flex items-center justify-center py-2 border rounded-lg text-gray-700 hover:bg-gray-100 transition">
           <FaFacebook className="mr-2 text-blue-500" size={20} />
           Continue with Facebook
-        </button>
-        <button className="flex items-center justify-center py-2 border rounded-full text-gray-700 hover:bg-gray-100 transition">
-          <FaInstagram className="mr-2 text-pink-500" size={20} />
-          Continue with Instagram
         </button>
       </div>
 
       <p className="mt-6 text-gray-700">
-        Don’t have an account?{" "}
+        Don't have an account?{" "}
         <button
           className="text-orange-500 font-bold underline"
-          onClick={() => (window.location.href = "/")}
+          onClick={() => (window.location.href = "/register")}
         >
           Sign Up
         </button>

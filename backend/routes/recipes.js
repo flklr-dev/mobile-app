@@ -2,9 +2,11 @@ const express = require("express");
 const multer = require("multer");
 const Recipe = require("../models/Recipe");
 const User = require("../models/User");
-const { authenticateToken } = require("../middleware/auth"); // Updated import
+const Comment = require("../models/Comment");
+const { authenticateToken } = require("../middleware/auth");
 const router = express.Router();
 const mongoose = require("mongoose");
+const Notification = require("../models/Notification");
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
@@ -108,46 +110,59 @@ router.get("/", async (req, res) => {
     }
 });
 
-router.post('/like/:recipeId', authenticateToken, async (req, res) => {
+// Like/Unlike route
+router.post("/like/:recipeId", authenticateToken, async (req, res) => {
   try {
     const recipe = await Recipe.findById(req.params.recipeId);
-    if (!recipe) {
-      return res.status(404).json({ message: 'Recipe not found' });
-    }
-
     const user = await User.findById(req.user.userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+
+    if (!recipe || !user) {
+      return res.status(404).json({ message: "Recipe or user not found" });
     }
 
-    const isLiked = user.likedRecipes.includes(recipe._id);
+    const userIdStr = req.user.userId.toString();
+    const recipeIdStr = recipe._id.toString();
+    
+    // Check if user has already liked
+    const userHasLiked = user.likedRecipes.includes(recipeIdStr);
 
-    if (isLiked) {
-      // Unlike the recipe
-      await User.findByIdAndUpdate(user._id, {
-        $pull: { likedRecipes: recipe._id }
+    if (userHasLiked) {
+      // Unlike: Remove recipe from user's likedRecipes
+      await User.findByIdAndUpdate(userIdStr, {
+        $pull: { likedRecipes: recipeIdStr }
       });
-      recipe.likes = Math.max(0, recipe.likes - 1);
+
+      // Decrease recipe likes count
+      await Recipe.findByIdAndUpdate(recipeIdStr, {
+        $inc: { likes: -1 }
+      });
+
+      res.json({
+        message: "Recipe unliked",
+        recipeLikes: recipe.likes - 1,
+        isLiked: false
+      });
     } else {
-      // Like the recipe
-      await User.findByIdAndUpdate(user._id, {
-        $addToSet: { likedRecipes: recipe._id }
+      // Like: Add recipe to user's likedRecipes
+      await User.findByIdAndUpdate(userIdStr, {
+        $addToSet: { likedRecipes: recipeIdStr }
       });
-      recipe.likes = (recipe.likes || 0) + 1;
+
+      // Increase recipe likes count
+      await Recipe.findByIdAndUpdate(recipeIdStr, {
+        $inc: { likes: 1 }
+      });
+
+      res.json({
+        message: "Recipe liked",
+        recipeLikes: recipe.likes + 1,
+        isLiked: true
+      });
     }
 
-    await recipe.save();
-
-    res.json({
-      recipeLikes: recipe.likes,
-      isLiked: !isLiked
-    });
   } catch (error) {
-    console.error('Error in like route:', error);
-    res.status(500).json({ 
-      message: 'Error processing like/unlike',
-      error: error.message 
-    });
+    console.error("Error in like/unlike:", error);
+    res.status(500).json({ message: "Failed to update like status" });
   }
 });
 
@@ -190,22 +205,126 @@ router.get("/:recipeId", async (req, res) => {
   }
 });
 
-// Add this route to get user's recipes
+// Update this route to get user's recipes
 router.get('/user/:userId', authenticateToken, async (req, res) => {
   try {
-    const recipes = await Recipe.find({ 
-      $or: [
-        { user: req.params.userId },
-        { userId: req.params.userId }
-      ]
-    })
-    .sort({ createdAt: -1 })
-    .populate('userId', 'name profilePicture');
+    const recipes = await Recipe.find({ user: req.params.userId })
+      .sort({ createdAt: -1 })
+      .populate('user', 'name profilePicture');
 
     res.json(recipes);
   } catch (error) {
     console.error('Error fetching user recipes:', error);
     res.status(500).json({ message: 'Error fetching user recipes' });
+  }
+});
+
+// Add a comment to a recipe
+router.post("/:recipeId/comments", authenticateToken, async (req, res) => {
+  try {
+    const { text } = req.body;
+    const recipe = await Recipe.findById(req.params.recipeId);
+    if (!recipe) {
+      return res.status(404).json({ message: "Recipe not found" });
+    }
+
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const comment = new Comment({
+      text,
+      user: req.user.userId,
+      recipe: req.params.recipeId
+    });
+    await comment.save();
+    
+    // Create notification if the recipe owner is not the same as the commenter
+    if (recipe.user.toString() !== req.user.userId) {
+      const notification = new Notification({
+        recipient: recipe.user,
+        sender: user._id,
+        recipe: recipe._id,
+        type: 'comment',
+        message: `${user.name || 'Someone'} commented on your recipe "${recipe.title}"`
+      });
+      await notification.save();
+    }
+
+    // Populate user details before sending response
+    const populatedComment = await Comment.findById(comment._id)
+      .populate('user', 'name profilePicture');
+    
+    res.status(201).json(populatedComment);
+  } catch (error) {
+    console.error("Error adding comment:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get comments for a recipe (including replies)
+router.get("/:recipeId/comments", authenticateToken, async (req, res) => {
+  try {
+    const comments = await Comment.find({ 
+      recipe: req.params.recipeId,
+      isDeleted: false 
+    })
+    .populate('user', 'name profilePicture')
+    .sort({ createdAt: -1 });
+    
+    res.json(comments);
+  } catch (error) {
+    console.error("Error fetching comments:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Add reply to a comment (only recipe owner)
+router.post("/:recipeId/comments/:commentId/reply", authenticateToken, async (req, res) => {
+  try {
+    // First check if the user is the recipe owner
+    const recipe = await Recipe.findById(req.params.recipeId);
+    if (!recipe) {
+      return res.status(404).json({ message: "Recipe not found" });
+    }
+
+    if (recipe.user.toString() !== req.user.userId) {
+      return res.status(403).json({ message: "Only recipe owner can reply to comments" });
+    }
+
+    const comment = await Comment.findById(req.params.commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    comment.reply = req.body.reply;
+    comment.replyDate = new Date();
+    await comment.save();
+
+    // Populate the user details before sending response
+    const populatedComment = await Comment.findById(comment._id)
+      .populate('user', 'name profilePicture');
+
+    res.json(populatedComment);
+  } catch (error) {
+    console.error("Error adding reply:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Delete a comment (only recipe owner)
+router.delete("/:recipeId/comments/:commentId", authenticateToken, async (req, res) => {
+  try {
+    const recipe = await Recipe.findById(req.params.recipeId);
+    if (recipe.user.toString() !== req.user.userId) {
+      return res.status(403).json({ message: "Only recipe owner can delete comments" });
+    }
+
+    await Comment.findByIdAndUpdate(req.params.commentId, { isDeleted: true });
+    res.json({ message: "Comment deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 

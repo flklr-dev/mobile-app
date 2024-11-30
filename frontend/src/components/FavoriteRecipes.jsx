@@ -15,16 +15,23 @@ const FavoriteRecipes = () => {
         const response = await axios.get("http://localhost:5000/auth/liked-recipes", {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
         });
-        setFavoriteRecipes(response.data);
         
-        // Initialize heart states
-        const initialHeartStates = {};
-        response.data.forEach(recipe => {
-          initialHeartStates[recipe._id] = true;
-        });
-        setHeartStates(initialHeartStates);
+        if (response.data) {
+          setFavoriteRecipes(response.data);
+          
+          // Initialize heart states
+          const initialHeartStates = {};
+          response.data.forEach(recipe => {
+            initialHeartStates[recipe._id] = true;
+          });
+          setHeartStates(initialHeartStates);
+        }
       } catch (error) {
         console.error("Error fetching favorites:", error);
+        toast.error("Failed to load favorite recipes", {
+          position: "top-center",
+          autoClose: 3000,
+        });
       }
     };
 

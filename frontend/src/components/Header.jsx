@@ -10,6 +10,7 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [likedCount, setLikedCount] = useState(0);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   // Fetch the user's liked recipes count
   const fetchLikedCount = async () => {
@@ -24,11 +25,27 @@ const Header = () => {
       }
     };
     
+  const fetchUnreadNotifications = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/notifications`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      setUnreadNotifications(response.data.filter(n => !n.read).length);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
+
   useEffect(() => {
     // Fetch initially
     fetchLikedCount();
+    fetchUnreadNotifications();
+    
     // Setup polling for updates
-    const interval = setInterval(fetchLikedCount, 1000); // Poll every 5 seconds
+    const interval = setInterval(() => {
+      fetchLikedCount();
+      fetchUnreadNotifications();
+    }, 2000);
     return () => clearInterval(interval); // Cleanup on component unmount
   }, []);
 
@@ -60,9 +77,19 @@ const Header = () => {
           <FaHeart size={16} className="text-orange-500 ml-1" />
           <span className="text-orange-500 ml-2 mb-1 mr-1">{likedCount}</span>
         </div>
-        <button className="bg-none text-white p-2">
-          <FaBell size={22} />
-        </button>
+        <div className="relative">
+          <button 
+            className="bg-none text-white p-2"
+            onClick={() => navigate('/notifications')}
+          >
+            <FaBell size={22} />
+            {unreadNotifications > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                {unreadNotifications}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

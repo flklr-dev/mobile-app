@@ -13,6 +13,7 @@ import MealPlanScreen from './components/MealPlanScreen';
 import AddToMealPlan from './components/AddToMealPlan';
 import CategoryRecipes from './components/CategoryRecipes';
 import UserProfile from './components/UserProfile';
+import NotificationScreen from './components/NotificationScreen';
 
 const App = () => {
   return (
@@ -32,7 +33,7 @@ const App = () => {
         <Route path="/add-to-meal-plan" element={<AddToMealPlan />} />
         <Route path="/category-recipes" element={<CategoryRecipes />} />
         <Route path="/user/:userId" element={<UserProfile />} />
-        
+        <Route path="/notifications" element={<NotificationScreen />} />
       </Routes>
     </Router>
   );

@@ -17,7 +17,7 @@ const ProfileScreen = () => {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No token found");
   
-        const { data } = await axios.get("http://172.10.59.220:5000/auth/profile", {
+        const { data } = await axios.get("http://192.168.1.118:5000/auth/profile", {
           headers: { Authorization: `Bearer ${token}` }, // Add 'Bearer' prefix
         });
         setUser(data);

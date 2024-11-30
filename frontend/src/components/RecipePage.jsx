@@ -4,6 +4,7 @@ import axios from "axios";
 import { FaChevronLeft, FaHeart, FaRegHeart, FaShare, FaClock, FaListUl, FaUtensils, FaStickyNote } from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { formatDistanceToNow, isWithinInterval, subMinutes } from 'date-fns';
 
 const RecipePage = () => {
   const { id } = useParams();
@@ -13,6 +14,18 @@ const RecipePage = () => {
   const [error, setError] = useState(null);
   const [likedRecipes, setLikedRecipes] = useState(new Set());
   const [moreRecipes, setMoreRecipes] = useState([]);
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState('');
+  const [newReply, setNewReply] = useState('');
+  const [activeReplyId, setActiveReplyId] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState(null);
+
+  useEffect(() => {
+    console.log('Recipe owner ID:', recipe?.user?._id);
+    console.log('Current user ID:', localStorage.getItem("userId"));
+    console.log('Comments:', comments);
+  }, [recipe, comments]);
 
   useEffect(() => {
     const fetchRecipeAndMore = async () => {
@@ -55,6 +68,24 @@ const RecipePage = () => {
 
     fetchRecipeAndMore();
   }, [id, navigate]);
+
+  useEffect(() => {
+    fetchComments();
+  }, [id]);
+
+  const fetchComments = async () => {
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/recipes/${id}/comments`,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        }
+      );
+      setComments(response.data);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+    }
+  };
 
   const handleToggleLike = async (recipeId, e = null) => {
     if (e) {
@@ -116,6 +147,105 @@ const RecipePage = () => {
     navigate('/add-to-meal-plan', { state: { recipe } });
   };
 
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/recipes/${id}/comments`,
+        { text: newComment },
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        }
+      );
+      setComments([response.data, ...comments]);
+      setNewComment('');
+      toast.success("Comment added successfully!");
+    } catch (error) {
+      toast.error("Failed to add comment");
+    }
+  };
+
+  const handleAddReply = async (commentId) => {
+    try {
+      console.log('Attempting to add reply to comment:', commentId);
+      console.log('Reply text:', newReply);
+      
+      if (!newReply.trim()) {
+        toast.error("Reply cannot be empty");
+        return;
+      }
+
+      const response = await axios.post(
+        `http://localhost:5000/recipes/${id}/comments/${commentId}/reply`,
+        { reply: newReply },
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        }
+      );
+
+      console.log('Reply response:', response.data);
+
+      // Update comments state with the new reply
+      setComments(prevComments => 
+        prevComments.map(comment => 
+          comment._id === commentId ? response.data : comment
+        )
+      );
+      
+      setNewReply('');
+      setActiveReplyId(null);
+      toast.success("Reply added successfully!");
+    } catch (error) {
+      console.error("Error adding reply:", error);
+      toast.error(error.response?.data?.message || "Failed to add reply");
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    setCommentToDelete(commentId);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await axios.delete(
+        `http://localhost:5000/recipes/${id}/comments/${commentToDelete}`,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        }
+      );
+      setComments(comments.filter(comment => comment._id !== commentToDelete));
+      setShowDeleteModal(false);
+      setCommentToDelete(null);
+      toast.success("Comment deleted successfully!");
+    } catch (error) {
+      toast.error("Failed to delete comment");
+    }
+  };
+
+  const formatTimeAgo = (date) => {
+    const now = new Date();
+    
+    // Check if less than a minute ago
+    if (isWithinInterval(new Date(date), { 
+      start: subMinutes(now, 1), 
+      end: now 
+    })) {
+      return 'Just now';
+    }
+    
+    // Otherwise use formatDistanceToNow with custom formatting
+    return formatDistanceToNow(new Date(date), { addSuffix: true })
+      .replace('about ', '')
+      .replace('less than a minute ago', 'Just now')
+      .replace(' minutes ago', 'm ago')
+      .replace(' minute ago', 'm ago')
+      .replace(' hours ago', 'h ago')
+      .replace(' hour ago', 'h ago')
+      .replace(' days ago', 'd ago')
+      .replace(' day ago', 'd ago');
+  };
+
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -143,7 +273,7 @@ const RecipePage = () => {
   }
 
   return (
-    <div className="relative min-h-screen bg-white">
+    <div className="relative min-h-screen bg-white pb-32">
       <ToastContainer />
 
       {/* Cover Image Section */}
@@ -282,7 +412,7 @@ const RecipePage = () => {
       </div>
 
       {/* More Recipes Section */}
-      <div className="mb-20 px-4 mt-12">
+      <div className="mb-28 px-4 mt-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-[#463C33]">More Recipes</h2>
           <button 
@@ -353,6 +483,115 @@ const RecipePage = () => {
         </div>
       </div>
 
+      {/* Comments Section */}
+      <div className="mb-24 px-4">
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-2xl font-bold text-[#463C33]">Comments</h2>
+        </div>
+        
+        {/* Add Comment Form */}
+        <form onSubmit={handleAddComment} className="mb-6">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Add a comment..."
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500"
+              required
+            />
+            <button
+              type="submit"
+              className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+            >
+              Post
+            </button>
+          </div>
+        </form>
+
+        {/* Comments List */}
+        <div className="space-y-4">
+          {comments.map((comment) => (
+            <div key={comment._id} className="bg-gray-50 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div 
+                  className="flex items-center gap-2 cursor-pointer"
+                  onClick={() => navigate(`/user/${comment.user._id}`)}
+                >
+                  <img
+                    src={`http://localhost:5000/${comment.user.profilePicture}`}
+                    alt={comment.user.name}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                  <span className="font-semibold hover:text-orange-500 transition-colors">
+                    {comment.user.name}
+                  </span>
+                </div>
+                <span className="text-sm text-gray-500">
+                  {formatTimeAgo(comment.createdAt)}
+                </span>
+              </div>
+              
+              <p className="text-gray-700 mb-2">{comment.text}</p>
+              
+              {/* Update this condition to properly check if current user is recipe owner */}
+              {recipe && recipe.user && recipe.user._id === localStorage.getItem("userId") && !comment.reply && (
+                <div className="mt-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Reply to this comment..."
+                      className="flex-1 px-3 py-1 border border-gray-300 rounded-lg text-sm"
+                      value={comment._id === activeReplyId ? newReply : ''}
+                      onChange={(e) => {
+                        setActiveReplyId(comment._id);
+                        setNewReply(e.target.value);
+                      }}
+                    />
+                    <button
+                      onClick={() => handleAddReply(comment._id)}
+                      className="bg-orange-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-orange-600"
+                    >
+                      Reply
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Display reply if it exists */}
+              {comment.reply && (
+                <div className="mt-2 ml-4 p-2 bg-white rounded-lg">
+                  <div className="flex justify-between items-center mb-1">
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                        alt={recipe.user.name}
+                        className="w-6 h-6 rounded-full object-cover"
+                      />
+                      <span className="text-sm font-semibold">{recipe.user.name}'s reply:</span>
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {formatTimeAgo(comment.replyDate)}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700 mt-1">{comment.reply}</p>
+                </div>
+              )}
+              
+              {/* Delete button (only visible to recipe owner) */}
+              {recipe && recipe.user && recipe.user._id === localStorage.getItem("userId") && (
+                <button
+                  onClick={() => handleDeleteComment(comment._id)}
+                  className="text-red-500 text-sm mt-2 hover:text-red-600"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Fixed Add to Meal Plan Button */}
       <div className="fixed bottom-4 left-0 right-0 bg-white shadow-lg z-50">
         <div className="max-w-screen-xl mx-auto px-4">
@@ -364,6 +603,37 @@ const RecipePage = () => {
           </button>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Delete Comment
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this comment?
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setCommentToDelete(null);
+                }}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-full font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-full font-medium hover:bg-red-600 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ToastContainer />
     </div>

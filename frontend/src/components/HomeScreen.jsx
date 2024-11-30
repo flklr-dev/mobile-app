@@ -35,44 +35,44 @@ const HomeScreen = () => {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
-
-      // Toggle the heart state
-      setHeartStates((prev) => ({
-        ...prev,
-        [recipeId]: !prev[recipeId],
-      }));
-
-      // Update the specific category's state
-      if (category === "trending") {
-        setTrendingRecipes((prevRecipes) =>
-          prevRecipes.map((recipe) =>
-            recipe._id === recipeId 
-              ? { ...recipe, likes: response.data.recipeLikes } 
-              : recipe
-          )
-        );
-      } else {
-        setRecipes((prev) => ({
+  
+        // Toggle the heart state
+        setHeartStates((prev) => ({
           ...prev,
-          [category]: prev[category].map((recipe) =>
-            recipe._id === recipeId 
-              ? { ...recipe, likes: response.data.recipeLikes } 
-              : recipe
-          ),
+          [recipeId]: !prev[recipeId],
         }));
-      }
 
-      // Show success toast
-      toast.success(
-        heartStates[recipeId]
-          ? "Recipe removed from favorites!"
-          : "Recipe added to favorites!",
-        { position: "top-center", autoClose: 2000 }
-      );
-    } catch (error) {
-      console.error("Error toggling like state:", error.message);
-      toast.error("Failed to update favorite status");
-    }
+        // Update the specific category's state
+        if (category === "trending") {
+          setTrendingRecipes((prevRecipes) =>
+            prevRecipes.map((recipe) =>
+              recipe._id === recipeId 
+                ? { ...recipe, likes: response.data.recipeLikes } 
+                : recipe
+            )
+          );
+        } else {
+          setRecipes((prev) => ({
+            ...prev,
+            [category]: prev[category].map((recipe) =>
+              recipe._id === recipeId 
+                ? { ...recipe, likes: response.data.recipeLikes } 
+                : recipe
+            ),
+          }));
+        }
+
+        // Show success toast
+        toast.success(
+          heartStates[recipeId]
+            ? "Recipe removed from favorites!"
+            : "Recipe added to favorites!",
+          { position: "top-center", autoClose: 1000 }
+        );
+        } catch (error) {
+        console.error("Error toggling like state:", error.message);
+        toast.error("Failed to update favorite status");
+        }
   };
 
   

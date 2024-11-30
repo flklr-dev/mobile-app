@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const User = require("../models/User");
 const Recipe = require("../models/Recipe");
+const Notification = require("../models/Notification");
 
 const router = express.Router();
 
@@ -60,7 +61,10 @@ router.post("/login", async (req, res) => {
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "2h" });
-    res.json({ token });
+    res.json({ 
+      token,
+      userId: user._id
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -145,10 +149,7 @@ router.get('/liked-recipes', authenticateToken, async (req, res) => {
     // Then, fetch the liked recipes with populated user data
     const likedRecipes = await Recipe.find(
       { _id: { $in: user.likedRecipes } }
-    ).populate({
-      path: 'userId',
-      select: 'name profilePicture'
-    });
+    ).populate('user', 'name profilePicture');
 
     res.json(likedRecipes);
 
@@ -345,6 +346,42 @@ router.put('/update-profile', authenticateToken, upload.single('profilePicture')
   } catch (error) {
     console.error('Error updating profile:', error);
     res.status(500).json({ message: 'Error updating profile', error: error.message });
+  }
+});
+
+// Get user notifications
+router.get("/notifications", authenticateToken, async (req, res) => {
+  try {
+    const notifications = await Notification.find({ recipient: req.user.userId })
+      .populate('sender', 'name profilePicture')
+      .populate('recipe', 'title')
+      .sort({ createdAt: -1 });
+    res.json(notifications);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Mark notification as read
+router.put("/notifications/:notificationId/read", authenticateToken, async (req, res) => {
+  try {
+    await Notification.findByIdAndUpdate(req.params.notificationId, { read: true });
+    res.json({ message: "Notification marked as read" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Mark all notifications as read
+router.put("/notifications/mark-all-read", authenticateToken, async (req, res) => {
+  try {
+    await Notification.updateMany(
+      { recipient: req.user.userId, read: false },
+      { read: true }
+    );
+    res.json({ message: "All notifications marked as read" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 
