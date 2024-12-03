@@ -101,13 +101,16 @@ router.get("/category/:category", authenticateToken, async (req, res) => {
 
 
 // Get all public recipes (for the search)
-router.get("/", async (req, res) => {
-    try {
-        const recipes = await Recipe.find({ isPublic: true }).populate("user", "name email");
-        res.status(200).json(recipes);  // Send recipes to frontend
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+router.get("/", authenticateToken, async (req, res) => {
+  try {
+    const recipes = await Recipe.find()
+      .populate('user', 'name email profilePicture')
+      .sort({ createdAt: -1 });
+    res.json(recipes);
+  } catch (error) {
+    console.error("Error fetching recipes:", error);
+    res.status(500).json({ message: "Failed to fetch recipes" });
+  }
 });
 
 // Like/Unlike route

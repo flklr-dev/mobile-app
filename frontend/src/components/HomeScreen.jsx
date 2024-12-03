@@ -81,18 +81,34 @@ const HomeScreen = () => {
     { id: 2, name: "Chicken", image: "src/assets/images/chicken.png" },
     { id: 3, name: "Pasta", image: "src/assets/images/pasta.png" },
     { id: 4, name: "Rice", image: "src/assets/images/rice.png" },
-    { id: 5, name: "Egg", image: "src/assets/images/egg.png" },
-    { id: 6, name: "Chicken", image: "src/assets/images/chicken.png" },
-    { id: 7, name: "Pasta", image: "src/assets/images/pasta.png" },
-    { id: 8, name: "Rice", image: "src/assets/images/rice.png" },
-    { id: 9, name: "Egg", image: "src/assets/images/egg.png" },
-    { id: 10, name: "Chicken", image: "src/assets/images/chicken.png" },
-    { id: 11, name: "Pasta", image: "src/assets/images/pasta.png" },
-    { id: 12, name: "Rice", image: "src/assets/images/rice.png" },
-    { id: 13, name: "Egg", image: "src/assets/images/egg.png" },
-    { id: 14, name: "Chicken", image: "src/assets/images/chicken.png" },
-    { id: 15, name: "Pasta", image: "src/assets/images/pasta.png" },
-    { id: 16, name: "Rice", image: "src/assets/images/rice.png" },
+    { id: 5, name: "Beef", image: "src/assets/images/beef.png" },
+    { id: 6, name: "Pork", image: "src/assets/images/pork.png" },
+    { id: 7, name: "Banana", image: "src/assets/images/banana.png" },
+    { id: 8, name: "Milk", image: "src/assets/images/milk.png" },
+    { id: 9, name: "Cheese", image: "src/assets/images/cheese.png" },
+    { id: 10, name: "Chocolate", image: "src/assets/images/chocolate.png" },
+    { id: 11, name: "Salmon", image: "src/assets/images/salmon.png" },
+    { id: 12, name: "Shrimp", image: "src/assets/images/shrimp.png" },
+    { id: 13, name: "Strawberries", image: "src/assets/images/strawberry.png" },
+    { id: 14, name: "Grapes", image: "src/assets/images/grapes.png" },
+    { id: 15, name: "Potato", image: "src/assets/images/potato.png" },
+    { id: 16, name: "Tomato", image: "src/assets/images/tomato.png" },
+    { id: 17, name: "Peanut Butter", image: "src/assets/images/peanut-butter.png" },
+    { id: 18, name: "Bread", image: "src/assets/images/bread.png" },
+    { id: 19, name: "Brocolli", image: "src/assets/images/brocolli.png" },
+    { id: 20, name: "Carrot", image: "src/assets/images/carrot.png" },
+    { id: 21, name: "Coconut Milk", image: "src/assets/images/coconut-milk.png" },
+    { id: 22, name: "Green Beans", image: "src/assets/images/green-beans.png" },
+    { id: 23, name: "Spinach", image: "src/assets/images/spinach.png" },
+    { id: 24, name: "Lettuce", image: "src/assets/images/lettuce.png" },
+    { id: 25, name: "Pineapple", image: "src/assets/images/pineapple.png" },
+    { id: 26, name: "Cucumber", image: "src/assets/images/cucumber.png" },
+    { id: 27, name: "Sweet Potato", image: "src/assets/images/sweet-potato.png" },
+    { id: 28, name: "Corn", image: "src/assets/images/corn.png" },
+    { id: 29, name: "Eggplant", image: "src/assets/images/eggplant.png" },
+    { id: 30, name: "Squash", image: "src/assets/images/squash.png" },
+    { id: 31, name: "Kangkong", image: "src/assets/images/kangkong.png" },
+    { id: 32, name: "Tofu", image: "src/assets/images/tofu.png" },
   ];
 
   const users = [
@@ -294,15 +310,15 @@ const HomeScreen = () => {
         </Slider>
     </div>
 
-        {/* Categories Section (Horizontally Swipable, 4 Items Per View) */}
+        {/* Categories Section */}
         <div className="mt-10 px-4">
           <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Categories</h2>
           <div className="overflow-x-auto scroll-smooth no-scrollbar mt-4">
             <div
               className="flex"
               style={{
-                gap: "1rem", // Space between items
-                width: "100%", // Ensures items fit within the container
+                gap: "1rem",
+                width: "100%",
               }}
             >
               {categories.map((category) => (
@@ -310,7 +326,7 @@ const HomeScreen = () => {
                   key={category.id}
                   className="flex flex-col items-center justify-center flex-shrink-0"
                   style={{
-                    width: "calc(25% - 1rem)", // Dynamic width for 4 items + spacing
+                    width: "calc(25% - 1rem)",
                     height: "auto",
                   }}
                 >
@@ -319,12 +335,22 @@ const HomeScreen = () => {
                     alt={category.name}
                     className="w-16 h-16 md:w-20 md:h-20"
                   />
-                  <span className="text-[#463C33] text-sm font-bold mt-2 text-center">
+                  <span className="text-[#463C33] text-xs font-bold mt-2 text-center h-8 flex items-center">
                     {category.name}
                   </span>
                 </div>
               ))}
             </div>
+          </div>
+          
+          {/* Show All Ingredients Button */}
+          <div className="flex justify-center mt-4">
+            <button 
+              onClick={() => navigate('/search', { state: { showAllIngredients: true } })}
+              className="text-orange-500 text-sm font-medium underline"
+            >
+              Show all ingredients
+            </button>
           </div>
         </div>
 
