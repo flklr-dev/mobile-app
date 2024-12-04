@@ -13,7 +13,7 @@ const LoginScreen = () => {
     e.preventDefault();
     setError("");
 
-    const baseUrl = import.meta.env.VITE_ENV === 'production' 
+    const baseUrl = import.meta.env.VITE_ENV === 'development' 
       ? import.meta.env.VITE_DEV_BASE_URL 
       : import.meta.env.VITE_PROD_BASE_URL;
 

@@ -30,9 +30,9 @@ const RegisterScreen = () => {
       return;
     }
 
-    const baseUrl = import.meta.env.VITE_ENV === 'production' 
-      ? import.meta.env.VITE_DEV_BASE_URL 
-      : import.meta.env.VITE_PROD_BASE_URL;
+    const baseUrl = import.meta.env.VITE_ENV === 'development' 
+      ? import.meta.env.VITE_DEV_BASE_URL    // Use DEV URL when in development
+      : import.meta.env.VITE_PROD_BASE_URL;  // Use PROD URL when in production
 
     try {
       await axios.post(`${baseUrl}${import.meta.env.VITE_REGISTER_USER_ROUTE}`, {
