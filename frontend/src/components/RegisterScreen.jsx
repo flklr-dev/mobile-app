@@ -30,7 +30,7 @@ const RegisterScreen = () => {
       return;
     }
 
-    const baseUrl = import.meta.env.VITE_ENV === 'production' 
+    const baseUrl = import.meta.env.VITE_ENV === 'development' 
       ? import.meta.env.VITE_DEV_BASE_URL    // Use DEV URL when in development
       : import.meta.env.VITE_PROD_BASE_URL;  // Use PROD URL when in production
 
