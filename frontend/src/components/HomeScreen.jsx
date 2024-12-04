@@ -266,7 +266,7 @@ const HomeScreen = () => {
                                 <span className="text-white">{recipe.likes}</span>
                             </div>
                             <img
-                                src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                                src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
                                 alt={recipe.user.name}
                                 className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
                                 onClick={(e) => {
@@ -348,7 +348,7 @@ const HomeScreen = () => {
                 <div className="relative">
                   <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={`http://localhost:5000/${recipe.image}`}
+                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
                       alt={recipe.title}
                       className="w-full h-56 object-cover"
                     />
@@ -379,7 +379,7 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                        src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                        src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
                         onClick={(e) => {
@@ -454,7 +454,7 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                        src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                          src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
                         onClick={(e) => {
@@ -529,7 +529,7 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                        src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                          src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
                         onClick={(e) => {
@@ -604,7 +604,7 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                        src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                          src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
                         onClick={(e) => {
@@ -679,7 +679,7 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                        src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                          src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
                         onClick={(e) => {
