@@ -71,47 +71,38 @@ const HomeScreen = () => {
 
   
   const categories = [
-    { id: 1, name: "Egg", image: "src/assets/images/egg.png" },
-    { id: 2, name: "Chicken", image: "src/assets/images/chicken.png" },
-    { id: 3, name: "Pasta", image: "src/assets/images/pasta.png" },
-    { id: 4, name: "Rice", image: "src/assets/images/rice.png" },
-    { id: 5, name: "Beef", image: "src/assets/images/beef.png" },
-    { id: 6, name: "Pork", image: "src/assets/images/pork.png" },
-    { id: 7, name: "Banana", image: "src/assets/images/banana.png" },
-    { id: 8, name: "Milk", image: "src/assets/images/milk.png" },
-    { id: 9, name: "Cheese", image: "src/assets/images/cheese.png" },
-    { id: 10, name: "Chocolate", image: "src/assets/images/chocolate.png" },
-    { id: 11, name: "Salmon", image: "src/assets/images/salmon.png" },
-    { id: 12, name: "Shrimp", image: "src/assets/images/shrimp.png" },
-    { id: 13, name: "Strawberries", image: "src/assets/images/strawberry.png" },
-    { id: 14, name: "Grapes", image: "src/assets/images/grapes.png" },
-    { id: 15, name: "Potato", image: "src/assets/images/potato.png" },
-    { id: 16, name: "Tomato", image: "src/assets/images/tomato.png" },
-    { id: 17, name: "Peanut Butter", image: "src/assets/images/peanut-butter.png" },
+    { id: 1, name: "Egg", image: "/src/assets/images/egg.png" },
+    { id: 2, name: "Chicken", image: "/src/assets/images/chicken.png" },
+    { id: 3, name: "Pasta", image: "/src/assets/images/pasta.png" },
+    { id: 4, name: "Rice", image: "/src/assets/images/rice.png" },
+    { id: 5, name: "Beef", image: "/src/assets/images/beef.png" },
+    { id: 6, name: "Pork", image: "/src/assets/images/pork.png" },
+    { id: 7, name: "Banana", image: "/src/assets/images/banana.png" },
+    { id: 8, name: "Milk", image: "/src/assets/images/milk.png" },
+    { id: 9, name: "Cheese", image: "/src/assets/images/cheese.png" },
+    { id: 10, name: "Chocolate", image: "/src/assets/images/chocolate.png" },
+    { id: 11, name: "Salmon", image: "/src/assets/images/salmon.png" },
+    { id: 12, name: "Shrimp", image: "/src/assets/images/shrimp.png" },
+    { id: 13, name: "Strawberries", image: "/src/assets/images/strawberry.png" },
+    { id: 14, name: "Grapes", image: "/src/assets/images/grapes.png" },
+    { id: 15, name: "Potato", image: "/src/assets/images/potato.png" },
+    { id: 16, name: "Tomato", image: "/src/assets/images/tomato.png" },
+    { id: 17, name: "Peanut Butter", image: "/src/assets/images/peanut-butter.png" },
     { id: 18, name: "Bread", image: "src/assets/images/bread.png" },
-    { id: 19, name: "Brocolli", image: "src/assets/images/brocolli.png" },
-    { id: 20, name: "Carrot", image: "src/assets/images/carrot.png" },
-    { id: 21, name: "Coconut Milk", image: "src/assets/images/coconut-milk.png" },
-    { id: 22, name: "Green Beans", image: "src/assets/images/green-beans.png" },
-    { id: 23, name: "Spinach", image: "src/assets/images/spinach.png" },
-    { id: 24, name: "Lettuce", image: "src/assets/images/lettuce.png" },
-    { id: 25, name: "Pineapple", image: "src/assets/images/pineapple.png" },
-    { id: 26, name: "Cucumber", image: "src/assets/images/cucumber.png" },
-    { id: 27, name: "Sweet Potato", image: "src/assets/images/sweet-potato.png" },
-    { id: 28, name: "Corn", image: "src/assets/images/corn.png" },
-    { id: 29, name: "Eggplant", image: "src/assets/images/eggplant.png" },
-    { id: 30, name: "Squash", image: "src/assets/images/squash.png" },
-    { id: 31, name: "Kangkong", image: "src/assets/images/kangkong.png" },
-    { id: 32, name: "Tofu", image: "src/assets/images/tofu.png" },
-  ];
-
-  const users = [
-    { id: 1, name: "John Doe", image: "src/assets/25.png" },
-    { id: 2, name: "Jane Smith", image: "src/assets/26.png" },
-    { id: 3, name: "Alice Reid", image: "src/assets/27.png" },
-    { id: 4, name: "John Doe", image: "src/assets/25.png" },
-    { id: 5, name: "Jane Smith", image: "src/assets/26.png" },
-    { id: 6, name: "Alice Johnson", image: "src/assets/27.png" },
+    { id: 19, name: "Brocolli", image: "/src/assets/images/brocolli.png" },
+    { id: 20, name: "Carrot", image: "/src/assets/images/carrot.png" },
+    { id: 21, name: "Coconut Milk", image: "/src/assets/images/coconut-milk.png" },
+    { id: 22, name: "Green Beans", image: "/src/assets/images/green-beans.png" },
+    { id: 23, name: "Spinach", image: "/src/assets/images/spinach.png" },
+    { id: 24, name: "Lettuce", image: "/src/assets/images/lettuce.png" },
+    { id: 25, name: "Pineapple", image: "/src/assets/images/pineapple.png" },
+    { id: 26, name: "Cucumber", image: "/src/assets/images/cucumber.png" },
+    { id: 27, name: "Sweet Potato", image: "/src/assets/images/sweet-potato.png" },
+    { id: 28, name: "Corn", image: "/src/assets/images/corn.png" },
+    { id: 29, name: "Eggplant", image: "/src/assets/images/eggplant.png" },
+    { id: 30, name: "Squash", image: "/src/assets/images/squash.png" },
+    { id: 31, name: "Kangkong", image: "/src/assets/images/kangkong.png" },
+    { id: 32, name: "Tofu", image: "/src/assets/images/tofu.png" },
   ];
 
   useEffect(() => {
@@ -241,7 +232,7 @@ const HomeScreen = () => {
                         <div className="relative">
                         <Link to={`/recipes/${recipe._id}`}>
                           <img
-                            src={`http://localhost:5000/${recipe.image}`}
+                            src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
                             alt={recipe.title}
                             className="w-full h-56 object-cover"
                           />
@@ -423,7 +414,7 @@ const HomeScreen = () => {
                 <div className="relative">
                   <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={`http://localhost:5000/${recipe.image}`}
+                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
                       alt={recipe.title}
                       className="w-full h-56 object-cover"
                     />
@@ -498,7 +489,7 @@ const HomeScreen = () => {
                 <div className="relative">
                   <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={`http://localhost:5000/${recipe.image}`}
+                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
                       alt={recipe.title}
                       className="w-full h-56 object-cover"
                     />
@@ -573,7 +564,7 @@ const HomeScreen = () => {
                 <div className="relative">
                 <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={`http://localhost:5000/${recipe.image}`}
+                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
                       alt={recipe.title}
                       className="w-full h-56 object-cover"
                     />
@@ -604,7 +595,7 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                          src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
+                        src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
                         onClick={(e) => {
@@ -648,7 +639,7 @@ const HomeScreen = () => {
                 <div className="relative">
                 <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={`http://localhost:5000/${recipe.image}`}
+                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
                       alt={recipe.title}
                       className="w-full h-56 object-cover"
                     />

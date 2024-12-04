@@ -12,12 +12,15 @@ const Notification = require("../models/Notification");
 const storage = multer.diskStorage({
     // Set the destination where files will be uploaded
     destination: (req, file, cb) => {
-        cb(null, "uploads/"); // Ensure this folder exists on the server
+        const uploadPath = process.env.NODE_ENV === 'production' 
+            ? '/opt/render/project/src/uploads/'
+            : 'uploads/';
+        cb(null, uploadPath);
     },
     // Define how the filename will be stored
     filename: (req, file, cb) => {
         // Store the file with a timestamp and original file name
-        cb(null, Date.now() + "-" + file.originalname);
+        cb(null, `${Date.now()}-${file.originalname}`);
     },
 });
 
