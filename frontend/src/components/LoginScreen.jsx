@@ -13,30 +13,29 @@ const LoginScreen = () => {
     e.preventDefault();
     setError("");
 
+    const baseUrl = import.meta.env.VITE_ENV === 'production' 
+      ? import.meta.env.VITE_DEV_BASE_URL 
+      : import.meta.env.VITE_PROD_BASE_URL;
+
     try {
-      const response = await axios.post("http://localhost:5000/auth/login", {
+      const response = await axios.post(`${baseUrl}${import.meta.env.VITE_LOGIN_USER_ROUTE}`, {
         email,
         password,
       });
 
       if (response.status === 200) {
         const { token } = response.data;
-        // Save token to localStorage
         localStorage.setItem("token", token);
-        localStorage.setItem('userId', response.data.userId); // Add this line
-  
-        // Show success toast
+        localStorage.setItem('userId', response.data.userId);
+
         toast.success("Login successful!", {
           position: "top-center",
           autoClose: 1000,
         });
 
-        // Redirect to Home after a short delay
         setTimeout(() => (window.location.href = "/home"), 1000);
-
-        }
+      }
     } catch (err) {
-      // Show error toast
       toast.error(
         err.response?.data?.message || "Login failed. Please try again.",
         {

@@ -6,12 +6,10 @@ const path = require('path');
 
 const app = express();
 
-// Update CORS configuration
+// Update CORS configuration to use environment variable
 const corsOptions = {
   origin: [
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://192.168.1.118:3000",
+    process.env.FRONTEND_URL || "http://localhost:5173",
     "http://192.168.1.118:5173"
   ],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",

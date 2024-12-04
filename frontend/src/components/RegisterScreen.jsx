@@ -30,8 +30,12 @@ const RegisterScreen = () => {
       return;
     }
 
+    const baseUrl = import.meta.env.VITE_ENV === 'production' 
+      ? import.meta.env.VITE_DEV_BASE_URL 
+      : import.meta.env.VITE_PROD_BASE_URL;
+
     try {
-      await axios.post("http://192.168.1.118:5000/auth/register", {
+      await axios.post(`${baseUrl}${import.meta.env.VITE_REGISTER_USER_ROUTE}`, {
         name,
         email,
         password,
