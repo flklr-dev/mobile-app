@@ -42,6 +42,7 @@ const App = () => {
         <Route path="/all-ingredients" element={<AllIngredients />} />
         <Route path="/my-recipes" element={<MyRecipesScreen />} />
         <Route path="/edit-recipe/:recipeId" element={<EditRecipeScreen />} />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
   );
