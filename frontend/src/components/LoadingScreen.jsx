@@ -7,9 +7,13 @@ const LoadingScreen = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Check if user is already logged in
+    const token = localStorage.getItem('token');
+    
     const timer = setTimeout(() => {
-      navigate('/login');
-    }, 3000); // 3 seconds delay
+      // If token exists, redirect to home, otherwise to login
+      navigate(token ? '/home' : '/login');
+    }, 3000);
 
     return () => clearTimeout(timer);
   }, [navigate]);
