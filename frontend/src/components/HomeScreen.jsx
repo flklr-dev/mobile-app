@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from '../config/axios';
 import BottomNavbar from "./BottomNavbar";
 import Header from '../components/Header';
 import { toast, ToastContainer } from "react-toastify"; // Import toast and ToastContainer
@@ -28,13 +28,7 @@ const HomeScreen = () => {
   // Function to toggle like and update the UI
   const toggleHeart = async (recipeId, category) => {
     try {
-      const response = await axios.post(
-        `http://localhost:5000/recipes/like/${recipeId}`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
-      );
+      const response = await api.post(`/recipes/like/${recipeId}`);
   
         // Toggle the heart state
         setHeartStates((prev) => ({
@@ -123,12 +117,7 @@ const HomeScreen = () => {
   useEffect(() => {
     const fetchRecipes = async (category) => {
       try {
-          const response = await axios.get(
-              `http://localhost:5000/recipes/category/${category}`,
-              {
-                  headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-              }
-          );
+          const response = await api.get(`/recipes/category/${category}`);
           return response.data; // Prioritized recipes with `isLiked` flag
       } catch (error) {
           console.error(`Error fetching ${category} recipes:`, error);
@@ -147,9 +136,7 @@ const HomeScreen = () => {
         desserts: results[4],
       });
 
-      const userResponse = await axios.get("http://localhost:5000/auth/profile", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
+      const userResponse = await api.get("/auth/profile");
       const likedRecipes = userResponse.data.likedRecipes.reduce((state, id) => {
         state[id] = true;
         return state;
@@ -184,7 +171,7 @@ const HomeScreen = () => {
 
   const fetchTrendingRecipes = async () => {
       try {
-          const response = await axios.get("http://localhost:5000/recipes/trending");
+          const response = await api.get("/recipes/trending");
           setTrendingRecipes(response.data);
       } catch (error) {
           console.error("Error fetching trending recipes:", error);
@@ -195,9 +182,7 @@ const HomeScreen = () => {
 
   const initializeData = async () => {
       try {
-          const response = await axios.get("http://localhost:5000/recipes/trending", {
-              headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-          });
+          const response = await api.get("/recipes/trending");
           setTrendingRecipes(response.data);
       } catch (error) {
           console.error("Error fetching trending recipes:", error);
