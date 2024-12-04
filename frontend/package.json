@@ -1,5 +1,6 @@
 {
   "name": "frontend",
+  "homepage": "https://flklr-dev.github.io/mobile-app/",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,6 +10,7 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.6.2",
     "date-fns": "^4.1.0",
+    "gh-pages": "^6.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.4.1",
@@ -26,7 +28,9 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "serve": "serve -s build --listen 3000 --host 0.0.0.0",
-    "dev": "vite --host"
+    "dev": "vite --host",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "eslintConfig": {
     "extends": [

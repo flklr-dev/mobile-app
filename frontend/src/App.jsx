@@ -15,6 +15,7 @@ import CategoryRecipes from './components/CategoryRecipes';
 import UserProfile from './components/UserProfile';
 import NotificationScreen from './components/NotificationScreen';
 import SearchResults from './components/SearchResults';
+import AllIngredients from './components/AllIngredients';
 
 const App = () => {
   return (
@@ -36,6 +37,7 @@ const App = () => {
         <Route path="/user/:userId" element={<UserProfile />} />
         <Route path="/notifications" element={<NotificationScreen />} />
         <Route path="/search-results" element={<SearchResults />} />
+        <Route path="/all-ingredients" element={<AllIngredients />} />
       </Routes>
     </Router>
   );

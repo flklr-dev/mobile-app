@@ -346,7 +346,7 @@ const HomeScreen = () => {
           {/* Show All Ingredients Button */}
           <div className="flex justify-center mt-4">
             <button 
-              onClick={() => navigate('/search', { state: { showAllIngredients: true } })}
+              onClick={() => navigate('/all-ingredients')}
               className="text-orange-500 text-sm font-medium underline"
             >
               Show all ingredients

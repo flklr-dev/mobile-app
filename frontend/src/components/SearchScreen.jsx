@@ -111,9 +111,12 @@ const SearchScreen = () => {
             <label className="text-[#463C33] text-sm">Chicken</label>
           </div>
         </div>
-        <div className="flex justify-center mt-2">
-          <button className="text-orange-500 underline">
-            Show all recipes
+        <div className="flex justify-center mt-4">
+          <button 
+            onClick={() => navigate('/all-ingredients')}
+            className="text-orange-500 text-sm font-medium underline"
+          >
+            Show all ingredients
           </button>
         </div>
       </section>
