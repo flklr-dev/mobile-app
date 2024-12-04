@@ -156,6 +156,18 @@ router.post("/like/:recipeId", authenticateToken, async (req, res) => {
         $inc: { likes: 1 }
       });
 
+      // Create notification only if the recipe owner is not the same as the liker
+      if (recipe.user.toString() !== userIdStr) {
+        const notification = new Notification({
+          recipient: recipe.user,
+          sender: user._id,
+          recipe: recipe._id,
+          type: 'like',
+          message: `${user.name} liked your recipe "${recipe.title}"`
+        });
+        await notification.save();
+      }
+
       res.json({
         message: "Recipe liked",
         recipeLikes: recipe.likes + 1,
@@ -327,6 +339,73 @@ router.delete("/:recipeId/comments/:commentId", authenticateToken, async (req, r
     await Comment.findByIdAndUpdate(req.params.commentId, { isDeleted: true });
     res.json({ message: "Comment deleted successfully" });
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Add or update this PUT route for updating recipes
+router.put("/:id", authenticateToken, upload.single("image"), async (req, res) => {
+  try {
+    const recipeId = req.params.id;
+    const userId = req.user.userId;
+
+    // First check if recipe exists and belongs to user
+    const existingRecipe = await Recipe.findOne({ _id: recipeId, user: userId });
+    if (!existingRecipe) {
+      return res.status(404).json({ message: "Recipe not found or unauthorized" });
+    }
+
+    // Prepare update object
+    const updateData = {
+      title: req.body.title,
+      description: req.body.description,
+      category: req.body.category,
+      servingSize: req.body.servingSize,
+      ingredients: JSON.parse(req.body.ingredients),
+      cookingInstructions: JSON.parse(req.body.cookingInstructions),
+      authorNotes: req.body.authorNotes,
+      isPublic: req.body.isPublic === 'true',
+      time: req.body.time
+    };
+
+    // Only update image if new one is uploaded
+    if (req.file) {
+      updateData.image = req.file.path.replace(/\\/g, '/');
+    }
+
+    // Update the recipe
+    const updatedRecipe = await Recipe.findByIdAndUpdate(
+      recipeId,
+      updateData,
+      { new: true }
+    );
+
+    res.json(updatedRecipe);
+  } catch (error) {
+    console.error('Error updating recipe:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Add this DELETE route to your existing routes
+router.delete("/:id", authenticateToken, async (req, res) => {
+  try {
+    const recipeId = req.params.id;
+    const userId = req.user.userId;
+
+    // Find the recipe and verify ownership
+    const recipe = await Recipe.findOne({ _id: recipeId, user: userId });
+    
+    if (!recipe) {
+      return res.status(404).json({ message: "Recipe not found or unauthorized" });
+    }
+
+    // Delete the recipe
+    await Recipe.findByIdAndDelete(recipeId);
+    
+    res.json({ message: "Recipe deleted successfully" });
+  } catch (error) {
+    console.error('Error deleting recipe:', error);
     res.status(500).json({ message: error.message });
   }
 });

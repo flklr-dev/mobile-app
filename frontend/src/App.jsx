@@ -16,6 +16,8 @@ import UserProfile from './components/UserProfile';
 import NotificationScreen from './components/NotificationScreen';
 import SearchResults from './components/SearchResults';
 import AllIngredients from './components/AllIngredients';
+import MyRecipesScreen from "./components/MyRecipesScreen";
+import EditRecipeScreen from "./components/EditRecipeScreen";
 
 const App = () => {
   return (
@@ -38,6 +40,8 @@ const App = () => {
         <Route path="/notifications" element={<NotificationScreen />} />
         <Route path="/search-results" element={<SearchResults />} />
         <Route path="/all-ingredients" element={<AllIngredients />} />
+        <Route path="/my-recipes" element={<MyRecipesScreen />} />
+        <Route path="/edit-recipe/:recipeId" element={<EditRecipeScreen />} />
       </Routes>
     </Router>
   );

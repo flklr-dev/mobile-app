@@ -99,28 +99,28 @@ const ProfileScreen = () => {
         </div>
 
         {/* Quick Actions Grid */}
-        <div className="mt-6 grid grid-cols-2 gap-4">
+        <div className="mt-6 grid grid-cols-2 gap-3">
           <div
             onClick={() => navigate('/favorites')}
-            className="bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group"
+            className="bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group"
           >
             <div className="flex flex-col items-center">
-              <div className="bg-orange-50 p-3 rounded-full group-hover:bg-orange-100 transition-colors">
-                <FaRegHeart className="text-orange-500 text-2xl" />
+              <div className="bg-orange-50 p-2.5 rounded-full group-hover:bg-orange-100 transition-colors">
+                <FaRegHeart className="text-orange-500 text-xl" />
               </div>
-              <h3 className="mt-3 text-gray-800 font-semibold">Saved Recipes</h3>
+              <h3 className="mt-4 text-gray-800 font-semibold text-sm sm:text-base whitespace-nowrap">Saved Recipes</h3>
             </div>
           </div>
 
           <div
-            onClick={() => alert("My Recipes clicked")}
-            className="bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group"
+            onClick={() => navigate('/my-recipes')}
+            className="bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group"
           >
             <div className="flex flex-col items-center">
-              <div className="bg-orange-50 p-3 rounded-full group-hover:bg-orange-100 transition-colors">
-                <FaClipboardList className="text-orange-500 text-2xl" />
+              <div className="bg-orange-50 p-2.5 rounded-full group-hover:bg-orange-100 transition-colors">
+                <FaClipboardList className="text-orange-500 text-xl" />
               </div>
-              <h3 className="mt-3 text-gray-800 font-semibold">My Recipes</h3>
+              <h3 className="mt-3 text-gray-800 font-semibold text-sm sm:text-base whitespace-nowrap">My Recipes</h3>
             </div>
           </div>
         </div>
