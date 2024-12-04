@@ -6,18 +6,27 @@ const path = require('path');
 
 const app = express();
 
-// Update CORS configuration to use environment variable
-const corsOptions = {
-  origin: [
-    process.env.FRONTEND_URL || "http://localhost:5173",
-    "http://192.168.1.118:5173"
-  ],
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization"]
-};
+// Define allowed origins using environment variables
+const allowedOrigins = [
+  process.env.ORIGIN_1,  // https://mobile-app-plum-one.vercel.app
+  'http://localhost:5173', // for local development
+  'http://192.168.1.118:5173' // if needed for local network testing
+];
 
-app.use(cors(corsOptions));
+app.use(cors({
+  origin: function (origin, callback) {
+    // Check if the origin is in our allowedOrigins array
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      console.log('Blocked origin:', origin); // For debugging
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express.json());
 
 // MongoDB Connection with better error handling
