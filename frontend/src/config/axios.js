@@ -1,9 +1,11 @@
 import axios from 'axios';
 
+const baseURL = import.meta.env.VITE_ENV === 'production'
+  ? 'https://mobile-app-2-s9az.onrender.com'
+  : 'http://localhost:5000';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_ENV === 'production' 
-    ? 'https://mobile-app-2-s9az.onrender.com'
-    : 'http://localhost:5000',
+  baseURL,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
@@ -17,8 +19,6 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    // Remove any custom CORS headers
-    delete config.headers['Access-Control-Allow-Origin'];
     return config;
   },
   (error) => {
@@ -26,7 +26,7 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor
+// Response interceptor with better error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
