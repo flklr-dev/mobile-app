@@ -6,23 +6,29 @@ const path = require('path');
 
 const app = express();
 
-// Define allowed origins using environment variables
+// Define allowed origins
 const allowedOrigins = [
   'https://mobile-app-plum-one.vercel.app',
-  'http://localhost:5173'  // for local development
+  'https://mobile-app-2-s9az.onrender.com',
+  'http://localhost:5173'
 ];
 
+// Updated CORS configuration
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
+      console.log('Blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  allowedHeaders: ["Content-Type", "Authorization"]
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
