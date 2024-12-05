@@ -2,9 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaHeart, FaBell, FaChevronLeft } from 'react-icons/fa';
-import axios from 'axios';
-import logo from '../assets/pantrypals.png'; // Import the logo
-import { API_BASE_URL } from '../config';
+import api from '../config/axios';
+import logo from '../assets/pantrypals.png';
 
 const Header = () => {
   const navigate = useNavigate();
@@ -12,24 +11,18 @@ const Header = () => {
   const [likedCount, setLikedCount] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
 
-  // Fetch the user's liked recipes count
   const fetchLikedCount = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/auth/profile`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
-    
-        setLikedCount(response.data.likedRecipes.length); // Get the length of liked recipes array
-      } catch (error) {
-        console.error("Error fetching liked count:", error);
-      }
-    };
+    try {
+      const response = await api.get('/auth/profile');
+      setLikedCount(response.data.likedRecipes.length);
+    } catch (error) {
+      console.error("Error fetching liked count:", error);
+    }
+  };
     
   const fetchUnreadNotifications = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/notifications`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
+      const response = await api.get('/notifications');
       setUnreadNotifications(response.data.filter(n => !n.read).length);
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -46,7 +39,7 @@ const Header = () => {
       fetchLikedCount();
       fetchUnreadNotifications();
     }, 2000);
-    return () => clearInterval(interval); // Cleanup on component unmount
+    return () => clearInterval(interval);
   }, []);
 
   const isOnFavorites = location.pathname === '/favorites';
