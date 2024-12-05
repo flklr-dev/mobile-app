@@ -117,7 +117,75 @@ router.get("/", authenticateToken, async (req, res) => {
 });
 
 // Like/Unlike route
-router.post("/like/:recipeId", authenticateToken, async (req, res) => {
+router.post("/:recipeId/like", authenticateToken, async (req, res) => {
+  try {
+    const recipe = await Recipe.findById(req.params.recipeId);
+    const user = await User.findById(req.user.userId);
+
+    if (!recipe || !user) {
+      return res.status(404).json({ message: "Recipe or user not found" });
+    }
+
+    const userIdStr = req.user.userId.toString();
+    const recipeIdStr = recipe._id.toString();
+    
+    // Check if user has already liked
+    const userHasLiked = user.likedRecipes.includes(recipeIdStr);
+
+    if (userHasLiked) {
+      // Unlike: Remove recipe from user's likedRecipes
+      await User.findByIdAndUpdate(userIdStr, {
+        $pull: { likedRecipes: recipeIdStr }
+      });
+
+      // Decrease recipe likes count
+      await Recipe.findByIdAndUpdate(recipeIdStr, {
+        $inc: { likes: -1 }
+      });
+
+      res.json({
+        message: "Recipe unliked",
+        recipeLikes: recipe.likes - 1,
+        isLiked: false
+      });
+    } else {
+      // Like: Add recipe to user's likedRecipes
+      await User.findByIdAndUpdate(userIdStr, {
+        $addToSet: { likedRecipes: recipeIdStr }
+      });
+
+      // Increase recipe likes count
+      await Recipe.findByIdAndUpdate(recipeIdStr, {
+        $inc: { likes: 1 }
+      });
+
+      // Create notification only if the recipe owner is not the same as the liker
+      if (recipe.user.toString() !== userIdStr) {
+        const notification = new Notification({
+          recipient: recipe.user,
+          sender: user._id,
+          recipe: recipe._id,
+          type: 'like',
+          message: `${user.name} liked your recipe "${recipe.title}"`
+        });
+        await notification.save();
+      }
+
+      res.json({
+        message: "Recipe liked",
+        recipeLikes: recipe.likes + 1,
+        isLiked: true
+      });
+    }
+
+  } catch (error) {
+    console.error("Error in like/unlike:", error);
+    res.status(500).json({ message: "Failed to update like status" });
+  }
+});
+
+// Like/Unlike route
+router.post("/:recipeId/unlike", authenticateToken, async (req, res) => {
   try {
     const recipe = await Recipe.findById(req.params.recipeId);
     const user = await User.findById(req.user.userId);

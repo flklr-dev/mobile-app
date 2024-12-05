@@ -46,13 +46,16 @@ const RecipePage = () => {
         
         setMoreRecipes(filteredRecipes);
 
-        // Set liked recipes
-        const likedRecipeIds = new Set(userResponse.data.likedRecipes.map(r => r._id));
+        // Check if the current recipe is in user's liked recipes
+        const userLikedRecipes = userResponse.data.likedRecipes.map(recipe => recipe._id);
+        setIsLiked(userLikedRecipes.includes(id));
+
+        // Set liked recipes for the "More Recipes" section
+        const likedRecipeIds = new Set(userLikedRecipes);
         setLikedRecipes(likedRecipeIds);
       } catch (error) {
         console.error("Error fetching data:", error);
         if (error.response?.status === 401) {
-          // Handle unauthorized access
           navigate('/login');
         } else {
           setError(error.response?.data?.message || "Failed to load recipe");
@@ -79,22 +82,29 @@ const RecipePage = () => {
     fetchComments();
   }, [id, navigate]);
 
-  const handleToggleLike = async (recipeId, e) => {
-    e.stopPropagation();
+  const handleToggleLike = async (recipeId) => {
     try {
-      if (likedRecipes.has(recipeId)) {
-        await api.post(`/recipes/${recipeId}/unlike`);
-        setLikedRecipes(prev => {
-          const updated = new Set(prev);
-          updated.delete(recipeId);
-          return updated;
-        });
-      } else {
-        await api.post(`/recipes/${recipeId}/like`);
-        setLikedRecipes(prev => new Set(prev).add(recipeId));
-      }
+      const response = await api.post(`/recipes/like/${recipeId}`);
+
+      // Toggle the heart state
+      setIsLiked((prev) => !prev);
+
+      // Update the recipe's likes count
+      setRecipe((prev) => ({
+        ...prev,
+        likes: response.data.recipeLikes,
+      }));
+
+      // Show success toast
+      toast.success(
+        isLiked
+          ? "Recipe removed from favorites!"
+          : "Recipe added to favorites!",
+        { position: "top-center", autoClose: 1000 }
+      );
     } catch (error) {
-      console.error("Error toggling like:", error);
+      console.error("Error toggling like state:", error.message);
+      toast.error("Failed to update like status");
     }
   };
 
@@ -248,10 +258,10 @@ const RecipePage = () => {
               <FaShare className="text-white" size={24} />
             </button>
             <button
-              onClick={() => handleToggleLike(recipe._id)}
+              onClick={(e) => handleToggleLike(recipe._id, e)}
               className="bg-black bg-opacity-60 p-2 rounded-full shadow-lg"
             >
-              {likedRecipes.has(recipe._id) ? (
+              {isLiked ? (
                 <FaHeart className="text-white" size={24} />
               ) : (
                 <FaRegHeart className="text-white" size={24} />
@@ -344,9 +354,9 @@ const RecipePage = () => {
             <div className="flex flex-col mb-4">
               <div className="flex items-center justify-between mb-3">
                 <img
-                  src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
+                  src={`http://localhost:5000/${recipe.user.profilePicture}`}
                   alt={recipe.user.name}
-                  className="w-8 h-8 rounded-full object-cover"
+                  className="w-14 h-14 rounded-full object-cover border-4 border-orange-500"
                 />
                 <button className="text-orange-500 hover:text-orange-600 underline font-semibold transition-colors">
                   View Profile
@@ -466,15 +476,30 @@ const RecipePage = () => {
         <div className="space-y-4">
           {comments.map((comment) => (
             <div key={comment._id} className="bg-gray-50 rounded-xl p-3 sm:p-4">
-              <div className="flex items-center gap-2">
-                <img
-                  src={`${import.meta.env.VITE_PROD_BASE_URL}/${comment.user.profilePicture}`}
-                  alt={comment.user.name}
-                  className="w-6 h-6 rounded-full object-cover"
-                />
-                <span className="font-semibold">{comment.user.name}</span>
-              </div>
-              <p>{comment.text}</p>
+              {/* ... other comment content ... */}
+              
+              {recipe && recipe.user && recipe.user._id === localStorage.getItem("userId") && !comment.reply && (
+                <div className="mt-2">
+                  <div className="flex gap-2 w-full">
+                    <input
+                      type="text"
+                      placeholder="Reply to this comment..."
+                      className="flex-1 min-w-0 px-3 py-1 text-sm border border-gray-300 rounded-lg"
+                      value={comment._id === activeReplyId ? newReply : ''}
+                      onChange={(e) => {
+                        setActiveReplyId(comment._id);
+                        setNewReply(e.target.value);
+                      }}
+                    />
+                    <button
+                      onClick={() => handleAddReply(comment._id)}
+                      className="bg-orange-500 text-white px-4 py-1 rounded-lg text-sm hover:bg-orange-600 whitespace-nowrap flex-shrink-0"
+                    >
+                      Reply
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
