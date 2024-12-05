@@ -277,6 +277,7 @@ router.get("/:recipeId/comments", authenticateToken, async (req, res) => {
       isDeleted: false 
     })
     .populate('user', 'name profilePicture')
+    .populate('replies.user', 'name profilePicture')
     .sort({ createdAt: -1 });
     
     res.json(comments);
@@ -286,51 +287,70 @@ router.get("/:recipeId/comments", authenticateToken, async (req, res) => {
   }
 });
 
-// Add reply to a comment (only recipe owner)
+// Add reply to comment
 router.post("/:recipeId/comments/:commentId/reply", authenticateToken, async (req, res) => {
   try {
-    // First check if the user is the recipe owner
-    const recipe = await Recipe.findById(req.params.recipeId);
-    if (!recipe) {
-      return res.status(404).json({ message: "Recipe not found" });
-    }
+    const { text } = req.body;
+    const { commentId } = req.params;
 
-    if (recipe.user.toString() !== req.user.userId) {
-      return res.status(403).json({ message: "Only recipe owner can reply to comments" });
-    }
-
-    const comment = await Comment.findById(req.params.commentId);
+    const comment = await Comment.findById(commentId);
     if (!comment) {
       return res.status(404).json({ message: "Comment not found" });
     }
 
-    comment.reply = req.body.reply;
-    comment.replyDate = new Date();
+    const reply = {
+      text,
+      user: req.user.userId,
+      createdAt: new Date()
+    };
+
+    comment.replies = comment.replies || [];
+    comment.replies.push(reply);
     await comment.save();
 
-    // Populate the user details before sending response
-    const populatedComment = await Comment.findById(comment._id)
-      .populate('user', 'name profilePicture');
+    // Populate the user details for the new reply
+    const populatedComment = await Comment.findById(commentId)
+      .populate('replies.user', 'name profilePicture');
 
-    res.json(populatedComment);
+    res.status(200).json(populatedComment);
   } catch (error) {
     console.error("Error adding reply:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Failed to add reply" });
   }
 });
 
-// Delete a comment (only recipe owner)
+// Delete a comment
 router.delete("/:recipeId/comments/:commentId", authenticateToken, async (req, res) => {
   try {
-    const recipe = await Recipe.findById(req.params.recipeId);
-    if (recipe.user.toString() !== req.user.userId) {
-      return res.status(403).json({ message: "Only recipe owner can delete comments" });
+    const { commentId } = req.params;
+    const userId = req.user.userId;
+
+    const comment = await Comment.findById(commentId);
+
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
     }
 
-    await Comment.findByIdAndUpdate(req.params.commentId, { isDeleted: true });
-    res.json({ message: "Comment deleted successfully" });
+    // Allow deletion if user is the comment owner
+    if (comment.user.toString() === userId) {
+      comment.isDeleted = true;
+      await comment.save();
+      return res.status(200).json({ message: "Comment deleted successfully" });
+    }
+
+    // If not comment owner, check if user is recipe owner
+    const recipe = await Recipe.findById(comment.recipe);
+    if (recipe && recipe.user.toString() === userId) {
+      comment.isDeleted = true;
+      await comment.save();
+      return res.status(200).json({ message: "Comment deleted successfully" });
+    }
+
+    return res.status(403).json({ message: "You do not have permission to delete this comment" });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error deleting comment:", error);
+    res.status(500).json({ message: "Failed to delete comment" });
   }
 });
 

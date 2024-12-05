@@ -75,6 +75,8 @@ const RecipePage = () => {
         console.error("Error fetching comments:", error);
         if (error.response?.status === 401) {
           navigate('/login');
+        } else {
+          toast.error("Failed to load comments");
         }
       }
     };
@@ -130,9 +132,6 @@ const RecipePage = () => {
 
   const handleAddReply = async (commentId) => {
     try {
-      console.log('Attempting to add reply to comment:', commentId);
-      console.log('Reply text:', newReply);
-      
       if (!newReply.trim()) {
         toast.error("Reply cannot be empty");
         return;
@@ -140,18 +139,19 @@ const RecipePage = () => {
 
       const response = await api.post(
         `/recipes/${id}/comments/${commentId}/reply`,
-        { reply: newReply },
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        }
+        { text: newReply }
       );
-
-      console.log('Reply response:', response.data);
 
       // Update comments state with the new reply
       setComments(prevComments => 
         prevComments.map(comment => 
-          comment._id === commentId ? response.data : comment
+          comment._id === commentId 
+            ? {
+                ...comment,
+                reply: newReply,
+                replyDate: new Date()
+              }
+            : comment
         )
       );
       
@@ -182,6 +182,7 @@ const RecipePage = () => {
       setCommentToDelete(null);
       toast.success("Comment deleted successfully!");
     } catch (error) {
+      console.error("Error deleting comment:", error);
       toast.error("Failed to delete comment");
     }
   };
@@ -474,34 +475,82 @@ const RecipePage = () => {
 
         {/* Comments List */}
         <div className="space-y-4">
-          {comments.map((comment) => (
-            <div key={comment._id} className="bg-gray-50 rounded-xl p-3 sm:p-4">
-              {/* ... other comment content ... */}
-              
-              {recipe && recipe.user && recipe.user._id === localStorage.getItem("userId") && !comment.reply && (
-                <div className="mt-2">
-                  <div className="flex gap-2 w-full">
-                    <input
-                      type="text"
-                      placeholder="Reply to this comment..."
-                      className="flex-1 min-w-0 px-3 py-1 text-sm border border-gray-300 rounded-lg"
-                      value={comment._id === activeReplyId ? newReply : ''}
-                      onChange={(e) => {
-                        setActiveReplyId(comment._id);
-                        setNewReply(e.target.value);
-                      }}
+          {comments.length > 0 ? (
+            comments.map((comment) => (
+              <div key={comment._id} className="bg-gray-50 rounded-xl p-3 sm:p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${comment.user.profilePicture}`}
+                      alt={comment.user.name}
+                      className="w-6 h-6 rounded-full object-cover"
                     />
-                    <button
-                      onClick={() => handleAddReply(comment._id)}
-                      className="bg-orange-500 text-white px-4 py-1 rounded-lg text-sm hover:bg-orange-600 whitespace-nowrap flex-shrink-0"
-                    >
-                      Reply
-                    </button>
+                    <span className="font-semibold">{comment.user.name}</span>
+                    <span className="text-gray-500 text-xs">
+                      {formatTimeAgo(comment.createdAt)}
+                    </span>
                   </div>
+                  
+                  {/* Show delete button for comment owner or recipe owner */}
+                  {(comment.user._id === localStorage.getItem("userId") || 
+                    recipe.user._id === localStorage.getItem("userId")) && (
+                    <button
+                      onClick={() => handleDeleteComment(comment._id)}
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+                <p className="mt-2">{comment.text}</p>
+
+                {/* Display Replies */}
+                {comment.reply && (
+                  <div className="ml-6 mt-2">
+                    <div className="bg-white rounded-lg p-2">
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
+                          alt={recipe.user.name}
+                          className="w-4 h-4 rounded-full object-cover"
+                        />
+                        <span className="text-sm font-semibold">{recipe.user.name}</span>
+                      </div>
+                      <p className="text-sm ml-6">{comment.reply}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Reply functionality - Only for recipe owner */}
+                {recipe && recipe.user && recipe.user._id === localStorage.getItem("userId") && (
+                  <div className="mt-2">
+                    <div className="flex gap-2 w-full">
+                      <input
+                        type="text"
+                        placeholder="Reply to this comment..."
+                        className="flex-1 min-w-0 px-3 py-1 text-sm border border-gray-300 rounded-lg"
+                        value={comment._id === activeReplyId ? newReply : ''}
+                        onChange={(e) => {
+                          setActiveReplyId(comment._id);
+                          setNewReply(e.target.value);
+                        }}
+                      />
+                      <button
+                        onClick={() => handleAddReply(comment._id)}
+                        className="bg-orange-500 text-white px-4 py-1 rounded-lg text-sm hover:bg-orange-600 whitespace-nowrap flex-shrink-0"
+                      >
+                        Reply
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500">No comments yet. Be the first to comment!</p>
+          )}
         </div>
       </div>
 
