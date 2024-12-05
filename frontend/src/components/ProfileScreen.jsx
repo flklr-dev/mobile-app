@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { toast, ToastContainer } from "react-toastify"; // Import toast and ToastContainer
+import api from '../config/axios';
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FaChevronLeft, FaRegHeart, FaClipboardList, FaStore, FaCog, FaPhone, FaRegCommentDots, FaInfoCircle, FaSignOutAlt } from "react-icons/fa";
 
@@ -14,30 +14,26 @@ const ProfileScreen = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("No token found");
-  
-        const { data } = await axios.get("http://localhost:5000/auth/profile", {
-          headers: { Authorization: `Bearer ${token}` }, // Add 'Bearer' prefix
-        });
+        const { data } = await api.get("/auth/profile");
         setUser(data);
       } catch (err) {
         setError("Failed to fetch user profile. Please log in again.");
         console.error(err);
+        if (err.response?.status === 401) {
+          navigate('/login');
+        }
       }
     };
   
     fetchUserProfile();
-  }, []);
-  
+  }, [navigate]);
 
   const goBack = () => {
     navigate("/home");
   };
 
-  // Handle "Edit Profile" button click
   const handleEditProfile = () => {
-    navigate("/edit-profile"); // This will navigate to the EditProfileScreen
+    navigate("/edit-profile");
   };
 
   const handleLogoutClick = () => {
@@ -62,6 +58,7 @@ const ProfileScreen = () => {
       </div>
     );
   }
+
   return (
     <div className="min-h-screen bg-gray-50 relative">
       <ToastContainer />
@@ -83,7 +80,7 @@ const ProfileScreen = () => {
           <div className="flex flex-col items-center">
             <div className="relative">
               <img
-                src={`http://localhost:5000/${user.profilePicture}`}
+                src={`${import.meta.env.VITE_PROD_BASE_URL}/${user.profilePicture}`}
                 alt="User Avatar"
                 className="w-24 h-24 object-cover rounded-full ring-4 ring-orange-500/20"
               />
