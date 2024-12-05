@@ -446,18 +446,18 @@ const RecipePage = () => {
         
         {/* Add Comment Form */}
         <form onSubmit={handleAddComment} className="mb-6">
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex gap-2 w-full">
             <input
               type="text"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Add a comment..."
-              className="flex-1 px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500"
+              className="flex-1 min-w-0 px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500"
               required
             />
             <button
               type="submit"
-              className="bg-orange-500 text-white px-4 py-2 text-sm sm:text-base rounded-lg hover:bg-orange-600 transition-colors whitespace-nowrap"
+              className="bg-orange-500 text-white px-4 py-2 text-sm sm:text-base rounded-lg hover:bg-orange-600 transition-colors whitespace-nowrap flex-shrink-0"
             >
               Post
             </button>
@@ -472,11 +472,11 @@ const RecipePage = () => {
               
               {recipe && recipe.user && recipe.user._id === localStorage.getItem("userId") && !comment.reply && (
                 <div className="mt-2">
-                  <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="flex gap-2 w-full">
                     <input
                       type="text"
                       placeholder="Reply to this comment..."
-                      className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg"
+                      className="flex-1 min-w-0 px-3 py-1 text-sm border border-gray-300 rounded-lg"
                       value={comment._id === activeReplyId ? newReply : ''}
                       onChange={(e) => {
                         setActiveReplyId(comment._id);
@@ -485,15 +485,13 @@ const RecipePage = () => {
                     />
                     <button
                       onClick={() => handleAddReply(comment._id)}
-                      className="bg-orange-500 text-white px-4 py-1 rounded-lg text-sm hover:bg-orange-600 whitespace-nowrap"
+                      className="bg-orange-500 text-white px-4 py-1 rounded-lg text-sm hover:bg-orange-600 whitespace-nowrap flex-shrink-0"
                     >
                       Reply
                     </button>
                   </div>
                 </div>
               )}
-              
-              {/* ... rest of comment content ... */}
             </div>
           ))}
         </div>
