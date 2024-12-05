@@ -439,7 +439,7 @@ const RecipePage = () => {
       </div>
 
       {/* Comments Section */}
-      <div className="mb-24 px-4">
+      <div className="mb-24 px-2 sm:px-4">
         <div className="flex items-center gap-3 mb-4">
           <h2 className="text-2xl font-bold text-[#463C33]">Comments</h2>
         </div>
@@ -465,7 +465,7 @@ const RecipePage = () => {
         </form>
 
         {/* Comments List */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {comments.map((comment) => (
             <div key={comment._id} className="bg-gray-50 rounded-xl p-4">
               <div className="flex items-center justify-between mb-2">
@@ -515,7 +515,7 @@ const RecipePage = () => {
               
               {/* Display reply if it exists */}
               {comment.reply && (
-                <div className="mt-2 ml-4 p-2 bg-white rounded-lg">
+                <div className="mt-2 ml-3 sm:ml-4 p-2 bg-white rounded-lg">
                   <div className="flex justify-between items-center mb-1">
                     <div className="flex items-center gap-2">
                       <img
@@ -548,11 +548,11 @@ const RecipePage = () => {
       </div>
 
       {/* Fixed Add to Meal Plan Button */}
-      <div className="fixed bottom-4 left-0 right-0 bg-white shadow-lg z-50">
-        <div className="max-w-screen-xl mx-auto px-4">
+      <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg z-50 px-2 sm:px-4 pb-4 pt-2">
+        <div className="max-w-screen-xl mx-auto">
           <button 
             onClick={() => handleAddToMealPlan(recipe)}
-            className="w-full bg-orange-500 text-white font-bold rounded-full py-4 hover:bg-orange-600 transition-colors"
+            className="w-full bg-orange-500 text-white font-bold text-sm sm:text-base rounded-full py-3 sm:py-4 hover:bg-orange-600 transition-colors"
           >
             Add to Meal Plan
           </button>
