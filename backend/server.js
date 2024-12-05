@@ -9,7 +9,9 @@ const app = express();
 // Define allowed origins
 const allowedOrigins = [
   'https://mobile-app-plum-one.vercel.app',  // Vercel production URL
-  'http://localhost:5173'                     // Local development URL
+  'http://localhost:5173',                   // Local development URL
+  'capacitor://localhost',                   // Add this for mobile app
+  'http://localhost'                         // Add this for mobile app
 ];
 
 // Updated CORS configuration
