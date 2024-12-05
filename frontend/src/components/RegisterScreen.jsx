@@ -1,8 +1,8 @@
 import { useState } from "react";
-import axios from "axios";
-import { toast, ToastContainer } from "react-toastify"; // Import toast components
+import api from '../config/axios'; // Use the configured axios instance
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { FaFacebook, FaGoogle, FaInstagram } from "react-icons/fa";
+import { FaFacebook, FaGoogle } from "react-icons/fa";
 
 const RegisterScreen = () => {
   const [name, setName] = useState("");
@@ -30,12 +30,8 @@ const RegisterScreen = () => {
       return;
     }
 
-    const baseUrl = import.meta.env.VITE_ENV === 'development' 
-      ? import.meta.env.VITE_DEV_BASE_URL    // Use DEV URL when in development
-      : import.meta.env.VITE_PROD_BASE_URL;  // Use PROD URL when in production
-
     try {
-      await axios.post(`${baseUrl}${import.meta.env.VITE_REGISTER_USER_ROUTE}`, {
+      await api.post("/auth/register", {
         name,
         email,
         password,
