@@ -439,32 +439,64 @@ const RecipePage = () => {
       </div>
 
       {/* Comments Section */}
-      <div className="mb-24 mx-auto max-w-2xl px-4 sm:px-6">
+      <div className="mb-24 mx-auto max-w-lg px-4 sm:px-6">
         <div className="flex items-center gap-3 mb-4">
           <h2 className="text-xl sm:text-2xl font-bold text-[#463C33]">Comments</h2>
         </div>
         
         {/* Add Comment Form */}
-        <form onSubmit={handleAddComment} className="mb-6 max-w-[95%] mx-auto"> {/* Added max-width and center */}
-          <div className="flex gap-2">
+        <form onSubmit={handleAddComment} className="mb-6">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Add a comment..."
-              className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500"
+              className="flex-1 px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500"
               required
             />
             <button
               type="submit"
-              className="bg-orange-500 text-white px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg hover:bg-orange-600 transition-colors whitespace-nowrap"
+              className="bg-orange-500 text-white px-4 py-2 text-sm sm:text-base rounded-lg hover:bg-orange-600 transition-colors whitespace-nowrap"
             >
               Post
             </button>
           </div>
         </form>
 
-        {/* ... rest of comments section ... */}
+        {/* Comments List */}
+        <div className="space-y-4">
+          {comments.map((comment) => (
+            <div key={comment._id} className="bg-gray-50 rounded-xl p-3 sm:p-4">
+              {/* ... other comment content ... */}
+              
+              {recipe && recipe.user && recipe.user._id === localStorage.getItem("userId") && !comment.reply && (
+                <div className="mt-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      placeholder="Reply to this comment..."
+                      className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg"
+                      value={comment._id === activeReplyId ? newReply : ''}
+                      onChange={(e) => {
+                        setActiveReplyId(comment._id);
+                        setNewReply(e.target.value);
+                      }}
+                    />
+                    <button
+                      onClick={() => handleAddReply(comment._id)}
+                      className="bg-orange-500 text-white px-4 py-1 rounded-lg text-sm hover:bg-orange-600 whitespace-nowrap"
+                    >
+                      Reply
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* ... rest of comment content ... */}
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Fixed Add to Meal Plan Button */}
