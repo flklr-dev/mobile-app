@@ -1,5 +1,5 @@
 import { useState } from "react";
-import api from '../config/axios';
+import api from '../config/axios';  // Import the configured axios instance
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css"
 import { FaGoogle, FaFacebook } from "react-icons/fa";
@@ -19,9 +19,10 @@ const LoginScreen = () => {
         password,
       });
 
-      if (response.data && response.data.token) {
-        // Save token and user ID to localStorage
-        localStorage.setItem("token", response.data.token);
+      if (response.status === 200) {
+        const { token } = response.data;
+        // Save token to localStorage
+        localStorage.setItem("token", token);
         localStorage.setItem('userId', response.data.userId);
   
         // Show success toast
@@ -31,28 +32,22 @@ const LoginScreen = () => {
         });
 
         // Redirect to Home after a short delay
-        setTimeout(() => {
-          window.location.href = "/home";
-        }, 1500);
-      } else {
-        throw new Error("Invalid response from server");
+        setTimeout(() => (window.location.href = "/home"), 1000);
       }
     } catch (err) {
-      console.error("Login error:", err);
-      const errorMessage = err.response?.data?.message || "Login failed. Please check your credentials.";
-      
-      toast.error(errorMessage, {
-        position: "top-center",
-        autoClose: 3000,
-      });
-      
-      setError(errorMessage);
+      toast.error(
+        err.response?.data?.message || "Login failed. Please try again.",
+        {
+          position: "top-center",
+          autoClose: 3000,
+        }
+      );
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center mx-4 min-h-screen bg-white px-4">
-      <ToastContainer />
+        <ToastContainer />
       <div className="w-full max-w-md mb-8">
         <h1 className="text-3xl font-bold text-orange-500 mb-3">
           Welcome Back
