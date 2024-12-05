@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.MODE === 'production' 
-  ? 'https://mobile-app-2-s9az.onrender.com'  // Your Render backend URL
+const baseURL = import.meta.env.VITE_ENV === 'production' 
+  ? import.meta.env.VITE_PROD_BASE_URL 
   : 'http://localhost:5000';
 
 const api = axios.create({
@@ -27,8 +27,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    console.error('API Error:', error.response?.data || error.message);
     if (error.response?.status === 401) {
-      // Token expired or invalid
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
