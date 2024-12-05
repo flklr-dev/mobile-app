@@ -25,17 +25,31 @@ const HomeScreen = () => {
   const [trendingRecipes, setTrendingRecipes] = useState([]);  
   const [heartStates, setHeartStates] = useState({});
 
+  // Define fetchRecipes function
+  const fetchRecipes = async (category) => {
+    try {
+      const response = await api.get(`/recipes/category/${category}`);
+      const recipesWithLikeState = response.data.map(recipe => ({
+        ...recipe,
+        isLiked: heartStates[recipe._id] || false
+      }));
+      return recipesWithLikeState;
+    } catch (error) {
+      console.error(`Error fetching ${category} recipes:`, error);
+      return [];
+    }
+  };
+
   // Add this function to fetch user's liked recipes
   const fetchUserLikedRecipes = async () => {
     try {
-      const response = await api.get("/auth/profile");
+      const response = await api.get("/auth/user");
       if (response.data && response.data.likedRecipes) {
-        // Create an object with recipe IDs as keys and true as values
-        const likedStates = response.data.likedRecipes.reduce((acc, recipeId) => {
-          acc[recipeId] = true;
-          return acc;
-        }, {});
-        setHeartStates(likedStates);
+        const initialHeartStates = {};
+        response.data.likedRecipes.forEach(recipe => {
+          initialHeartStates[recipe._id] = true;
+        });
+        setHeartStates(initialHeartStates);
       }
     } catch (error) {
       console.error("Error fetching liked recipes:", error);
@@ -45,13 +59,12 @@ const HomeScreen = () => {
   useEffect(() => {
     const initializeRecipes = async () => {
       try {
-        // Fetch liked recipes first
+        // First fetch liked recipes to initialize heart states
         await fetchUserLikedRecipes();
 
-        // Then fetch recipes by category
         const categories = ["breakfast", "lunch", "dinner", "snacks", "desserts"];
         const results = await Promise.all(categories.map(fetchRecipes));
-        
+
         setRecipes({
           breakfast: results[0],
           lunch: results[1],
@@ -70,38 +83,32 @@ const HomeScreen = () => {
   // Update the toggleHeart function
   const toggleHeart = async (recipeId) => {
     try {
-      const isCurrentlyLiked = heartStates[recipeId];
+      const response = await api.post(`/recipes/like/${recipeId}`);
 
-      if (isCurrentlyLiked) {
-        await api.post(`/recipes/${recipeId}/unlike`);
-      } else {
-        await api.post(`/recipes/${recipeId}/like`);
-      }
-
-      // Toggle the heart state
-      setHeartStates((prev) => ({
+      // Update heart states
+      setHeartStates(prev => ({
         ...prev,
-        [recipeId]: !prev[recipeId],
+        [recipeId]: response.data.isLiked
       }));
 
-      // Update the specific recipe's likes count
-      setRecipes((prevRecipes) => {
+      // Update recipes state
+      setRecipes(prevRecipes => {
         const updatedRecipes = { ...prevRecipes };
-        for (const category in updatedRecipes) {
-          updatedRecipes[category] = updatedRecipes[category].map((recipe) =>
+        Object.keys(updatedRecipes).forEach(category => {
+          updatedRecipes[category] = updatedRecipes[category].map(recipe =>
             recipe._id === recipeId
-              ? { ...recipe, likes: isCurrentlyLiked ? recipe.likes - 1 : recipe.likes + 1 }
+              ? { ...recipe, likes: response.data.recipeLikes }
               : recipe
           );
-        }
+        });
         return updatedRecipes;
       });
 
       // Show success toast
       toast.success(
-        isCurrentlyLiked
-          ? "Recipe removed from favorites!"
-          : "Recipe added to favorites!",
+        response.data.isLiked
+          ? "Recipe added to favorites!"
+          : "Recipe removed from favorites!",
         { position: "top-center", autoClose: 1000 }
       );
     } catch (error) {

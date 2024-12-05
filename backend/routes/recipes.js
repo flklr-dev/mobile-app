@@ -159,18 +159,6 @@ router.post("/like/:recipeId", authenticateToken, async (req, res) => {
         $inc: { likes: 1 }
       });
 
-      // Create notification only if the recipe owner is not the same as the liker
-      if (recipe.user.toString() !== userIdStr) {
-        const notification = new Notification({
-          recipient: recipe.user,
-          sender: user._id,
-          recipe: recipe._id,
-          type: 'like',
-          message: `${user.name} liked your recipe "${recipe.title}"`
-        });
-        await notification.save();
-      }
-
       res.json({
         message: "Recipe liked",
         recipeLikes: recipe.likes + 1,

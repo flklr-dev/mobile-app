@@ -84,31 +84,27 @@ const RecipePage = () => {
 
   const handleToggleLike = async (recipeId) => {
     try {
-      if (isLiked) {
-        await api.post(`/recipes/${recipeId}/unlike`);
-      } else {
-        await api.post(`/recipes/${recipeId}/like`);
-      }
+      const response = await api.post(`/recipes/like/${recipeId}`);
 
-      // Toggle the heart state
-      setIsLiked((prev) => !prev);
+      // Update isLiked state based on the response
+      setIsLiked(response.data.isLiked);
 
-      // Update the recipe's likes count
-      setRecipe((prev) => ({
+      // Update recipe likes count
+      setRecipe(prev => ({
         ...prev,
-        likes: isLiked ? prev.likes - 1 : prev.likes + 1,
+        likes: response.data.recipeLikes
       }));
 
       // Show success toast
       toast.success(
-        isLiked
-          ? "Recipe removed from favorites!"
-          : "Recipe added to favorites!",
+        response.data.isLiked
+          ? "Recipe added to favorites!"
+          : "Recipe removed from favorites!",
         { position: "top-center", autoClose: 1000 }
       );
     } catch (error) {
       console.error("Error toggling like state:", error.message);
-      toast.error("Failed to update like status");
+      toast.error("Failed to update favorite status");
     }
   };
 
