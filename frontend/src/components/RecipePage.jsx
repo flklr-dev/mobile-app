@@ -439,13 +439,13 @@ const RecipePage = () => {
       </div>
 
       {/* Comments Section */}
-      <div className="mb-24 mx-auto max-w-3xl px-4 sm:px-6">
+      <div className="mb-24 mx-auto max-w-2xl px-4 sm:px-6">
         <div className="flex items-center gap-3 mb-4">
           <h2 className="text-xl sm:text-2xl font-bold text-[#463C33]">Comments</h2>
         </div>
         
         {/* Add Comment Form */}
-        <form onSubmit={handleAddComment} className="mb-6">
+        <form onSubmit={handleAddComment} className="mb-6 max-w-[95%] mx-auto"> {/* Added max-width and center */}
           <div className="flex gap-2">
             <input
               type="text"
