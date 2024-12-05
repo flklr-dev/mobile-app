@@ -1,18 +1,20 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_ENV === 'production'
-  ? 'https://mobile-app-2-s9az.onrender.com'
-  : 'http://localhost:5000';
+const baseURL = import.meta.env.VITE_ENV === 'production' 
+  ? import.meta.env.VITE_PROD_BASE_URL 
+  : import.meta.env.VITE_DEV_BASE_URL;
 
 const api = axios.create({
   baseURL,
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*'
+  },
+  timeout: 10000
 });
 
-// Request interceptor
+// Add request interceptor
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -26,12 +28,13 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor with better error handling
+// Add response interceptor with better error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error:', error);
-    if (error.response?.status === 401) {
+    if (error.code === 'ERR_NETWORK') {
+      console.error('Network Error - Please check your connection:', error);
+    } else if (error.response?.status === 401) {
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
