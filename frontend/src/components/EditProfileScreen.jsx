@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from '../config/axios';
 import { FaPen, FaChevronLeft } from "react-icons/fa";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -16,26 +16,26 @@ const EditProfileScreen = () => {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      const token = localStorage.getItem("token");
       try {
-        const { data } = await axios.get("http://localhost:5000/auth/profile", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const { data } = await api.get("/auth/profile");
 
         setUserData({
           name: data.name,
           aboutMe: data.aboutMe || "",
           profilePicture: null,
         });
-        setImagePreview(`http://localhost:5000/${data.profilePicture}`);
+        setImagePreview(`${import.meta.env.VITE_PROD_BASE_URL}/${data.profilePicture}`);
       } catch (error) {
         console.error(error);
         toast.error("Failed to fetch profile details");
+        if (error.response?.status === 401) {
+          navigate('/login');
+        }
       }
     };
 
     fetchUserProfile();
-  }, []);
+  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -58,7 +58,6 @@ const EditProfileScreen = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem("token");
     
     try {
       const formData = new FormData();
@@ -68,16 +67,11 @@ const EditProfileScreen = () => {
         formData.append("profilePicture", userData.profilePicture);
       }
 
-      await axios.put(
-        "http://localhost:5000/auth/update-profile",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      await api.put("/auth/update-profile", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       toast.success("Profile updated successfully!", {
         position: "top-center",
