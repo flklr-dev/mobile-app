@@ -3,6 +3,7 @@ import axios from "axios";
 import { toast, ToastContainer } from "react-toastify"; // Import toast components
 import "react-toastify/dist/ReactToastify.css"
 import { FaGoogle, FaFacebook } from "react-icons/fa";
+import api from '../config/axios'; // Ensure this import is present
 
 const LoginScreen = () => {
   const [email, setEmail] = useState("");
@@ -14,28 +15,25 @@ const LoginScreen = () => {
     setError("");
 
     try {
-      const response = await axios.post("http://localhost:5000/auth/login", {
+      const response = await api.post("/auth/login", {
         email,
         password,
       });
 
       if (response.status === 200) {
         const { token } = response.data;
-        // Save token to localStorage
         localStorage.setItem("token", token);
-        localStorage.setItem('userId', response.data.userId); // Add this line
-  
-        // Show success toast
+        localStorage.setItem('userId', response.data.userId);
+
         toast.success("Login successful!", {
           position: "top-center",
           autoClose: 1000,
         });
 
-        // Redirect to Home after a short delay
         setTimeout(() => (window.location.href = "/home"), 1000);
-
-        }
+      }
     } catch (err) {
+      console.error("Login error:", err);
       toast.error(
         err.response?.data?.message || "Login failed. Please try again.",
         {
