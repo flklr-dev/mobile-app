@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { FaHeart, FaRegHeart } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
+import api from '../config/axios'; // Import the configured api instance
 import Header from './Header';
 
 const FavoriteRecipes = () => {
@@ -12,9 +12,7 @@ const FavoriteRecipes = () => {
   useEffect(() => {
     const fetchFavorites = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/auth/liked-recipes", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        });
+        const response = await api.get("/auth/liked-recipes");
         
         if (response.data) {
           setFavoriteRecipes(response.data);
@@ -40,13 +38,7 @@ const FavoriteRecipes = () => {
 
   const toggleHeart = async (recipeId) => {
     try {
-      await axios.post(
-        `http://localhost:5000/recipes/like/${recipeId}`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
-      );
+      await api.post(`/recipes/${recipeId}/like`);
 
       setHeartStates(prev => ({
         ...prev,
@@ -85,7 +77,7 @@ const FavoriteRecipes = () => {
               <div className="relative">
                 <Link to={`/recipes/${recipe._id}`}>
                   <img
-                    src={`http://localhost:5000/${recipe.image}`}
+                    src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
                     alt={recipe.title}
                     className="w-full h-28 object-cover"
                   />

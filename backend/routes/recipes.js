@@ -201,6 +201,7 @@ router.get("/trending", async (req, res) => {
 
 router.get("/:recipeId", async (req, res) => {
   try {
+    // Validate the recipe ID
     if (!req.params.recipeId || !mongoose.Types.ObjectId.isValid(req.params.recipeId)) {
       return res.status(400).json({ message: "Invalid recipe ID" });
     }
