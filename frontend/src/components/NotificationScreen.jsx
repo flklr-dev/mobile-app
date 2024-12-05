@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../config/axios';
 import { FaChevronLeft, FaCheck, FaTrash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { formatDistanceToNow } from 'date-fns';
@@ -17,9 +17,7 @@ const NotificationScreen = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/notifications', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await api.get('/notifications');
       setNotifications(response.data);
     } catch (error) {
       toast.error('Failed to fetch notifications');
@@ -28,11 +26,7 @@ const NotificationScreen = () => {
 
   const markAsRead = async (notificationId) => {
     try {
-      await axios.patch(
-        `http://localhost:5000/notifications/${notificationId}/read`,
-        {},
-        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-      );
+      await api.patch(`/notifications/${notificationId}/read`);
       setNotifications(notifications.map(notif => 
         notif._id === notificationId ? { ...notif, read: true } : notif
       ));
@@ -43,11 +37,7 @@ const NotificationScreen = () => {
 
   const markAllAsRead = async () => {
     try {
-      await axios.patch(
-        'http://localhost:5000/notifications/mark-all-read',
-        {},
-        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-      );
+      await api.patch('/notifications/mark-all-read');
       setNotifications(notifications.map(notif => ({ ...notif, read: true })));
       toast.success('All notifications marked as read');
     } catch (error) {
@@ -57,9 +47,7 @@ const NotificationScreen = () => {
 
   const deleteNotification = async (notificationId) => {
     try {
-      await axios.delete(`http://localhost:5000/notifications/${notificationId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      await api.delete(`/notifications/${notificationId}`);
       setNotifications(notifications.filter(notif => notif._id !== notificationId));
       toast.success('Notification deleted');
       setShowDeleteModal(false);
@@ -107,7 +95,7 @@ const NotificationScreen = () => {
                   <div className="flex items-center space-x-3">
                     <img
                       src={notification.sender.profilePicture 
-                        ? `http://localhost:5000/${notification.sender.profilePicture}`
+                        ? `${import.meta.env.VITE_PROD_BASE_URL}/${notification.sender.profilePicture}`
                         : '/default-avatar.png'}
                       alt=""
                       className="w-10 h-10 rounded-full object-cover"
