@@ -84,7 +84,11 @@ const RecipePage = () => {
 
   const handleToggleLike = async (recipeId) => {
     try {
-      const response = await api.post(`/recipes/like/${recipeId}`);
+      if (isLiked) {
+        await api.post(`/recipes/${recipeId}/unlike`);
+      } else {
+        await api.post(`/recipes/${recipeId}/like`);
+      }
 
       // Toggle the heart state
       setIsLiked((prev) => !prev);
@@ -92,7 +96,7 @@ const RecipePage = () => {
       // Update the recipe's likes count
       setRecipe((prev) => ({
         ...prev,
-        likes: response.data.recipeLikes,
+        likes: isLiked ? prev.likes - 1 : prev.likes + 1,
       }));
 
       // Show success toast

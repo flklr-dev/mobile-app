@@ -68,47 +68,46 @@ const HomeScreen = () => {
   }, []);
 
   // Update the toggleHeart function
-  const toggleHeart = async (recipeId, category) => {
+  const toggleHeart = async (recipeId) => {
     try {
-      const response = await api.post(`/recipes/like/${recipeId}`);
-  
-        // Toggle the heart state
-        setHeartStates((prev) => ({
-          ...prev,
-          [recipeId]: !prev[recipeId],
-        }));
+      const isCurrentlyLiked = heartStates[recipeId];
 
-        // Update the specific category's state
-        if (category === "trending") {
-          setTrendingRecipes((prevRecipes) =>
-            prevRecipes.map((recipe) =>
-              recipe._id === recipeId 
-                ? { ...recipe, likes: response.data.recipeLikes } 
-                : recipe
-            )
+      if (isCurrentlyLiked) {
+        await api.post(`/recipes/${recipeId}/unlike`);
+      } else {
+        await api.post(`/recipes/${recipeId}/like`);
+      }
+
+      // Toggle the heart state
+      setHeartStates((prev) => ({
+        ...prev,
+        [recipeId]: !prev[recipeId],
+      }));
+
+      // Update the specific recipe's likes count
+      setRecipes((prevRecipes) => {
+        const updatedRecipes = { ...prevRecipes };
+        for (const category in updatedRecipes) {
+          updatedRecipes[category] = updatedRecipes[category].map((recipe) =>
+            recipe._id === recipeId
+              ? { ...recipe, likes: isCurrentlyLiked ? recipe.likes - 1 : recipe.likes + 1 }
+              : recipe
           );
-        } else {
-          setRecipes((prev) => ({
-            ...prev,
-            [category]: prev[category].map((recipe) =>
-              recipe._id === recipeId 
-                ? { ...recipe, likes: response.data.recipeLikes } 
-                : recipe
-            ),
-          }));
         }
+        return updatedRecipes;
+      });
 
-        // Show success toast
-        toast.success(
-          heartStates[recipeId]
-            ? "Recipe removed from favorites!"
-            : "Recipe added to favorites!",
-          { position: "top-center", autoClose: 1000 }
-        );
-        } catch (error) {
-        console.error("Error toggling like state:", error.message);
-        toast.error("Failed to update favorite status");
-        }
+      // Show success toast
+      toast.success(
+        isCurrentlyLiked
+          ? "Recipe removed from favorites!"
+          : "Recipe added to favorites!",
+        { position: "top-center", autoClose: 1000 }
+      );
+    } catch (error) {
+      console.error("Error toggling like state:", error.message);
+      toast.error("Failed to update favorite status");
+    }
   };
   
   const categories = [
@@ -293,7 +292,7 @@ const HomeScreen = () => {
                         </Link>
                             <button
                               className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
-                              onClick={() => toggleHeart(recipe._id, "trending")}
+                              onClick={() => toggleHeart(recipe._id)}
                             >
                               {heartStates[recipe._id] ? (
                                 <FaHeart size={20} className="text-white" />
@@ -395,7 +394,7 @@ const HomeScreen = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      toggleHeart(recipe._id, "breakfast");
+                      toggleHeart(recipe._id);
                     }}
                   >
                     {heartStates[recipe._id] ? (
@@ -470,7 +469,7 @@ const HomeScreen = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      toggleHeart(recipe._id, "lunch");
+                      toggleHeart(recipe._id);
                     }}
                   >
                     {heartStates[recipe._id] ? (
@@ -545,7 +544,7 @@ const HomeScreen = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      toggleHeart(recipe._id, "dinner");
+                      toggleHeart(recipe._id);
                     }}
                   >
                     {heartStates[recipe._id] ? (
@@ -620,7 +619,7 @@ const HomeScreen = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      toggleHeart(recipe._id, "breakfast");
+                      toggleHeart(recipe._id);
                     }}
                   >
                     {heartStates[recipe._id] ? (
@@ -695,7 +694,7 @@ const HomeScreen = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      toggleHeart(recipe._id, "breakfast");
+                      toggleHeart(recipe._id);
                     }}
                   >
                     {heartStates[recipe._id] ? (
