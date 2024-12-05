@@ -25,50 +25,98 @@ const HomeScreen = () => {
   const [trendingRecipes, setTrendingRecipes] = useState([]);  
   const [heartStates, setHeartStates] = useState({});
 
-  // Function to toggle like and update the UI
+  useEffect(() => {
+    const fetchRecipes = async (category) => {
+      try {
+        const response = await api.get(`/recipes/category/${category}`);
+        return response.data;
+      } catch (error) {
+        console.error(`Error fetching ${category} recipes:`, error);
+        return [];
+      }
+    };
+
+    const fetchAllRecipes = async () => {
+      try {
+        const categories = ["breakfast", "lunch", "dinner", "snacks", "desserts"];
+        const results = await Promise.all(categories.map(fetchRecipes));
+        
+        setRecipes({
+          breakfast: results[0],
+          lunch: results[1],
+          dinner: results[2],
+          snacks: results[3],
+          desserts: results[4],
+        });
+
+        // Fetch user's liked recipes
+        const userResponse = await api.get("/auth/profile");
+        const likedRecipes = userResponse.data.likedRecipes.reduce((state, id) => {
+          state[id] = true;
+          return state;
+        }, {});
+        setHeartStates(likedRecipes);
+      } catch (error) {
+        console.error('Error fetching recipes:', error);
+      }
+    };
+
+    const fetchTrendingRecipes = async () => {
+      try {
+        const response = await api.get("/recipes/trending");
+        setTrendingRecipes(response.data);
+      } catch (error) {
+        console.error("Error fetching trending recipes:", error);
+      }
+    };
+
+    // Call both functions
+    fetchAllRecipes();
+    fetchTrendingRecipes();
+  }, []); // Empty dependency array for initial load only
+
   const toggleHeart = async (recipeId, category) => {
     try {
       const response = await api.post(`/recipes/like/${recipeId}`);
-  
-        // Toggle the heart state
-        setHeartStates((prev) => ({
-          ...prev,
-          [recipeId]: !prev[recipeId],
-        }));
 
-        // Update the specific category's state
-        if (category === "trending") {
-          setTrendingRecipes((prevRecipes) =>
-            prevRecipes.map((recipe) =>
-              recipe._id === recipeId 
-                ? { ...recipe, likes: response.data.recipeLikes } 
-                : recipe
-            )
-          );
-        } else {
-          setRecipes((prev) => ({
-            ...prev,
-            [category]: prev[category].map((recipe) =>
-              recipe._id === recipeId 
-                ? { ...recipe, likes: response.data.recipeLikes } 
-                : recipe
-            ),
-          }));
-        }
+      // Toggle the heart state
+      setHeartStates((prev) => ({
+        ...prev,
+        [recipeId]: !prev[recipeId],
+      }));
 
-        // Show success toast
-        toast.success(
-          heartStates[recipeId]
-            ? "Recipe removed from favorites!"
-            : "Recipe added to favorites!",
-          { position: "top-center", autoClose: 1000 }
+      // Update the specific category's state
+      if (category === "trending") {
+        setTrendingRecipes((prevRecipes) =>
+          prevRecipes.map((recipe) =>
+            recipe._id === recipeId 
+              ? { ...recipe, likes: response.data.recipeLikes } 
+              : recipe
+          )
         );
-        } catch (error) {
-        console.error("Error toggling like state:", error.message);
-        toast.error("Failed to update favorite status");
-        }
+      } else {
+        setRecipes((prev) => ({
+          ...prev,
+          [category]: prev[category].map((recipe) =>
+            recipe._id === recipeId 
+              ? { ...recipe, likes: response.data.recipeLikes } 
+              : recipe
+          ),
+        }));
+      }
+
+      toast.success(
+        heartStates[recipeId]
+          ? "Recipe removed from favorites!"
+          : "Recipe added to favorites!",
+        { position: "top-center", autoClose: 1000 }
+      );
+    } catch (error) {
+      console.error("Error toggling like state:", error);
+      toast.error("Failed to update favorite status");
+    }
   };
-  
+
   const categories = [
     { id: 1, name: "Egg", image: "/images/egg.png" },
     { id: 2, name: "Chicken", image: "/images/chicken.png" },
@@ -103,84 +151,6 @@ const HomeScreen = () => {
     { id: 31, name: "Kangkong", image: "/images/kangkong.png" },
     { id: 32, name: "Tofu", image: "/images/tofu.png" },
   ];
-
-  useEffect(() => {
-    const fetchRecipes = async (category) => {
-      try {
-          const response = await api.get(`/recipes/category/${category}`);
-          return response.data; // Prioritized recipes with `isLiked` flag
-      } catch (error) {
-          console.error(`Error fetching ${category} recipes:`, error);
-          return [];
-      }
-  };
-  
-    const fetchAllRecipes = async () => {
-      const categories = ["breakfast", "lunch", "dinner", "snacks", "desserts"];
-      const results = await Promise.all(categories.map(fetchRecipes));
-      setRecipes({
-        breakfast: results[0],
-        lunch: results[1],
-        dinner: results[2],
-        snacks: results[3],
-        desserts: results[4],
-      });
-
-      const userResponse = await api.get("/auth/profile");
-      const likedRecipes = userResponse.data.likedRecipes.reduce((state, id) => {
-        state[id] = true;
-        return state;
-      }, {});
-      setHeartStates(likedRecipes);
-    };
-
-    fetchAllRecipes();
-
-    const initializeRecipes = async () => {
-      const categories = ["breakfast", "lunch", "dinner", "snacks", "desserts"];
-      const updatedRecipes = {};
-
-      for (const category of categories) {
-          const data = await fetchRecipes(category);
-          updatedRecipes[category] = data;
-
-          // Update heartStates for each recipe
-          setHeartStates((prev) => ({
-              ...prev,
-              ...data.reduce((acc, recipe) => {
-                  acc[recipe._id] = recipe.isLiked;
-                  return acc;
-              }, {}),
-          }));
-      }
-
-      setRecipes(updatedRecipes);
-  };
-
-  initializeRecipes();
-
-  const fetchTrendingRecipes = async () => {
-      try {
-          const response = await api.get("/recipes/trending");
-          setTrendingRecipes(response.data);
-      } catch (error) {
-          console.error("Error fetching trending recipes:", error);
-      }
-  };
-  fetchRecipes();
-  fetchTrendingRecipes();
-
-  const initializeData = async () => {
-      try {
-          const response = await api.get("/recipes/trending");
-          setTrendingRecipes(response.data);
-      } catch (error) {
-          console.error("Error fetching trending recipes:", error);
-      }
-  };
-
-  initializeData();
-  }, []);
 
   const sliderSettings = {
     centerMode: true,
