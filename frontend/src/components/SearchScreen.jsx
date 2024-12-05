@@ -136,16 +136,20 @@ const SearchScreen = () => {
                 className="w-full h-[85%] object-cover rounded-xl"
               />
             </div>
-            {/* Lunch */}
-            <div>
+            <div 
+              onClick={() => handleCategoryClick('Lunch', 'category')}
+              className="cursor-pointer"
+            >
               <img
                 src="src/assets/images/lunch.png"
                 alt="Lunch"
                 className="w-full h-[85%] object-cover rounded-xl"
               />
             </div>
-            {/* Dinner */}
-            <div>
+            <div 
+              onClick={() => handleCategoryClick('Dinner', 'category')}
+              className="cursor-pointer"
+            >
               <img
                 src="src/assets/images/dinner.png"
                 alt="Dinner"
@@ -153,18 +157,21 @@ const SearchScreen = () => {
               />
             </div>
           </div>
-          {/* Column 2 */}
           <div className="flex flex-col space-y-0">
-            {/* Snacks */}
-            <div>
+            <div 
+              onClick={() => handleCategoryClick('Snacks', 'category')}
+              className="cursor-pointer"
+            >
               <img
                 src="src/assets/images/snacks.png"
                 alt="Snacks"
                 className="w-full h-[85%] object-cover rounded-xl"
               />
             </div>
-            {/* Desserts */}
-            <div>
+            <div 
+              onClick={() => handleCategoryClick('Desserts', 'category')}
+              className="cursor-pointer"
+            >
               <img
                 src="src/assets/images/desserts.png"
                 alt="Desserts"

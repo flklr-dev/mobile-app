@@ -1,29 +1,37 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_ENV === 'production' 
-  ? import.meta.env.VITE_PROD_BASE_URL 
-  : import.meta.env.VITE_DEV_BASE_URL;
-
 const api = axios.create({
-  baseURL,
-  withCredentials: true
-});
-
-// Add request interceptor to add auth token
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  baseURL: import.meta.env.VITE_ENV === 'production' 
+    ? 'https://mobile-app-2-s9az.onrender.com'
+    : 'http://localhost:5000',
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json'
   }
-  return config;
 });
 
-// Add response interceptor to handle token expiration
+// Request interceptor
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Remove any custom CORS headers
+    delete config.headers['Access-Control-Allow-Origin'];
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    console.error('API Error:', error);
     if (error.response?.status === 401) {
-      // Token expired or invalid
       localStorage.removeItem('token');
       window.location.href = '/login';
     }

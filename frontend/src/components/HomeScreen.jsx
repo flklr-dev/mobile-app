@@ -25,50 +25,81 @@ const HomeScreen = () => {
   const [trendingRecipes, setTrendingRecipes] = useState([]);  
   const [heartStates, setHeartStates] = useState({});
 
-  // Function to toggle like and update the UI
+  // Add this function to fetch user's liked recipes
+  const fetchUserLikedRecipes = async () => {
+    try {
+      const response = await api.get("/auth/profile");
+      if (response.data && response.data.likedRecipes) {
+        // Create an object with recipe IDs as keys and true as values
+        const likedStates = response.data.likedRecipes.reduce((acc, recipeId) => {
+          acc[recipeId] = true;
+          return acc;
+        }, {});
+        setHeartStates(likedStates);
+      }
+    } catch (error) {
+      console.error("Error fetching liked recipes:", error);
+    }
+  };
+
+  useEffect(() => {
+    const initializeRecipes = async () => {
+      try {
+        // Fetch liked recipes first
+        await fetchUserLikedRecipes();
+
+        // Then fetch recipes by category
+        const categories = ["breakfast", "lunch", "dinner", "snacks", "desserts"];
+        const results = await Promise.all(categories.map(fetchRecipes));
+        
+        setRecipes({
+          breakfast: results[0],
+          lunch: results[1],
+          dinner: results[2],
+          snacks: results[3],
+          desserts: results[4],
+        });
+      } catch (error) {
+        console.error('Error initializing recipes:', error);
+      }
+    };
+
+    initializeRecipes();
+  }, []);
+
+  // Update the toggleHeart function
   const toggleHeart = async (recipeId, category) => {
     try {
       const response = await api.post(`/recipes/like/${recipeId}`);
-  
-        // Toggle the heart state
-        setHeartStates((prev) => ({
-          ...prev,
-          [recipeId]: !prev[recipeId],
-        }));
+      
+      // Update heart states
+      setHeartStates(prev => ({
+        ...prev,
+        [recipeId]: !prev[recipeId]
+      }));
 
-        // Update the specific category's state
-        if (category === "trending") {
-          setTrendingRecipes((prevRecipes) =>
-            prevRecipes.map((recipe) =>
-              recipe._id === recipeId 
-                ? { ...recipe, likes: response.data.recipeLikes } 
-                : recipe
-            )
-          );
-        } else {
-          setRecipes((prev) => ({
-            ...prev,
-            [category]: prev[category].map((recipe) =>
-              recipe._id === recipeId 
-                ? { ...recipe, likes: response.data.recipeLikes } 
-                : recipe
-            ),
-          }));
-        }
+      // Update recipe likes count
+      setRecipes(prev => ({
+        ...prev,
+        [category]: prev[category].map(recipe =>
+          recipe._id === recipeId
+            ? { ...recipe, likes: response.data.recipeLikes }
+            : recipe
+        )
+      }));
 
-        // Show success toast
-        toast.success(
-          heartStates[recipeId]
-            ? "Recipe removed from favorites!"
-            : "Recipe added to favorites!",
-          { position: "top-center", autoClose: 1000 }
-        );
-        } catch (error) {
-        console.error("Error toggling like state:", error.message);
-        toast.error("Failed to update favorite status");
-        }
+      toast.success(
+        heartStates[recipeId]
+          ? "Recipe removed from favorites!"
+          : "Recipe added to favorites!",
+        { position: "top-center", autoClose: 1000 }
+      );
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      toast.error("Failed to update favorite status");
+    }
   };
-  
+
   const categories = [
     { id: 1, name: "Egg", image: "/images/egg.png" },
     { id: 2, name: "Chicken", image: "/images/chicken.png" },
@@ -107,55 +138,79 @@ const HomeScreen = () => {
   useEffect(() => {
     const fetchRecipes = async (category) => {
       try {
-        const response = await api.get(`/recipes/category/${category}`);
-        return response.data;
+          const response = await api.get(`/recipes/category/${category}`);
+          return response.data; // Prioritized recipes with `isLiked` flag
       } catch (error) {
-        console.error(`Error fetching ${category} recipes:`, error);
-        return [];
+          console.error(`Error fetching ${category} recipes:`, error);
+          return [];
       }
-    };
-
+  };
+  
     const fetchAllRecipes = async () => {
-      try {
-        const categories = ["breakfast", "lunch", "dinner", "snacks", "desserts"];
-        const results = await Promise.all(categories.map(fetchRecipes));
-        
-        setRecipes({
-          breakfast: results[0],
-          lunch: results[1],
-          dinner: results[2],
-          snacks: results[3],
-          desserts: results[4],
-        });
+      const categories = ["breakfast", "lunch", "dinner", "snacks", "desserts"];
+      const results = await Promise.all(categories.map(fetchRecipes));
+      setRecipes({
+        breakfast: results[0],
+        lunch: results[1],
+        dinner: results[2],
+        snacks: results[3],
+        desserts: results[4],
+      });
 
-        // Fetch user's liked recipes
-        const userResponse = await api.get("/auth/profile");
-        if (userResponse.data && userResponse.data.likedRecipes) {
-          const likedRecipes = userResponse.data.likedRecipes.reduce((state, id) => {
-            state[id] = true;
-            return state;
-          }, {});
-          setHeartStates(likedRecipes);
-        }
-      } catch (error) {
-        console.error('Error in fetchAllRecipes:', error);
-      }
+      const userResponse = await api.get("/auth/profile");
+      const likedRecipes = userResponse.data.likedRecipes.reduce((state, id) => {
+        state[id] = true;
+        return state;
+      }, {});
+      setHeartStates(likedRecipes);
     };
 
-    const fetchTrendingRecipes = async () => {
-      try {
-        const response = await api.get("/recipes/trending");
-        if (response.data) {
-          setTrendingRecipes(response.data);
-        }
-      } catch (error) {
-        console.error("Error fetching trending recipes:", error);
-      }
-    };
-
-    // Execute fetches
     fetchAllRecipes();
-    fetchTrendingRecipes();
+
+    const initializeRecipes = async () => {
+      const categories = ["breakfast", "lunch", "dinner", "snacks", "desserts"];
+      const updatedRecipes = {};
+
+      for (const category of categories) {
+          const data = await fetchRecipes(category);
+          updatedRecipes[category] = data;
+
+          // Update heartStates for each recipe
+          setHeartStates((prev) => ({
+              ...prev,
+              ...data.reduce((acc, recipe) => {
+                  acc[recipe._id] = recipe.isLiked;
+                  return acc;
+              }, {}),
+          }));
+      }
+
+      setRecipes(updatedRecipes);
+  };
+
+  initializeRecipes();
+
+  const fetchTrendingRecipes = async () => {
+      try {
+          const response = await api.get("/recipes/trending");
+          setTrendingRecipes(response.data);
+      } catch (error) {
+          console.error("Error fetching trending recipes:", error);
+      }
+  };
+  fetchRecipes();
+  fetchTrendingRecipes();
+
+  const initializeData = async () => {
+      try {
+          const response = await api.get("/recipes/trending");
+          setTrendingRecipes(response.data);
+      } catch (error) {
+          console.error("Error fetching trending recipes:", error);
+      }
+  };
+
+  initializeData();
   }, []);
 
   const sliderSettings = {
@@ -185,6 +240,16 @@ const HomeScreen = () => {
         },
     ],
 };
+
+  // Add this function to handle ingredient clicks
+  const handleIngredientClick = (ingredientName) => {
+    navigate('/search-results', { 
+      state: { 
+        query: ingredientName,
+        type: 'ingredient'
+      }
+    });
+  };
 
   return (
     <div className="flex flex-col bg-white w-full pb-24">
@@ -265,21 +330,13 @@ const HomeScreen = () => {
         <div className="mt-10 px-4">
           <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Categories</h2>
           <div className="overflow-x-auto scroll-smooth no-scrollbar mt-4">
-            <div
-              className="flex"
-              style={{
-                gap: "1rem",
-                width: "100%",
-              }}
-            >
+            <div className="flex" style={{ gap: "1rem", width: "100%" }}>
               {categories.map((category) => (
                 <div
                   key={category.id}
-                  className="flex flex-col items-center justify-center flex-shrink-0"
-                  style={{
-                    width: "calc(25% - 1rem)",
-                    height: "auto",
-                  }}
+                  className="flex flex-col items-center justify-center flex-shrink-0 cursor-pointer"
+                  style={{ width: "calc(25% - 1rem)", height: "auto" }}
+                  onClick={() => handleIngredientClick(category.name)}
                 >
                   <img
                     src={category.image}

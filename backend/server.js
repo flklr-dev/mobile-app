@@ -6,33 +6,29 @@ const path = require('path');
 
 const app = express();
 
-// Define allowed origins
-const allowedOrigins = [
-  'https://mobile-app-plum-one.vercel.app',
-  'https://mobile-app-2-s9az.onrender.com',
-  'http://localhost:5173'
-];
-
 // Updated CORS configuration
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      console.log('Blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: ['http://localhost:5173', 'https://mobile-app-plum-one.vercel.app'],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept']
 }));
+
+// Remove any custom headers from your axios config
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+  res.header('Access-Control-Allow-Credentials', true);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  next();
+});
+
 app.use(express.json());
 
-// MongoDB Connection with better error handling
+// Serve static files
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, { 
   useNewUrlParser: true, 
   useUnifiedTopology: true 
@@ -52,21 +48,17 @@ const notificationRoutes = require("./routes/notifications");
 app.use('/auth', authRoutes);
 app.use("/recipes", recipeRoutes);
 app.use("/notifications", notificationRoutes);
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Global error handling middleware
+// Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Global error:', err);
+  console.error('Error:', err);
   res.status(500).json({
     message: "Internal server error",
     error: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ message: "Route not found" });
-});
-
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});

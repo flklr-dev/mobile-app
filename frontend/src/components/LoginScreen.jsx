@@ -1,8 +1,8 @@
 import { useState } from "react";
-import axios from "axios";
-import { toast, ToastContainer } from "react-toastify"; // Import toast components
+import api from '../config/axios';  // Import the configured axios instance
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css"
-import { FaGoogle, FaFacebook, FaInstagram } from "react-icons/fa";
+import { FaGoogle, FaFacebook } from "react-icons/fa";
 
 const LoginScreen = () => {
   const [email, setEmail] = useState("");
@@ -13,26 +13,25 @@ const LoginScreen = () => {
     e.preventDefault();
     setError("");
 
-    const baseUrl = import.meta.env.VITE_ENV === 'development' 
-      ? import.meta.env.VITE_DEV_BASE_URL 
-      : import.meta.env.VITE_PROD_BASE_URL;
-
     try {
-      const response = await axios.post(`${baseUrl}${import.meta.env.VITE_LOGIN_USER_ROUTE}`, {
+      const response = await api.post("/auth/login", {
         email,
         password,
       });
 
       if (response.status === 200) {
         const { token } = response.data;
+        // Save token to localStorage
         localStorage.setItem("token", token);
         localStorage.setItem('userId', response.data.userId);
-
+  
+        // Show success toast
         toast.success("Login successful!", {
           position: "top-center",
           autoClose: 1000,
         });
 
+        // Redirect to Home after a short delay
         setTimeout(() => (window.location.href = "/home"), 1000);
       }
     } catch (err) {
