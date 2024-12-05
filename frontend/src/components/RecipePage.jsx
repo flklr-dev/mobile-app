@@ -234,7 +234,7 @@ const RecipePage = () => {
       {/* Cover Image Section */}
       <div className="relative h-[40vh]">
         <img
-          src={`http://localhost:5000/${recipe.image}`}
+          src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
           alt={recipe.title}
           className="w-full h-full object-cover"
         />
@@ -388,7 +388,7 @@ const RecipePage = () => {
               >
                 <div className="relative h-40">
                   <img
-                    src={`http://localhost:5000/${moreRecipe.image}`}
+                    src={`${import.meta.env.VITE_PROD_BASE_URL}/${moreRecipe.image}`}
                     alt={moreRecipe.title}
                     className="w-full h-full object-cover"
                   />
@@ -474,7 +474,7 @@ const RecipePage = () => {
                   onClick={() => navigate(`/user/${comment.user._id}`)}
                 >
                   <img
-                    src={`http://localhost:5000/${comment.user.profilePicture}`}
+                    src={`${import.meta.env.VITE_PROD_BASE_URL}/${comment.user.profilePicture}`}
                     alt={comment.user.name}
                     className="w-8 h-8 rounded-full object-cover"
                   />
@@ -519,7 +519,7 @@ const RecipePage = () => {
                   <div className="flex justify-between items-center mb-1">
                     <div className="flex items-center gap-2">
                       <img
-                        src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                        src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
                         alt={recipe.user.name}
                         className="w-6 h-6 rounded-full object-cover"
                       />
