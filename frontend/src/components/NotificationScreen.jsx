@@ -17,17 +17,12 @@ const NotificationScreen = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await api.get('/notifications');
+      const response = await axios.get('http://localhost:5000/notifications', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
       setNotifications(response.data);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
-      if (error.response?.status === 401) {
-        // Handle unauthorized access
-        navigate('/login');
-      } else {
-        // Handle other errors
-        toast.error('Failed to fetch notifications');
-      }
+      toast.error('Failed to fetch notifications');
     }
   };
 
