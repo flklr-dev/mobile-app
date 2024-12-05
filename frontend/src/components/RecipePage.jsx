@@ -439,7 +439,7 @@ const RecipePage = () => {
       </div>
 
       {/* Comments Section */}
-      <div className="mb-20 mx-4 sm:mx-6"> {/* Added horizontal margins */}
+      <div className="mb-24 mx-auto max-w-3xl px-4 sm:px-6">
         <div className="flex items-center gap-3 mb-4">
           <h2 className="text-xl sm:text-2xl font-bold text-[#463C33]">Comments</h2>
         </div>
@@ -469,10 +469,10 @@ const RecipePage = () => {
 
       {/* Fixed Add to Meal Plan Button */}
       <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg z-50">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 pb-4 pt-2"> {/* Added padding to container */}
+        <div className="max-w-2xl mx-auto px-6 sm:px-8 pb-4 pt-2"> {/* Reduced max-width and increased padding */}
           <button 
             onClick={() => handleAddToMealPlan(recipe)}
-            className="w-full bg-orange-500 text-white font-bold text-sm sm:text-base rounded-full py-3 sm:py-4 hover:bg-orange-600 transition-colors"
+            className="w-11/12 mx-auto block bg-orange-500 text-white font-bold text-sm sm:text-base rounded-full py-3 sm:py-4 hover:bg-orange-600 transition-colors"
           >
             Add to Meal Plan
           </button>
