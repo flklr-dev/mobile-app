@@ -71,35 +71,46 @@ const HomeScreen = () => {
   const toggleHeart = async (recipeId, category) => {
     try {
       const response = await api.post(`/recipes/like/${recipeId}`);
-      
-      // Update heart states
-      setHeartStates(prev => ({
-        ...prev,
-        [recipeId]: !prev[recipeId]
-      }));
+  
+        // Toggle the heart state
+        setHeartStates((prev) => ({
+          ...prev,
+          [recipeId]: !prev[recipeId],
+        }));
 
-      // Update recipe likes count
-      setRecipes(prev => ({
-        ...prev,
-        [category]: prev[category].map(recipe =>
-          recipe._id === recipeId
-            ? { ...recipe, likes: response.data.recipeLikes }
-            : recipe
-        )
-      }));
+        // Update the specific category's state
+        if (category === "trending") {
+          setTrendingRecipes((prevRecipes) =>
+            prevRecipes.map((recipe) =>
+              recipe._id === recipeId 
+                ? { ...recipe, likes: response.data.recipeLikes } 
+                : recipe
+            )
+          );
+        } else {
+          setRecipes((prev) => ({
+            ...prev,
+            [category]: prev[category].map((recipe) =>
+              recipe._id === recipeId 
+                ? { ...recipe, likes: response.data.recipeLikes } 
+                : recipe
+            ),
+          }));
+        }
 
-      toast.success(
-        heartStates[recipeId]
-          ? "Recipe removed from favorites!"
-          : "Recipe added to favorites!",
-        { position: "top-center", autoClose: 1000 }
-      );
-    } catch (error) {
-      console.error("Error toggling like:", error);
-      toast.error("Failed to update favorite status");
-    }
+        // Show success toast
+        toast.success(
+          heartStates[recipeId]
+            ? "Recipe removed from favorites!"
+            : "Recipe added to favorites!",
+          { position: "top-center", autoClose: 1000 }
+        );
+        } catch (error) {
+        console.error("Error toggling like state:", error.message);
+        toast.error("Failed to update favorite status");
+        }
   };
-
+  
   const categories = [
     { id: 1, name: "Egg", image: "/images/egg.png" },
     { id: 2, name: "Chicken", image: "/images/chicken.png" },
