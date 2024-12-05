@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
-import { FaChevronLeft, FaHeart, FaRegHeart, FaShare, FaClock, FaListUl, FaUtensils, FaStickyNote } from "react-icons/fa";
+import api from '../config/axios';
+import { FaChevronLeft, FaShare, FaHeart, FaRegHeart, FaListUl, FaUtensils, FaStickyNote, FaClock } from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { formatDistanceToNow, isWithinInterval, subMinutes } from 'date-fns';
@@ -31,15 +31,9 @@ const RecipePage = () => {
     const fetchRecipeAndMore = async () => {
       try {
         const [recipeResponse, moreRecipesResponse, userResponse] = await Promise.all([
-          axios.get(`http://localhost:5000/recipes/${id}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-          }),
-          axios.get('http://localhost:5000/recipes', {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-          }),
-          axios.get('http://localhost:5000/auth/user', {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-          })
+          api.get(`/recipes/${id}`),
+          api.get('/recipes'),
+          api.get('/auth/user')
         ]);
 
         setRecipe(recipeResponse.data);
@@ -75,8 +69,8 @@ const RecipePage = () => {
 
   const fetchComments = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:5000/recipes/${id}/comments`,
+      const response = await api.get(
+        `/recipes/${id}/comments`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
         }
@@ -87,56 +81,22 @@ const RecipePage = () => {
     }
   };
 
-  const handleToggleLike = async (recipeId, e = null) => {
-    if (e) {
-      e.stopPropagation();
-    }
-
+  const handleToggleLike = async (recipeId, e) => {
+    e.stopPropagation();
     try {
-      const response = await axios.post(
-        `http://localhost:5000/recipes/like/${recipeId}`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        }
-      );
-
-      setLikedRecipes(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(recipeId)) {
-          newSet.delete(recipeId);
-        } else {
-          newSet.add(recipeId);
-        }
-        return newSet;
-      });
-
-      // Update likes count in moreRecipes
-      setMoreRecipes(prev => 
-        prev.map(recipe => 
-          recipe._id === recipeId 
-            ? { ...recipe, likes: response.data.recipeLikes }
-            : recipe
-        )
-      );
-
-      // Also update main recipe likes if it's the same recipe
-      if (recipe && recipe._id === recipeId) {
-        setRecipe(prev => ({
-          ...prev,
-          likes: response.data.recipeLikes
-        }));
+      if (likedRecipes.has(recipeId)) {
+        await api.post(`/recipes/${recipeId}/unlike`);
+        setLikedRecipes(prev => {
+          const updated = new Set(prev);
+          updated.delete(recipeId);
+          return updated;
+        });
+      } else {
+        await api.post(`/recipes/${recipeId}/like`);
+        setLikedRecipes(prev => new Set(prev).add(recipeId));
       }
-
-      toast.success(
-        likedRecipes.has(recipeId)
-          ? "Recipe removed from favorites!"
-          : "Recipe added to favorites!",
-        { position: "top-center", autoClose: 2000 }
-      );
     } catch (error) {
       console.error("Error toggling like:", error);
-      toast.error("Failed to update favorite status");
     }
   };
 
@@ -150,17 +110,12 @@ const RecipePage = () => {
   const handleAddComment = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(
-        `http://localhost:5000/recipes/${id}/comments`,
-        { text: newComment },
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        }
-      );
-      setComments([response.data, ...comments]);
+      const response = await api.post(`/recipes/${id}/comments`, { text: newComment });
+      setComments([...comments, response.data]);
       setNewComment('');
       toast.success("Comment added successfully!");
     } catch (error) {
+      console.error("Error adding comment:", error);
       toast.error("Failed to add comment");
     }
   };
@@ -175,8 +130,8 @@ const RecipePage = () => {
         return;
       }
 
-      const response = await axios.post(
-        `http://localhost:5000/recipes/${id}/comments/${commentId}/reply`,
+      const response = await api.post(
+        `/recipes/${id}/comments/${commentId}/reply`,
         { reply: newReply },
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
@@ -208,8 +163,8 @@ const RecipePage = () => {
 
   const handleDeleteConfirm = async () => {
     try {
-      await axios.delete(
-        `http://localhost:5000/recipes/${id}/comments/${commentToDelete}`,
+      await api.delete(
+        `/recipes/${id}/comments/${commentToDelete}`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
         }
