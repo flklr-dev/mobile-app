@@ -1,12 +1,15 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_ENV === 'production' 
-  ? import.meta.env.VITE_PROD_BASE_URL 
-  : import.meta.env.VITE_DEV_BASE_URL;
+const baseURL = import.meta.env.MODE === 'production' 
+  ? 'https://mobile-app-2-s9az.onrender.com'  // Your Render backend URL
+  : 'http://localhost:5000';
 
 const api = axios.create({
   baseURL,
-  withCredentials: true
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  }
 });
 
 // Add request interceptor to add auth token
@@ -16,6 +19,21 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
+
+// Add response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api; 
