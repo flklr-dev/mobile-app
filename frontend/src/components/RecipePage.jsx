@@ -64,22 +64,20 @@ const RecipePage = () => {
   }, [id, navigate]);
 
   useEffect(() => {
-    fetchComments();
-  }, [id]);
-
-  const fetchComments = async () => {
-    try {
-      const response = await api.get(
-        `/recipes/${id}/comments`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+    const fetchComments = async () => {
+      try {
+        const response = await api.get(`/recipes/${id}/comments`);
+        setComments(response.data);
+      } catch (error) {
+        console.error("Error fetching comments:", error);
+        if (error.response?.status === 401) {
+          navigate('/login');
         }
-      );
-      setComments(response.data);
-    } catch (error) {
-      console.error("Error fetching comments:", error);
-    }
-  };
+      }
+    };
+
+    fetchComments();
+  }, [id, navigate]);
 
   const handleToggleLike = async (recipeId, e) => {
     e.stopPropagation();
@@ -346,9 +344,9 @@ const RecipePage = () => {
             <div className="flex flex-col mb-4">
               <div className="flex items-center justify-between mb-3">
                 <img
-                  src={`http://localhost:5000/${recipe.user.profilePicture}`}
+                  src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
                   alt={recipe.user.name}
-                  className="w-14 h-14 rounded-full object-cover border-4 border-orange-500"
+                  className="w-8 h-8 rounded-full object-cover"
                 />
                 <button className="text-orange-500 hover:text-orange-600 underline font-semibold transition-colors">
                   View Profile
@@ -367,12 +365,12 @@ const RecipePage = () => {
       </div>
 
       {/* More Recipes Section */}
-      <div className="mb-8 px-4 mt-12">
+      <div className="mb-8 pl-4 pr-0 mt-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-[#463C33]">More Recipes</h2>
           <button 
             onClick={() => navigate('/')}
-            className="text-orange-500 text-sm font-medium"
+            className="text-orange-500 text-sm font-medium mr-4"
           >
             See All
           </button>
@@ -468,30 +466,15 @@ const RecipePage = () => {
         <div className="space-y-4">
           {comments.map((comment) => (
             <div key={comment._id} className="bg-gray-50 rounded-xl p-3 sm:p-4">
-              {/* ... other comment content ... */}
-              
-              {recipe && recipe.user && recipe.user._id === localStorage.getItem("userId") && !comment.reply && (
-                <div className="mt-2">
-                  <div className="flex gap-2 w-full">
-                    <input
-                      type="text"
-                      placeholder="Reply to this comment..."
-                      className="flex-1 min-w-0 px-3 py-1 text-sm border border-gray-300 rounded-lg"
-                      value={comment._id === activeReplyId ? newReply : ''}
-                      onChange={(e) => {
-                        setActiveReplyId(comment._id);
-                        setNewReply(e.target.value);
-                      }}
-                    />
-                    <button
-                      onClick={() => handleAddReply(comment._id)}
-                      className="bg-orange-500 text-white px-4 py-1 rounded-lg text-sm hover:bg-orange-600 whitespace-nowrap flex-shrink-0"
-                    >
-                      Reply
-                    </button>
-                  </div>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <img
+                  src={`${import.meta.env.VITE_PROD_BASE_URL}/${comment.user.profilePicture}`}
+                  alt={comment.user.name}
+                  className="w-6 h-6 rounded-full object-cover"
+                />
+                <span className="font-semibold">{comment.user.name}</span>
+              </div>
+              <p>{comment.text}</p>
             </div>
           ))}
         </div>
