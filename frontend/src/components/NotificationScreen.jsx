@@ -18,14 +18,20 @@ const NotificationScreen = () => {
   const fetchNotifications = async () => {
     try {
       const response = await api.get('/notifications');
+      console.log('Fetched notifications:', response.data);
       setNotifications(response.data);
     } catch (error) {
+      console.error('Error fetching notifications:', error);
       toast.error('Failed to fetch notifications');
+      if (error.response?.status === 401) {
+        navigate('/login');
+      }
     }
   };
 
   const markAsRead = async (notificationId) => {
     try {
+      console.log('Marking notification as read:', notificationId);
       await api.patch(`/notifications/${notificationId}/read`);
       setNotifications(prevNotifications => 
         prevNotifications.map(notif => 
@@ -43,6 +49,7 @@ const NotificationScreen = () => {
 
   const markAllAsRead = async () => {
     try {
+      console.log('Marking all notifications as read');
       await api.patch('/notifications/mark-all-read');
       setNotifications(prevNotifications => 
         prevNotifications.map(notif => ({ ...notif, read: true }))
@@ -56,11 +63,13 @@ const NotificationScreen = () => {
 
   const deleteNotification = async (notificationId) => {
     try {
+      console.log('Deleting notification:', notificationId);
       await api.delete(`/notifications/${notificationId}`);
       setNotifications(notifications.filter(notif => notif._id !== notificationId));
       toast.success('Notification deleted');
       setShowDeleteModal(false);
     } catch (error) {
+      console.error('Error deleting notification:', error);
       toast.error('Failed to delete notification');
     }
   };
@@ -103,9 +112,7 @@ const NotificationScreen = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
                     <img
-                      src={notification.sender.profilePicture 
-                        ? `${import.meta.env.VITE_PROD_BASE_URL}/${notification.sender.profilePicture}`
-                        : '/default-avatar.png'}
+                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${notification.sender.profilePicture}`}
                       alt=""
                       className="w-10 h-10 rounded-full object-cover"
                     />
@@ -113,20 +120,14 @@ const NotificationScreen = () => {
                       <p className="text-gray-800">
                         <span 
                           className="font-semibold cursor-pointer hover:text-orange-500"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/user/${notification.sender._id}`);
-                          }}
+                          onClick={() => navigate(`/user/${notification.sender._id}`)}
                         >
                           {notification.sender.name || 'Someone'}
                         </span>
                         {notification.type === 'like' ? ' liked' : ' commented on'} your recipe "
                         <span 
                           className="font-semibold cursor-pointer hover:text-orange-500"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/recipes/${notification.recipe._id}`);
-                          }}
+                          onClick={() => navigate(`/recipes/${notification.recipe._id}`)}
                         >
                           {notification.recipe.title}
                         </span>"
