@@ -43,7 +43,7 @@ router.get("/", authenticateToken, async (req, res) => {
 });
 
 // Mark notification as read
-router.patch("/:notificationId/read", authenticateToken, async (req, res) => {
+router.post("/:notificationId/read", authenticateToken, async (req, res) => {
   try {
     const notification = await Notification.findOneAndUpdate(
       { _id: req.params.notificationId, recipient: req.user.userId },
@@ -57,7 +57,7 @@ router.patch("/:notificationId/read", authenticateToken, async (req, res) => {
 });
 
 // Mark all notifications as read
-router.patch("/mark-all-read", authenticateToken, async (req, res) => {
+router.post("/mark-all-read", authenticateToken, async (req, res) => {
   try {
     await Notification.updateMany(
       { recipient: req.user.userId, read: false },

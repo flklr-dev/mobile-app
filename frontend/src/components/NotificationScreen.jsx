@@ -32,7 +32,7 @@ const NotificationScreen = () => {
   const markAsRead = async (notificationId) => {
     try {
       console.log('Marking notification as read:', notificationId);
-      await api.patch(`/notifications/${notificationId}/read`);
+      await api.post(`/notifications/${notificationId}/read`);
       setNotifications(prevNotifications => 
         prevNotifications.map(notif => 
           notif._id === notificationId 
@@ -50,7 +50,7 @@ const NotificationScreen = () => {
   const markAllAsRead = async () => {
     try {
       console.log('Marking all notifications as read');
-      await api.patch('/notifications/mark-all-read');
+      await api.post('/notifications/mark-all-read');
       setNotifications(prevNotifications => 
         prevNotifications.map(notif => ({ ...notif, read: true }))
       );
