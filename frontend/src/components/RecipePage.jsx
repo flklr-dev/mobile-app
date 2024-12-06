@@ -237,6 +237,12 @@ const RecipePage = () => {
       .replace(' day ago', 'd ago');
   };
 
+  const handleUserProfileClick = (userId) => {
+    if (userId) {
+      navigate(`/user/${userId}`);
+    }
+  };
+
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -315,6 +321,29 @@ const RecipePage = () => {
             </div>
           </div>
 
+          {/* User Profile Section - Moved below image */}
+          <div className="mb-6">
+            <div 
+              className="flex items-center cursor-pointer" 
+              onClick={() => handleUserProfileClick(recipe.user?._id)}
+            >
+              <img
+                src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user?.profilePicture}`}
+                alt={recipe.user?.name}
+                className="w-14 h-14 rounded-full object-cover border-4 border-orange-500"
+              />
+              <div className="ml-3">
+                <h3 className="font-bold text-lg text-[#463C33] break-words hover:text-orange-500 transition-colors">
+                  {recipe.user?.name}
+                </h3>
+                <span className="text-gray-500 text-sm">Recipe Creator</span>
+              </div>
+            </div>
+            <p className="text-gray-600 break-words mt-3">
+              {recipe.user?.aboutMe || "No description available."}
+            </p>
+          </div>
+
           {/* Title and Description */}
           <h1 className="text-3xl font-bold text-[#463C33] mb-3">{recipe.title}</h1>
           <p className="text-gray-600 leading-relaxed mb-8">{recipe.description}</p>
@@ -375,37 +404,6 @@ const RecipePage = () => {
                 {recipe.authorNotes || "No additional notes from the author."}
               </p>
             </div>
-          </div>
-
-          {/* Updated User Profile Section */}
-          <div className="mt-8 bg-gray-50 rounded-xl p-6 mx-4">
-            <div className="flex flex-col mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <div 
-                  className="flex items-center cursor-pointer" 
-                  onClick={() => navigate(`/profile/${recipe.user?._id}`)}
-                >
-                  <img
-                    src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user?.profilePicture}`}
-                    alt={recipe.user?.name}
-                    className="w-14 h-14 rounded-full object-cover border-4 border-orange-500"
-                  />
-                  <div className="ml-3">
-                    <h3 className="font-bold text-lg text-[#463C33] break-words">{recipe.user?.name}</h3>
-                    <span className="text-gray-500 text-sm">Recipe Creator</span>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => navigate(`/profile/${recipe.user?._id}`)}
-                  className="text-orange-500 hover:text-orange-600 underline font-semibold transition-colors"
-                >
-                  View Profile
-                </button>
-              </div>
-            </div>
-            <p className="text-gray-600 break-words">
-              {recipe.user?.aboutMe || "No description available."}
-            </p>
           </div>
         </div>
       </div>
@@ -516,7 +514,7 @@ const RecipePage = () => {
               <div className="flex items-center justify-between mb-2">
                 <div 
                   className="flex items-center gap-2 cursor-pointer" 
-                  onClick={() => navigate(`/profile/${comment.user._id}`)}
+                  onClick={() => handleUserProfileClick(comment.user._id)}
                 >
                   <img
                     src={`${import.meta.env.VITE_PROD_BASE_URL}/${comment.user.profilePicture}`}
