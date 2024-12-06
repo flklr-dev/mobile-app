@@ -160,13 +160,7 @@ const RecipePage = () => {
     }
 
     try {
-      const response = await axios.post(
-        `http://localhost:5000/recipes/like/${recipeId}`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        }
-      );
+      const response = await api.post(`/recipes/like/${recipeId}`);
 
       setLikedRecipes(prev => {
         const newSet = new Set(prev);
