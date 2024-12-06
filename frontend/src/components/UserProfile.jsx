@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaChevronLeft, FaHeart } from 'react-icons/fa';
-import axios from 'axios';
+import api from '../config/axios';
 
 const UserProfile = () => {
   const { userId } = useParams();
@@ -12,14 +12,9 @@ const UserProfile = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const token = localStorage.getItem('token');
         const [userResponse, recipesResponse] = await Promise.all([
-          axios.get(`http://localhost:5000/auth/profile/${userId}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get(`http://localhost:5000/recipes/user/${userId}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
+          api.get(`/auth/profile/${userId}`),
+          api.get(`/recipes/user/${userId}`)
         ]);
 
         setUser(userResponse.data);
@@ -29,6 +24,9 @@ const UserProfile = () => {
         setUserRecipes(sortedRecipes);
       } catch (error) {
         console.error('Error fetching user data:', error);
+        if (error.response?.status === 401) {
+          navigate('/login');
+        }
       }
     };
 
@@ -36,7 +34,9 @@ const UserProfile = () => {
   }, [userId]);
 
   if (!user) {
-    return <div>Loading...</div>;
+    return <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">Loading...</div>
+    </div>;
   }
 
   return (
@@ -58,7 +58,7 @@ const UserProfile = () => {
         <div className="flex flex-col items-center">
           <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-orange-500">
             <img
-              src={`http://localhost:5000/${user.profilePicture}`}
+              src={`${import.meta.env.VITE_PROD_BASE_URL}/${user.profilePicture}`}
               alt={user.name}
               className="w-full h-full object-cover"
             />
@@ -101,7 +101,7 @@ const UserProfile = () => {
               >
                 <div className="relative">
                   <img
-                    src={`http://localhost:5000/${recipe.image}`}
+                    src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
                     alt={recipe.title}
                     className="w-full h-32 object-cover"
                   />
@@ -140,4 +140,4 @@ const UserProfile = () => {
   );
 };
 
-export default UserProfile; 
+export default UserProfile;

@@ -381,18 +381,26 @@ const RecipePage = () => {
           <div className="mt-8 bg-gray-50 rounded-xl p-6 mx-4">
             <div className="flex flex-col mb-4">
               <div className="flex items-center justify-between mb-3">
-                <img
-                  src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user?.profilePicture}`}
-                  alt={recipe.user?.name}
-                  className="w-14 h-14 rounded-full object-cover border-4 border-orange-500"
-                />
-                <button className="text-orange-500 hover:text-orange-600 underline font-semibold transition-colors">
+                <div 
+                  className="flex items-center cursor-pointer" 
+                  onClick={() => navigate(`/profile/${recipe.user?._id}`)}
+                >
+                  <img
+                    src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user?.profilePicture}`}
+                    alt={recipe.user?.name}
+                    className="w-14 h-14 rounded-full object-cover border-4 border-orange-500"
+                  />
+                  <div className="ml-3">
+                    <h3 className="font-bold text-lg text-[#463C33] break-words">{recipe.user?.name}</h3>
+                    <span className="text-gray-500 text-sm">Recipe Creator</span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => navigate(`/profile/${recipe.user?._id}`)}
+                  className="text-orange-500 hover:text-orange-600 underline font-semibold transition-colors"
+                >
                   View Profile
                 </button>
-              </div>
-              <div>
-                <h3 className="font-bold text-lg text-[#463C33] break-words">{recipe.user?.name}</h3>
-                <span className="text-gray-500 text-sm">Recipe Creator</span>
               </div>
             </div>
             <p className="text-gray-600 break-words">
@@ -403,12 +411,12 @@ const RecipePage = () => {
       </div>
 
       {/* More Recipes Section */}
-      <div className="mb-8 px-2 sm:px-4">
+      <div className="my-8 pl-4 sm:pl-4">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-[#463C33]">More Recipes</h2>
           <button 
             onClick={() => navigate('/')}
-            className="text-orange-500 text-sm font-medium"
+            className="text-orange-500 text-sm font-medium mr-4"
           >
             See All
           </button>
@@ -506,13 +514,18 @@ const RecipePage = () => {
           {comments.map((comment) => (
             <div key={comment._id} className="bg-gray-50 p-4 rounded-lg">
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
+                <div 
+                  className="flex items-center gap-2 cursor-pointer" 
+                  onClick={() => navigate(`/profile/${comment.user._id}`)}
+                >
                   <img
                     src={`${import.meta.env.VITE_PROD_BASE_URL}/${comment.user.profilePicture}`}
                     alt={comment.user.name}
                     className="w-8 h-8 rounded-full object-cover"
                   />
-                  <span className="font-semibold">{comment.user.name}</span>
+                  <span className="font-semibold hover:text-orange-500 transition-colors">
+                    {comment.user.name}
+                  </span>
                 </div>
                 <span className="text-sm text-gray-500">
                   {formatTimeAgo(comment.createdAt)}
