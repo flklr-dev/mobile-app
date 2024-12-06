@@ -23,61 +23,134 @@ const RecipePage = () => {
   const [commentToDelete, setCommentToDelete] = useState(null);
 
   useEffect(() => {
-    console.log('Recipe owner ID:', recipe?.user?._id);
-    console.log('Current user ID:', localStorage.getItem("userId"));
-    console.log('Comments:', comments);
-  }, [recipe, comments]);
-
-  useEffect(() => {
-    const fetchRecipeAndMore = async () => {
-      try {
-        const [recipeResponse, moreRecipesResponse, userResponse] = await Promise.all([
-          api.get(`/recipes/${id}`),
-          api.get('/recipes'),
-          api.get('/auth/user')
-        ]);
-
-        setRecipe(recipeResponse.data);
-        
-        // Filter out current recipe and get random 10 recipes
-        const filteredRecipes = moreRecipesResponse.data
-          .filter(r => r._id !== id)
-          .sort(() => 0.5 - Math.random())
-          .slice(0, 10);
-        
-        setMoreRecipes(filteredRecipes);
-
-        // Set liked recipes
-        const likedRecipeIds = new Set(userResponse.data.likedRecipes.map(r => r._id));
-        setLikedRecipes(likedRecipeIds);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        if (error.response?.status === 401) {
-          navigate('/login');
-        } else {
-          setError(error.response?.data?.message || "Failed to load recipe");
-        }
-      }
-    };
-
     fetchRecipeAndMore();
-  }, [id, navigate]);
-
-  useEffect(() => {
     fetchComments();
   }, [id]);
 
+  const fetchRecipeAndMore = async () => {
+    try {
+      const [recipeResponse, moreRecipesResponse, userResponse] = await Promise.all([
+        api.get(`/recipes/${id}`),
+        api.get('/recipes'),
+        api.get('/auth/user')
+      ]);
+
+      setRecipe(recipeResponse.data);
+      
+      const filteredRecipes = moreRecipesResponse.data
+        .filter(r => r._id !== id)
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 10);
+      
+      setMoreRecipes(filteredRecipes);
+      const likedRecipeIds = new Set(userResponse.data.likedRecipes.map(r => r._id));
+      setLikedRecipes(likedRecipeIds);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      if (error.response?.status === 401) {
+        navigate('/login');
+      } else {
+        setError(error.response?.data?.message || "Failed to load recipe");
+      }
+    }
+  };
+
   const fetchComments = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:5000/recipes/${id}/comments`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        }
-      );
+      const response = await api.get(`/recipes/${id}/comments`);
+      console.log('Fetched comments:', response.data);
       setComments(response.data);
     } catch (error) {
       console.error("Error fetching comments:", error);
+      toast.error("Failed to load comments");
+    }
+  };
+
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    try {
+      if (!newComment.trim()) {
+        toast.error("Comment cannot be empty");
+        return;
+      }
+
+      const response = await api.post(`/recipes/${id}/comments`, {
+        text: newComment
+      });
+
+      setComments(prevComments => [response.data, ...prevComments]);
+      setNewComment('');
+      toast.success("Comment added successfully!");
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      toast.error(error.response?.data?.message || "Failed to add comment");
+    }
+  };
+
+  const handleAddReply = async (commentId) => {
+    try {
+      if (!newReply.trim()) {
+        toast.error("Reply cannot be empty");
+        return;
+      }
+
+      console.log('Sending reply request:', {
+        commentId,
+        reply: newReply,
+        recipeId: id
+      });
+
+      const response = await api.post(
+        `/recipes/${id}/comments/${commentId}/reply`,
+        { reply: newReply }
+      );
+
+      console.log('Reply response:', response.data);
+
+      if (response.data.comment) {
+        setComments(prevComments => 
+          prevComments.map(comment => 
+            comment._id === commentId 
+              ? {
+                  ...comment,
+                  reply: response.data.comment.reply,
+                  replyDate: response.data.comment.replyDate
+                }
+              : comment
+          )
+        );
+        
+        setNewReply('');
+        setActiveReplyId(null);
+        toast.success("Reply added successfully!");
+      }
+    } catch (error) {
+      console.error("Error adding reply:", error.response?.data || error);
+      toast.error(
+        error.response?.data?.message || 
+        error.message || 
+        "Failed to add reply"
+      );
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    setCommentToDelete(commentId);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await api.delete(`/recipes/${id}/comments/${commentToDelete}`);
+      setComments(prevComments => 
+        prevComments.filter(comment => comment._id !== commentToDelete)
+      );
+      setShowDeleteModal(false);
+      setCommentToDelete(null);
+      toast.success("Comment deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast.error("Failed to delete comment");
     }
   };
 
@@ -139,96 +212,6 @@ const RecipePage = () => {
       e.stopPropagation(); // Only stop propagation for card clicks
     }
     navigate('/add-to-meal-plan', { state: { recipe } });
-  };
-
-  const handleAddComment = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await axios.post(
-        `http://localhost:5000/recipes/${id}/comments`,
-        { text: newComment },
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        }
-      );
-      setComments([response.data, ...comments]);
-      setNewComment('');
-      toast.success("Comment added successfully!");
-    } catch (error) {
-      toast.error("Failed to add comment");
-    }
-  };
-
-  const handleAddReply = async (commentId) => {
-    try {
-      if (!newReply.trim()) {
-        toast.error("Reply cannot be empty");
-        return;
-      }
-
-      console.log('Sending reply request:', {
-        commentId,
-        reply: newReply,
-        recipeId: id
-      });
-
-      const response = await api.post(
-        `/recipes/${id}/comments/${commentId}/reply`,
-        { reply: newReply }
-      );
-
-      console.log('Reply response:', response.data);
-
-      if (response.data.comment) {
-        // Update the comments state with the new reply
-        setComments(prevComments => 
-          prevComments.map(comment => 
-            comment._id === commentId 
-              ? {
-                  ...comment,
-                  reply: response.data.comment.reply,
-                  replyDate: response.data.comment.replyDate
-                }
-              : comment
-          )
-        );
-        
-        setNewReply('');
-        setActiveReplyId(null);
-        toast.success("Reply added successfully!");
-      } else {
-        throw new Error('Invalid response format');
-      }
-    } catch (error) {
-      console.error("Error adding reply:", error.response?.data || error);
-      toast.error(
-        error.response?.data?.message || 
-        error.message || 
-        "Failed to add reply"
-      );
-    }
-  };
-
-  const handleDeleteComment = async (commentId) => {
-    setCommentToDelete(commentId);
-    setShowDeleteModal(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    try {
-      await axios.delete(
-        `http://localhost:5000/recipes/${id}/comments/${commentToDelete}`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        }
-      );
-      setComments(comments.filter(comment => comment._id !== commentToDelete));
-      setShowDeleteModal(false);
-      setCommentToDelete(null);
-      toast.success("Comment deleted successfully!");
-    } catch (error) {
-      toast.error("Failed to delete comment");
-    }
   };
 
   const formatTimeAgo = (date) => {
@@ -492,10 +475,8 @@ const RecipePage = () => {
       </div>
 
       {/* Comments Section */}
-      <div className="mb-24 px-4">
-        <div className="flex items-center gap-3 mb-4">
-          <h2 className="text-2xl font-bold text-[#463C33]">Comments</h2>
-        </div>
+      <div className="mt-8 px-4">
+        <h3 className="text-xl font-bold text-[#463C33] mb-4">Comments</h3>
         
         {/* Add Comment Form */}
         <form onSubmit={handleAddComment} className="mb-6">
@@ -505,12 +486,11 @@ const RecipePage = () => {
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Add a comment..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500"
-              required
+              className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
             <button
               type="submit"
-              className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+              className="bg-orange-500 text-white px-4 py-2 rounded-lg"
             >
               Post
             </button>
@@ -520,20 +500,15 @@ const RecipePage = () => {
         {/* Comments List */}
         <div className="space-y-4">
           {comments.map((comment) => (
-            <div key={comment._id} className="bg-gray-50 rounded-xl p-4">
+            <div key={comment._id} className="bg-gray-50 p-4 rounded-lg">
               <div className="flex items-center justify-between mb-2">
-                <div 
-                  className="flex items-center gap-2 cursor-pointer"
-                  onClick={() => navigate(`/user/${comment.user._id}`)}
-                >
+                <div className="flex items-center gap-2">
                   <img
-                    src={`http://localhost:5000/${comment.user.profilePicture}`}
+                    src={`${import.meta.env.VITE_PROD_BASE_URL}/${comment.user.profilePicture}`}
                     alt={comment.user.name}
                     className="w-8 h-8 rounded-full object-cover"
                   />
-                  <span className="font-semibold hover:text-orange-500 transition-colors">
-                    {comment.user.name}
-                  </span>
+                  <span className="font-semibold">{comment.user.name}</span>
                 </div>
                 <span className="text-sm text-gray-500">
                   {formatTimeAgo(comment.createdAt)}
@@ -541,59 +516,53 @@ const RecipePage = () => {
               </div>
               
               <p className="text-gray-700 mb-2">{comment.text}</p>
-              
-              {/* Update this condition to properly check if current user is recipe owner */}
-              {recipe && recipe.user && recipe.user._id === localStorage.getItem("userId") && !comment.reply && (
-                <div className="mt-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Reply to this comment..."
-                      className="flex-1 px-3 py-1 border border-gray-300 rounded-lg text-sm"
-                      value={comment._id === activeReplyId ? newReply : ''}
-                      onChange={(e) => {
-                        setActiveReplyId(comment._id);
-                        setNewReply(e.target.value);
-                      }}
-                    />
+
+              {/* Reply Section */}
+              {recipe?.user?._id === localStorage.getItem("userId") && !comment.reply && (
+                <div>
+                  {activeReplyId === comment._id ? (
+                    <div className="flex gap-2 mt-2">
+                      <input
+                        type="text"
+                        value={newReply}
+                        onChange={(e) => setNewReply(e.target.value)}
+                        placeholder="Write a reply..."
+                        className="flex-1 p-2 border rounded-lg"
+                      />
+                      <button
+                        onClick={() => handleAddReply(comment._id)}
+                        className="bg-orange-500 text-white px-4 py-2 rounded-lg"
+                      >
+                        Reply
+                      </button>
+                    </div>
+                  ) : (
                     <button
-                      onClick={() => handleAddReply(comment._id)}
-                      className="bg-orange-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-orange-600"
+                      onClick={() => setActiveReplyId(comment._id)}
+                      className="text-orange-500 text-sm font-medium"
                     >
                       Reply
                     </button>
-                  </div>
+                  )}
                 </div>
               )}
-              
-              {/* Display reply if it exists */}
+
+              {/* Display Reply */}
               {comment.reply && (
                 <div className="mt-2 ml-4 p-2 bg-white rounded-lg">
-                  <div className="flex justify-between items-center mb-1">
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={`http://localhost:5000/${recipe.user.profilePicture}`}
-                        alt={recipe.user.name}
-                        className="w-6 h-6 rounded-full object-cover"
-                      />
-                      <span className="text-sm font-semibold">{recipe.user.name}'s reply:</span>
-                    </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <img
+                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
+                      alt={recipe.user.name}
+                      className="w-6 h-6 rounded-full object-cover"
+                    />
+                    <span className="font-semibold text-sm">{recipe.user.name}</span>
                     <span className="text-xs text-gray-500">
                       {formatTimeAgo(comment.replyDate)}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-700 mt-1">{comment.reply}</p>
+                  <p className="text-gray-700 text-sm">{comment.reply}</p>
                 </div>
-              )}
-              
-              {/* Delete button (only visible to recipe owner) */}
-              {recipe && recipe.user && recipe.user._id === localStorage.getItem("userId") && (
-                <button
-                  onClick={() => handleDeleteComment(comment._id)}
-                  className="text-red-500 text-sm mt-2 hover:text-red-600"
-                >
-                  Delete
-                </button>
               )}
             </div>
           ))}
@@ -612,29 +581,22 @@ const RecipePage = () => {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Comment Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Delete Comment
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete this comment?
-            </p>
-            <div className="flex space-x-3">
+          <div className="bg-white p-6 rounded-lg max-w-sm mx-4">
+            <h3 className="text-lg font-bold mb-4">Delete Comment</h3>
+            <p className="mb-6">Are you sure you want to delete this comment?</p>
+            <div className="flex justify-end gap-4">
               <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setCommentToDelete(null);
-                }}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-full font-medium hover:bg-gray-200 transition-colors"
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 text-gray-600"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteConfirm}
-                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-full font-medium hover:bg-red-600 transition-colors"
+                className="px-4 py-2 bg-red-500 text-white rounded-lg"
               >
                 Delete
               </button>
