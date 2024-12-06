@@ -160,9 +160,14 @@ const RecipePage = () => {
     }
 
     try {
-      const response = await api.post(`/recipes/like/${recipeId}`);
+      const response = await axios.post(
+        `http://localhost:5000/recipes/like/${recipeId}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        }
+      );
 
-      // Update liked recipes set
       setLikedRecipes(prev => {
         const newSet = new Set(prev);
         if (newSet.has(recipeId)) {
@@ -182,7 +187,7 @@ const RecipePage = () => {
         )
       );
 
-      // Update main recipe likes if it's the same recipe
+      // Also update main recipe likes if it's the same recipe
       if (recipe && recipe._id === recipeId) {
         setRecipe(prev => ({
           ...prev,
@@ -194,25 +199,11 @@ const RecipePage = () => {
         likedRecipes.has(recipeId)
           ? "Recipe removed from favorites!"
           : "Recipe added to favorites!",
-        { 
-          position: "top-center", 
-          autoClose: 2000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        }
+        { position: "top-center", autoClose: 2000 }
       );
     } catch (error) {
       console.error("Error toggling like:", error);
-      if (error.response?.status === 401) {
-        navigate('/login');
-      } else {
-        toast.error("Failed to update favorite status", {
-          position: "top-center",
-          autoClose: 3000
-        });
-      }
+      toast.error("Failed to update favorite status");
     }
   };
 
@@ -412,7 +403,7 @@ const RecipePage = () => {
       </div>
 
       {/* More Recipes Section */}
-      <div className="mb-28 px-4 mt-12">
+      <div className="mb-28 px-2 sm:px-4">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-[#463C33]">More Recipes</h2>
           <button 
@@ -426,53 +417,59 @@ const RecipePage = () => {
         <div className="overflow-x-auto no-scrollbar">
           <div className="flex space-x-4 pb-4">
             {moreRecipes.map((moreRecipe) => (
-              <div key={moreRecipe._id} className="relative mb-6">
-                <div className="flex-shrink-0 w-64 bg-[#463C33] rounded-xl overflow-hidden cursor-pointer flex flex-col">
-                  <div className="relative h-40">
-                    <img
-                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${moreRecipe.image}`}
-                      alt={moreRecipe.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-0 left-0 right-0 p-3 flex justify-between items-start">
-                      <span className="text-white text-xs bg-black/50 px-2 py-1 rounded-full">
-                        {moreRecipe.time}
-                      </span>
-                      <button
-                        onClick={(e) => handleToggleLike(moreRecipe._id, e)}
-                        className="absolute top-4 right-4 bg-black bg-opacity-60 p-2 rounded-full"
-                      >
-                        {likedRecipes.has(moreRecipe._id) ? (
-                          <FaHeart className="text-white" size={20} />
-                        ) : (
-                          <FaRegHeart className="text-white" size={20} />
-                        )}
-                      </button>
+              <div
+                key={moreRecipe._id}
+                className="flex-shrink-0 w-64 bg-[#463C33] rounded-xl overflow-hidden cursor-pointer flex flex-col"
+                onClick={() => navigate(`/recipes/${moreRecipe._id}`)}
+              >
+                <div className="relative h-40">
+                  <img
+                    src={`${import.meta.env.VITE_PROD_BASE_URL}/${moreRecipe.image}`}
+                    alt={moreRecipe.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-0 left-0 right-0 p-3 flex justify-between items-start">
+                    <span className="text-white text-xs bg-black/50 px-2 py-1 rounded-full">
+                      {moreRecipe.time}
+                    </span>
+                    <button
+                      onClick={(e) => handleToggleLike(moreRecipe._id, e)}
+                      className="text-white bg-black/50 p-2 rounded-full"
+                    >
+                      {likedRecipes.has(moreRecipe._id) ? (
+                        <FaHeart className="text-white" size={16} />
+                      ) : (
+                        <FaRegHeart size={16} />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-3 flex-1 flex flex-col">
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="text-white font-bold text-sm line-clamp-2 flex-1 mr-2">
+                      {moreRecipe.title}
+                    </h3>
+                    <div className="flex items-center space-x-1 flex-shrink-0">
+                      <span className="text-white text-xs">{moreRecipe.likes || 0}</span>
+                      <FaHeart className="text-white text-xs" />
                     </div>
                   </div>
 
-                  <div className="p-3 flex-1 flex flex-col">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-white font-bold text-sm line-clamp-2 flex-1 mr-2">
-                        {moreRecipe.title}
-                      </h3>
-                      <div className="flex items-center space-x-1 flex-shrink-0">
-                        <span className="text-white text-xs">{moreRecipe.likes || 0}</span>
-                        <FaHeart className="text-white text-xs" />
-                      </div>
-                    </div>
-
-                    <div className="mt-auto">
-                      <span className="block text-white/70 text-xs mb-2">
-                        {moreRecipe.calories}
-                      </span>
-                      <button 
-                        onClick={(e) => handleAddToMealPlan(moreRecipe, e)}
-                        className="w-full text-sm bg-white text-[#463C33] py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors"
-                      >
-                        Add to Meal Plan
-                      </button>
-                    </div>
+                  <div className="mt-auto">
+                    <span className="block text-white/70 text-xs mb-2">
+                      {moreRecipe.calories}
+                    </span>
+                    <button 
+                      className="bg-white text-[#463C33] font-bold rounded-full py-2 px-3 sm:px-4 mt-3 w-full text-sm sm:text-base"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        navigate('/add-to-meal-plan', { state: { recipe } });
+                      }}
+                    >
+                      Add to Meal Plan
+                    </button>
                   </div>
                 </div>
               </div>
@@ -482,22 +479,22 @@ const RecipePage = () => {
       </div>
 
       {/* Comments Section */}
-      <div className="mt-8 px-4">
+      <div className="mt-8 px-2 sm:px-4">
         <h3 className="text-xl font-bold text-[#463C33] mb-4">Comments</h3>
         
         {/* Add Comment Form */}
         <form onSubmit={handleAddComment} className="mb-6">
-          <div className="flex gap-2">
+          <div className="flex gap-2 max-w-full">
             <input
               type="text"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Add a comment..."
-              className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="flex-1 min-w-0 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
             <button
               type="submit"
-              className="bg-orange-500 text-white px-4 py-2 rounded-lg"
+              className="whitespace-nowrap bg-orange-500 text-white px-3 py-2 rounded-lg text-sm sm:px-4 sm:text-base"
             >
               Post
             </button>
