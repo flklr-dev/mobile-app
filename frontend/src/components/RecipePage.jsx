@@ -403,7 +403,7 @@ const RecipePage = () => {
       </div>
 
       {/* More Recipes Section */}
-      <div className="mb-28 px-2 sm:px-4">
+      <div className="mb-8 px-2 sm:px-4">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-[#463C33]">More Recipes</h2>
           <button 
@@ -478,8 +478,8 @@ const RecipePage = () => {
         </div>
       </div>
 
-      {/* Comments Section */}
-      <div className="mt-8 px-2 sm:px-4">
+      {/* Comments Section - Added mx-auto and max-w-3xl for better margins */}
+      <div className="mt-4 px-4 sm:px-6 mx-auto max-w-3xl">
         <h3 className="text-xl font-bold text-[#463C33] mb-4">Comments</h3>
         
         {/* Add Comment Form */}
@@ -502,7 +502,7 @@ const RecipePage = () => {
         </form>
 
         {/* Comments List */}
-        <div className="space-y-4">
+        <div className="space-y-4 mb-20">
           {comments.map((comment) => (
             <div key={comment._id} className="bg-gray-50 p-4 rounded-lg">
               <div className="flex items-center justify-between mb-2">
