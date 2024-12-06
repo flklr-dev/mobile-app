@@ -27,10 +27,16 @@ const NotificationScreen = () => {
   const markAsRead = async (notificationId) => {
     try {
       await api.patch(`/notifications/${notificationId}/read`);
-      setNotifications(notifications.map(notif => 
-        notif._id === notificationId ? { ...notif, read: true } : notif
-      ));
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notif => 
+          notif._id === notificationId 
+            ? { ...notif, read: true } 
+            : notif
+        )
+      );
+      toast.success('Notification marked as read');
     } catch (error) {
+      console.error('Error marking notification as read:', error);
       toast.error('Failed to mark notification as read');
     }
   };
@@ -38,9 +44,12 @@ const NotificationScreen = () => {
   const markAllAsRead = async () => {
     try {
       await api.patch('/notifications/mark-all-read');
-      setNotifications(notifications.map(notif => ({ ...notif, read: true })));
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notif => ({ ...notif, read: true }))
+      );
       toast.success('All notifications marked as read');
     } catch (error) {
+      console.error('Error marking all notifications as read:', error);
       toast.error('Failed to mark all notifications as read');
     }
   };
@@ -69,7 +78,7 @@ const NotificationScreen = () => {
         {notifications.some(n => !n.read) && (
           <button
             onClick={markAllAsRead}
-            className="text-white text-sm bg-orange-600 px-3 py-1 rounded-full"
+            className="text-white text-sm bg-orange-600 px-3 py-1 rounded-full hover:bg-orange-700 transition-colors"
           >
             Mark all as read
           </button>
@@ -134,7 +143,7 @@ const NotificationScreen = () => {
                           e.stopPropagation();
                           markAsRead(notification._id);
                         }}
-                        className="text-orange-500 hover:text-orange-600"
+                        className="text-orange-500 hover:text-orange-600 transition-colors"
                       >
                         <FaCheck size={16} />
                       </button>
