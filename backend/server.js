@@ -70,9 +70,19 @@ app.use('/auth', authRoutes);
 app.use("/recipes", recipeRoutes);
 app.use("/notifications", notificationRoutes);
 
-// Error handling middleware
+// Add this before your routes
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`, {
+    query: req.query,
+    params: req.params,
+    body: req.body
+  });
+  next();
+});
+
+// Add this after your routes
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  console.error('Server Error:', err);
   res.status(500).json({
     message: "Internal server error",
     error: process.env.NODE_ENV === 'development' ? err.message : undefined

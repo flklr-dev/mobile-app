@@ -277,7 +277,6 @@ router.get("/:recipeId/comments", authenticateToken, async (req, res) => {
       isDeleted: false 
     })
     .populate('user', 'name profilePicture')
-    .populate('replies.user', 'name profilePicture')
     .sort({ createdAt: -1 });
     
     res.json(comments);
@@ -287,70 +286,90 @@ router.get("/:recipeId/comments", authenticateToken, async (req, res) => {
   }
 });
 
-// Add reply to comment
+// Add reply to a comment
 router.post("/:recipeId/comments/:commentId/reply", authenticateToken, async (req, res) => {
   try {
-    const { text } = req.body;
-    const { commentId } = req.params;
+    const { recipeId, commentId } = req.params;
+    const userId = req.user.userId;
+    const { reply } = req.body;
 
+    console.log('Reply Request:', {
+      recipeId,
+      commentId,
+      userId,
+      reply
+    });
+
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(recipeId) || !mongoose.Types.ObjectId.isValid(commentId)) {
+      return res.status(400).json({ message: "Invalid recipe or comment ID" });
+    }
+
+    // Find recipe with user populated
+    const recipe = await Recipe.findById(recipeId).populate('user');
+    if (!recipe) {
+      console.log('Recipe not found:', recipeId);
+      return res.status(404).json({ message: "Recipe not found" });
+    }
+
+    console.log('Recipe owner:', recipe.user._id.toString());
+    console.log('Current user:', userId);
+
+    // Check ownership
+    if (recipe.user._id.toString() !== userId) {
+      return res.status(403).json({ 
+        message: "Only recipe owner can reply to comments",
+        recipeOwner: recipe.user._id.toString(),
+        currentUser: userId
+      });
+    }
+
+    // Find and update comment
     const comment = await Comment.findById(commentId);
     if (!comment) {
+      console.log('Comment not found:', commentId);
       return res.status(404).json({ message: "Comment not found" });
     }
 
-    const reply = {
-      text,
-      user: req.user.userId,
-      createdAt: new Date()
-    };
-
-    comment.replies = comment.replies || [];
-    comment.replies.push(reply);
+    // Update comment
+    comment.reply = reply;
+    comment.replyDate = new Date();
     await comment.save();
 
-    // Populate the user details for the new reply
-    const populatedComment = await Comment.findById(commentId)
-      .populate('replies.user', 'name profilePicture');
+    // Get fully populated comment
+    const updatedComment = await Comment.findById(commentId)
+      .populate('user', 'name profilePicture')
+      .populate('recipe', 'title');
 
-    res.status(200).json(populatedComment);
+    console.log('Updated comment:', updatedComment);
+
+    // Send success response
+    res.status(200).json({
+      message: "Reply added successfully",
+      comment: updatedComment
+    });
+
   } catch (error) {
-    console.error("Error adding reply:", error);
-    res.status(500).json({ message: "Failed to add reply" });
+    console.error('Reply Error:', error);
+    res.status(500).json({ 
+      message: "Failed to add reply",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
-// Delete a comment
+// Delete a comment (only recipe owner)
 router.delete("/:recipeId/comments/:commentId", authenticateToken, async (req, res) => {
   try {
-    const { commentId } = req.params;
-    const userId = req.user.userId;
-
-    const comment = await Comment.findById(commentId);
-
-    if (!comment) {
-      return res.status(404).json({ message: "Comment not found" });
+    const recipe = await Recipe.findById(req.params.recipeId);
+    if (recipe.user.toString() !== req.user.userId) {
+      return res.status(403).json({ message: "Only recipe owner can delete comments" });
     }
 
-    // Allow deletion if user is the comment owner
-    if (comment.user.toString() === userId) {
-      comment.isDeleted = true;
-      await comment.save();
-      return res.status(200).json({ message: "Comment deleted successfully" });
-    }
-
-    // If not comment owner, check if user is recipe owner
-    const recipe = await Recipe.findById(comment.recipe);
-    if (recipe && recipe.user.toString() === userId) {
-      comment.isDeleted = true;
-      await comment.save();
-      return res.status(200).json({ message: "Comment deleted successfully" });
-    }
-
-    return res.status(403).json({ message: "You do not have permission to delete this comment" });
-
+    await Comment.findByIdAndUpdate(req.params.commentId, { isDeleted: true });
+    res.json({ message: "Comment deleted successfully" });
   } catch (error) {
-    console.error("Error deleting comment:", error);
-    res.status(500).json({ message: "Failed to delete comment" });
+    res.status(500).json({ message: error.message });
   }
 });
 

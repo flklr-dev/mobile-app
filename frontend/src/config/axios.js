@@ -1,14 +1,14 @@
 import axios from 'axios';
 
 const baseURL = import.meta.env.VITE_ENV === 'production'
-  ? 'https://mobile-app-2-s9az.onrender.com'  // Render backend URL
-  : 'http://localhost:5000';                   // Local backend URL
+  ? import.meta.env.VITE_PROD_BASE_URL
+  : import.meta.env.VITE_DEV_BASE_URL;
 
 const api = axios.create({
   baseURL,
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
   }
 });
 
