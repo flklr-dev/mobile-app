@@ -32,15 +32,9 @@ const RecipePage = () => {
     const fetchRecipeAndMore = async () => {
       try {
         const [recipeResponse, moreRecipesResponse, userResponse] = await Promise.all([
-          axios.get(`http://localhost:5000/recipes/${id}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-          }),
-          axios.get('http://localhost:5000/recipes', {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-          }),
-          axios.get('http://localhost:5000/auth/user', {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-          })
+          api.get(`/recipes/${id}`),
+          api.get('/recipes'),
+          api.get('/auth/user')
         ]);
 
         setRecipe(recipeResponse.data);
@@ -59,7 +53,6 @@ const RecipePage = () => {
       } catch (error) {
         console.error("Error fetching data:", error);
         if (error.response?.status === 401) {
-          // Handle unauthorized access
           navigate('/login');
         } else {
           setError(error.response?.data?.message || "Failed to load recipe");
@@ -294,7 +287,7 @@ const RecipePage = () => {
       {/* Cover Image Section */}
       <div className="relative h-[40vh]">
         <img
-          src={`http://localhost:5000/${recipe.image}`}
+          src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
           alt={recipe.title}
           className="w-full h-full object-cover"
         />
@@ -406,8 +399,8 @@ const RecipePage = () => {
             <div className="flex flex-col mb-4">
               <div className="flex items-center justify-between mb-3">
                 <img
-                  src={`http://localhost:5000/${recipe.user.profilePicture}`}
-                  alt={recipe.user.name}
+                  src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user?.profilePicture}`}
+                  alt={recipe.user?.name}
                   className="w-14 h-14 rounded-full object-cover border-4 border-orange-500"
                 />
                 <button className="text-orange-500 hover:text-orange-600 underline font-semibold transition-colors">
@@ -415,12 +408,12 @@ const RecipePage = () => {
                 </button>
               </div>
               <div>
-                <h3 className="font-bold text-lg text-[#463C33] break-words">{recipe.user.name}</h3>
+                <h3 className="font-bold text-lg text-[#463C33] break-words">{recipe.user?.name}</h3>
                 <span className="text-gray-500 text-sm">Recipe Creator</span>
               </div>
             </div>
             <p className="text-gray-600 break-words">
-              {recipe.user.aboutMe || "No description available."}
+              {recipe.user?.aboutMe || "No description available."}
             </p>
           </div>
         </div>
@@ -448,7 +441,7 @@ const RecipePage = () => {
               >
                 <div className="relative h-40">
                   <img
-                    src={`http://localhost:5000/${moreRecipe.image}`}
+                    src={`${import.meta.env.VITE_PROD_BASE_URL}/${moreRecipe.image}`}
                     alt={moreRecipe.title}
                     className="w-full h-full object-cover"
                   />
