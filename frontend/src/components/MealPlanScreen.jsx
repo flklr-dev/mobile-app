@@ -3,7 +3,7 @@ import { FaPlus, FaTrash } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from './Header';
 import BottomNavbar from './BottomNavbar';
-import axios from 'axios';
+import api from '../config/axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -29,15 +29,8 @@ const MealPlanScreen = () => {
 
   const fetchMealPlans = async () => {
     try {
-      const token = localStorage.getItem('token');
       const dateStr = selectedDay.toISOString().split('T')[0];
-      
-      const response = await axios.get(
-        `http://localhost:5000/auth/meal-plans/${dateStr}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      const response = await api.get(`/auth/meal-plans/${dateStr}`);
 
       // Organize meals by category
       const organizedMeals = {
@@ -84,34 +77,24 @@ const MealPlanScreen = () => {
     if (!mealToDelete) return;
 
     try {
-      const token = localStorage.getItem('token');
       const dateStr = selectedDay.toISOString().split('T')[0];
+      const loadingToast = toast.loading("Removing meal...");
 
-      await axios.delete(
-        `http://localhost:5000/auth/meal-plans/${dateStr}/${mealToDelete.planId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      await api.delete(`/auth/meal-plans/${dateStr}/${mealToDelete.planId}`);
 
       setMealPlan(prev => ({
         ...prev,
         [mealToDelete.mealType]: prev[mealToDelete.mealType].filter((_, i) => i !== mealToDelete.index)
       }));
       
-      toast.success('Meal removed from plan', {
-        position: "top-center",
-        autoClose: 2000
-      });
+      toast.dismiss(loadingToast);
+      toast.success('Meal removed from plan');
 
       setShowDeleteModal(false);
       setMealToDelete(null);
     } catch (error) {
       console.error('Error deleting meal:', error);
-      toast.error('Failed to remove meal from plan', {
-        position: "top-center",
-        autoClose: 2000
-      });
+      toast.error('Failed to remove meal from plan');
     }
   };
 
@@ -201,7 +184,7 @@ const MealPlanScreen = () => {
                     >
                       <div className="flex items-center space-x-3">
                         <img
-                          src={`http://localhost:5000/${meal.image}`}
+                          src={`${import.meta.env.VITE_PROD_BASE_URL}/${meal.image}`}
                           alt={meal.title}
                           className="w-12 h-12 rounded-lg object-cover"
                         />
@@ -211,7 +194,7 @@ const MealPlanScreen = () => {
                       </div>
                       <button 
                         onClick={(e) => {
-                          e.stopPropagation(); // Prevent navigation when clicking delete
+                          e.stopPropagation();
                           handleDeleteMeal(key.toLowerCase(), index, meal.planId);
                         }}
                         className="text-red-500 hover:text-red-600 p-2"
