@@ -309,19 +309,20 @@ const EditRecipeScreen = () => {
         {/* Ingredients */}
         <label className="text-orange-500 font-bold mb-2">Ingredients</label>
         {ingredients.map((ingredient, index) => (
-          <div key={index} className="flex items-center mb-4">
+          <div key={index} className="flex items-center gap-2 mb-4">
             <input
               type="text"
               placeholder="Enter ingredient"
               value={ingredient}
               onChange={(e) => updateIngredient(e.target.value, index)}
-              className="flex-1 p-3 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="flex-1 min-w-0 p-3 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
             <button
               onClick={() => deleteIngredient(index)}
-              className="ml-2 bg-red-500 text-white p-2 rounded-full"
+              className="shrink-0 w-10 h-10 flex items-center justify-center bg-red-500 text-white rounded-full hover:bg-red-600"
+              aria-label="Delete ingredient"
             >
-              Delete
+              ×
             </button>
           </div>
         ))}
@@ -335,19 +336,20 @@ const EditRecipeScreen = () => {
         {/* Cooking Instructions */}
         <label className="text-orange-500 font-bold mb-2">Cooking Instructions</label>
         {instructions.map((instruction, index) => (
-          <div key={index} className="flex items-center mb-4">
+          <div key={index} className="flex items-center gap-2 mb-4">
             <input
               type="text"
               placeholder="Enter instruction"
               value={instruction}
               onChange={(e) => updateInstruction(e.target.value, index)}
-              className="flex-1 p-3 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="flex-1 min-w-0 p-3 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
             <button
               onClick={() => deleteInstruction(index)}
-              className="ml-2 bg-red-500 text-white p-2 rounded-full"
+              className="shrink-0 w-10 h-10 flex items-center justify-center bg-red-500 text-white rounded-full hover:bg-red-600"
+              aria-label="Delete instruction"
             >
-              Delete
+              ×
             </button>
           </div>
         ))}

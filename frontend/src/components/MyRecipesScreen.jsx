@@ -42,7 +42,7 @@ const MyRecipesScreen = () => {
   }, [navigate]);
 
   const goBack = () => {
-    navigate("/home");
+    navigate("/profile");
   };
 
   const handleEditClick = (recipeId) => {
