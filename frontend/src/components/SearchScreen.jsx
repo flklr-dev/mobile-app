@@ -97,16 +97,16 @@ const SearchScreen = () => {
         <div className="flex space-x-2 overflow-x-auto py-4 no-scrollbar">
           {ingredients.map((ingredient) => (
             <div 
-              key={ingredient.name}
+              key={ingredient.id}
               className="flex flex-col items-center min-w-[80px] cursor-pointer"
               onClick={() => handleCategoryClick(ingredient.name, 'ingredient')}
             >
               <img 
-                src={`${import.meta.env.VITE_PROD_BASE_URL}/${ingredient.image}`} 
+                src={`${import.meta.env.VITE_PROD_BASE_URL}${ingredient.image}`}
                 alt={ingredient.name} 
                 className="w-14 h-14 object-cover rounded-full"
               />
-              <label className="text-[#463C33] text-sm">{ingredient.name}</label>
+              <label className="text-[#463C33] text-sm text-center">{ingredient.name}</label>
             </div>
           ))}
         </div>
