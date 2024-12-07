@@ -147,7 +147,7 @@ const SearchScreen = () => {
                 className="cursor-pointer h-32"
               >
                 <img
-                  src={meals.image}
+                  src={meal.image}
                   alt={meal.name}
                   className="w-full h-full object-cover rounded-xl"
                 />
