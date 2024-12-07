@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../config/axios';
 import { FaChevronLeft, FaCheck, FaTrash } from 'react-icons/fa';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { formatDistanceToNow } from 'date-fns';
 
 const NotificationScreen = () => {
@@ -29,9 +30,13 @@ const NotificationScreen = () => {
     }
   };
 
+  const handleBack = () => {
+    toast.dismiss();
+    navigate(-1);
+  };
+
   const markAsRead = async (notificationId) => {
     try {
-      console.log('Marking notification as read:', notificationId);
       await api.post(`/notifications/${notificationId}/read`);
       setNotifications(prevNotifications => 
         prevNotifications.map(notif => 
@@ -40,46 +45,75 @@ const NotificationScreen = () => {
             : notif
         )
       );
-      toast.success('Notification marked as read');
+      toast.success('Notification marked as read', {
+        position: "top-center",
+        autoClose: 2000,
+      });
     } catch (error) {
       console.error('Error marking notification as read:', error);
-      toast.error('Failed to mark notification as read');
+      toast.error('Failed to mark notification as read', {
+        position: "top-center",
+        autoClose: 1000,
+      });
     }
   };
 
   const markAllAsRead = async () => {
     try {
-      console.log('Marking all notifications as read');
       await api.post('/notifications/mark-all-read');
       setNotifications(prevNotifications => 
         prevNotifications.map(notif => ({ ...notif, read: true }))
       );
-      toast.success('All notifications marked as read');
+      toast.success('All notifications marked as read', {
+        position: "top-center",
+        autoClose: 1000,
+      });
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
-      toast.error('Failed to mark all notifications as read');
+      toast.error('Failed to mark all notifications as read', {
+        position: "top-center",
+        autoClose: 1000,
+      });
     }
   };
 
   const deleteNotification = async (notificationId) => {
     try {
-      console.log('Deleting notification:', notificationId);
       await api.delete(`/notifications/${notificationId}`);
       setNotifications(notifications.filter(notif => notif._id !== notificationId));
-      toast.success('Notification deleted');
+      toast.success('Notification deleted', {
+        position: "top-center",
+        autoClose: 2000,
+      });
       setShowDeleteModal(false);
     } catch (error) {
       console.error('Error deleting notification:', error);
-      toast.error('Failed to delete notification');
+      toast.error('Failed to delete notification', {
+        position: "top-center",
+        autoClose: 1000,
+      });
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
+      <ToastContainer
+        position="top-center"
+        autoClose={2000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+      
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 bg-orange-500 p-4 flex items-center justify-between z-10">
         <div className="flex items-center">
-          <button onClick={() => navigate(-1)} className="text-white mr-4">
+          <button onClick={handleBack} className="text-white mr-4">
             <FaChevronLeft size={24} />
           </button>
           <h1 className="text-white text-xl font-bold">Notifications</h1>
