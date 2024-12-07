@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FaChevronLeft } from 'react-icons/fa';
-import axios from 'axios';
+import api from '../config/axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -27,18 +27,8 @@ const EditRecipeScreen = () => {
   useEffect(() => {
     const fetchRecipe = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          navigate('/login');
-          return;
-        }
-
         console.log('Fetching recipe with ID:', recipeId);
-
-        const response = await axios.get(`http://localhost:5000/recipes/${recipeId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
+        const response = await api.get(`/recipes/${recipeId}`);
         const recipe = response.data;
         console.log('Fetched recipe:', recipe);
         
@@ -106,7 +96,7 @@ const EditRecipeScreen = () => {
     if (!recipeTitle || !description || !category || !servingSize) {
       toast.error("Please fill in all required fields!", {
         position: "top-center",
-        autoClose: 3000,
+        autoClose: 1000,
       });
       return;
     }
@@ -115,7 +105,7 @@ const EditRecipeScreen = () => {
     if (totalMinutes === 0) {
       toast.error("Please specify cooking time!", {
         position: "top-center",
-        autoClose: 3000,
+        autoClose: 1000,
       });
       return;
     }
@@ -136,7 +126,7 @@ const EditRecipeScreen = () => {
     if (ingredients.length === 0) {
       toast.error("Please add at least one ingredient!", {
         position: "top-center",
-        autoClose: 3000,
+        autoClose: 1000,
       });
       return;
     }
@@ -144,43 +134,31 @@ const EditRecipeScreen = () => {
     if (instructions.length === 0) {
       toast.error("Please add at least one instruction!", {
         position: "top-center",
-        autoClose: 3000,
+        autoClose: 1000,
       });
       return;
     }
 
-    // Prepare form data
-    const formData = new FormData();
-    formData.append("title", recipeTitle);
-    formData.append("description", description);
-    formData.append("category", category);
-    formData.append("servingSize", servingSize);
-    formData.append("ingredients", JSON.stringify(ingredients));
-    formData.append("cookingInstructions", JSON.stringify(instructions));
-    formData.append("authorNotes", authorNotes);
-    formData.append("isPublic", isPublic);
-    formData.append("time", timeString);
-    if (coverImage) formData.append("image", coverImage);
-
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("Authentication error. Please login again.", {
-          position: "top-center",
-          autoClose: 3000,
-        });
-        navigate('/login');
-        return;
-      }
-
       // Show loading toast
       const loadingToast = toast.loading("Updating recipe...", {
         position: "top-center",
       });
 
-      await axios.put(`http://localhost:5000/recipes/${recipeId}`, formData, {
+      const formData = new FormData();
+      formData.append("title", recipeTitle);
+      formData.append("description", description);
+      formData.append("category", category);
+      formData.append("servingSize", servingSize);
+      formData.append("ingredients", JSON.stringify(ingredients));
+      formData.append("cookingInstructions", JSON.stringify(instructions));
+      formData.append("authorNotes", authorNotes);
+      formData.append("isPublic", isPublic);
+      formData.append("time", timeString);
+      if (coverImage) formData.append("image", coverImage);
+
+      await api.put(`/recipes/${recipeId}`, formData, {
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
         },
       });
@@ -201,7 +179,7 @@ const EditRecipeScreen = () => {
       console.error("Error updating recipe:", error);
       toast.error(error.response?.data?.message || "Failed to update recipe", {
         position: "top-center",
-        autoClose: 3000,
+        autoClose: 1000,
       });
     }
   };
@@ -264,9 +242,8 @@ const EditRecipeScreen = () => {
           >
             Change Image
           </label>
-          {/* Show either the new image or the current image */}
           <img
-            src={coverImage ? URL.createObjectURL(coverImage) : `http://localhost:5000/${currentImage}`}
+            src={coverImage ? URL.createObjectURL(coverImage) : `${import.meta.env.VITE_PROD_BASE_URL}/${currentImage}`}
             alt="Recipe Cover"
             className="w-full mt-4 rounded-md"
           />
