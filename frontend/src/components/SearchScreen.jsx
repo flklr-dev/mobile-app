@@ -62,11 +62,11 @@ const SearchScreen = () => {
   ];
 
   const meals = [
-    { name: 'Breakfast', image: 'meals/breakfast.png' },
-    { name: 'Lunch', image: 'meals/lunch.png' },
-    { name: 'Dinner', image: 'meals/dinner.png' },
-    { name: 'Snacks', image: 'meals/snacks.png' },
-    { name: 'Desserts', image: 'meals/desserts.png' }
+    { name: 'Breakfast', image: '/images/breakfast.png' },
+    { name: 'Lunch', image: '/images/lunch.png' },
+    { name: 'Dinner', image: '/images/dinner.png' },
+    { name: 'Snacks', image: '/images/snacks.png' },
+    { name: 'Desserts', image: '/images/desserts.png' }
   ];
 
   return (
@@ -132,7 +132,7 @@ const SearchScreen = () => {
                 className="cursor-pointer h-32"
               >
                 <img
-                  src={`${import.meta.env.VITE_PROD_BASE_URL}/${meal.image}`}
+                  src={meals.image}
                   alt={meal.name}
                   className="w-full h-full object-cover rounded-xl"
                 />
@@ -147,7 +147,7 @@ const SearchScreen = () => {
                 className="cursor-pointer h-32"
               >
                 <img
-                  src={`${import.meta.env.VITE_PROD_BASE_URL}/${meal.image}`}
+                  src={meals.image}
                   alt={meal.name}
                   className="w-full h-full object-cover rounded-xl"
                 />
