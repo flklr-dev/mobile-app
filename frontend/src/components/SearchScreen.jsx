@@ -93,7 +93,7 @@ const SearchScreen = () => {
 
       {/* By Ingredients Section */}
       <section className="px-4 py-6">
-        <h2 className="text-xl font-semibold text-orange-600">By Ingredients</h2>
+        <h2 className="text-xl font-bold text-orange-600">By Ingredients</h2>
         <div className="flex space-x-2 overflow-x-auto py-4 no-scrollbar">
           {ingredients.map((ingredient) => (
             <div 
@@ -122,7 +122,7 @@ const SearchScreen = () => {
 
       {/* By Meal Section - Updated styling */}
       <section className="px-4 py-6 pt-0 pb-24">
-        <h2 className="text-xl font-semibold mb-4 text-orange-600">By Meal</h2>
+        <h2 className="text-xl font-bold mb-4 text-orange-600">By Meal</h2>
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-4">
             {meals.slice(0, 3).map((meal) => (
