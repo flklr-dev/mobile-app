@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { FaChevronLeft } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import axios from 'axios';
+import api from '../config/axios';
 
 const AddToMealPlan = () => {
   const location = useLocation();
@@ -15,6 +15,7 @@ const AddToMealPlan = () => {
   const [selectedCategories, setSelectedCategories] = useState(
     preSelectedCategory ? [preSelectedCategory] : []
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Get week days starting from today
   const getWeekDays = () => {
@@ -30,7 +31,7 @@ const AddToMealPlan = () => {
   };
 
   const toggleDay = (date) => {
-    const dateStr = date.toISOString().split('T')[0]; // Get just the date part
+    const dateStr = date.toISOString().split('T')[0];
     setSelectedDays(prev => 
       prev.includes(dateStr) 
         ? prev.filter(d => d !== dateStr)
@@ -47,8 +48,11 @@ const AddToMealPlan = () => {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+
     try {
-      const token = localStorage.getItem('token');
+      setIsSubmitting(true);
+      const loadingToast = toast.loading("Adding to meal plan...");
       
       // Create meal plan entries for each selected day and category combination
       const mealPlanEntries = selectedDays.flatMap(date => 
@@ -59,12 +63,11 @@ const AddToMealPlan = () => {
         }))
       );
 
-      await axios.post('http://localhost:5000/auth/add-meal-plan', {
+      await api.post('/auth/add-meal-plan', {
         mealPlans: mealPlanEntries
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
 
+      toast.dismiss(loadingToast);
       toast.success('Added to meal plan successfully!', {
         position: "top-center",
         autoClose: 2000
@@ -77,16 +80,27 @@ const AddToMealPlan = () => {
 
     } catch (error) {
       console.error('Error adding to meal plan:', error);
-      toast.error('Failed to add to meal plan. Please try again.', {
-        position: "top-center"
+      toast.error(error.response?.data?.message || 'Failed to add to meal plan', {
+        position: "top-center",
+        autoClose: 3000
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  if (!recipe) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-500">Recipe not found</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <ToastContainer />
-      {/* Simple Header - removed h1 */}
+      {/* Header */}
       <div className="fixed top-0 left-0 w-full z-10 bg-orange-500 shadow-md">
         <div className="flex items-center p-4">
           <button onClick={() => navigate(-1)} className="text-white">
@@ -96,16 +110,16 @@ const AddToMealPlan = () => {
       </div>
 
       <div className="pt-24 px-4 pb-10">
-        {/* Recipe Preview - updated styling */}
+        {/* Recipe Preview */}
         <div className="mb-6">
           <div className="relative w-full h-48 rounded-2xl overflow-hidden">
             <img
-              src={`http://localhost:5000/${recipe?.image}`}
-              alt={recipe?.title}
+              src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
+              alt={recipe.title}
               className="w-full h-full object-cover"
             />
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
-              <h2 className="text-xl font-bold text-white">{recipe?.title}</h2>
+              <h2 className="text-xl font-bold text-white">{recipe.title}</h2>
             </div>
           </div>
         </div>
@@ -120,14 +134,15 @@ const AddToMealPlan = () => {
             <div className="flex space-x-3 py-2">
               {getWeekDays().map((date) => {
                 const dateStr = date.toISOString().split('T')[0];
+                const isSelected = selectedDays.includes(dateStr);
                 return (
                   <button
                     key={dateStr}
                     onClick={() => toggleDay(date)}
                     className={`flex-shrink-0 w-16 p-3 rounded-xl transition-colors ${
-                      selectedDays.includes(dateStr)
+                      isSelected
                         ? 'bg-orange-500 text-white'
-                        : 'bg-white text-gray-800'
+                        : 'bg-white text-gray-800 hover:bg-gray-50'
                     }`}
                   >
                     <div className="text-xs font-medium">
@@ -147,29 +162,36 @@ const AddToMealPlan = () => {
         <div className="mb-6">
           <h3 className="text-lg font-bold text-gray-800 mb-3">Which meal is this for?</h3>
           <div className="grid grid-cols-2 gap-3">
-            {['Breakfast', 'Lunch', 'Dinner', 'Snacks', 'Desserts'].map((category) => (
-              <button
-                key={category}
-                onClick={() => toggleCategory(category.toLowerCase())}
-                className={`p-4 rounded-xl text-center font-medium transition-colors ${
-                  selectedCategories.includes(category.toLowerCase())
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-white text-gray-800'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
+            {['Breakfast', 'Lunch', 'Dinner', 'Snacks', 'Desserts'].map((category) => {
+              const isSelected = selectedCategories.includes(category.toLowerCase());
+              return (
+                <button
+                  key={category}
+                  onClick={() => toggleCategory(category.toLowerCase())}
+                  className={`p-4 rounded-xl text-center font-medium transition-colors ${
+                    isSelected
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-white text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  {category}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Submit Button */}
         <button
           onClick={handleSubmit}
-          disabled={selectedDays.length === 0 || selectedCategories.length === 0}
-          className="w-full bg-orange-500 text-white py-4 rounded-xl font-bold disabled:bg-gray-300 transition-colors mb-4"
+          disabled={selectedDays.length === 0 || selectedCategories.length === 0 || isSubmitting}
+          className={`w-full py-4 rounded-xl font-bold transition-colors mb-4 ${
+            selectedDays.length === 0 || selectedCategories.length === 0 || isSubmitting
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-orange-500 text-white hover:bg-orange-600'
+          }`}
         >
-          Continue
+          {isSubmitting ? 'Adding...' : 'Continue'}
         </button>
       </div>
     </div>

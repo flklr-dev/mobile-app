@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaHeart, FaChevronLeft } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
+import api from '../config/axios';
+import 'react-toastify/dist/ReactToastify.css';
 
 const CategoryRecipes = () => {
   const [recipes, setRecipes] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
   const category = location.state?.category;
@@ -13,13 +15,17 @@ const CategoryRecipes = () => {
   useEffect(() => {
     const fetchRecipes = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/recipes", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        });
+        setLoading(true);
+        const response = await api.get("/recipes");
         setRecipes(response.data);
       } catch (error) {
         console.error("Error fetching recipes:", error);
-        toast.error("Failed to load recipes");
+        toast.error("Failed to load recipes", {
+          position: "top-center",
+          autoClose: 2000
+        });
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -35,9 +41,17 @@ const CategoryRecipes = () => {
     });
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white pb-24">
-      {/* Simple Header */}
+      {/* Header */}
       <div className="fixed top-0 left-0 w-full z-10 bg-orange-500 shadow-md">
         <div className="flex items-center p-4">
           <button onClick={() => navigate(-1)} className="text-white">
@@ -58,7 +72,7 @@ const CategoryRecipes = () => {
               <div className="relative">
                 <Link to={`/recipes/${recipe._id}`}>
                   <img
-                    src={`http://localhost:5000/${recipe.image}`}
+                    src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
                     alt={recipe.title}
                     className="w-full h-28 object-cover"
                   />
@@ -73,11 +87,11 @@ const CategoryRecipes = () => {
                   <div className="flex justify-between items-center mb-1">
                     <div className="flex items-center space-x-1">
                       <FaHeart size={12} className="text-white" />
-                      <span className="text-white text-xs">{recipe.likes}</span>
+                      <span className="text-white text-xs">{recipe.likes?.length || 0}</span>
                     </div>
                     <div className="w-6 h-6 rounded-full overflow-hidden border-2 border-white">
                       <img
-                        src={`http://localhost:5000/${recipe.user?.profilePicture || 'uploads/default-profile.png'}`}
+                        src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user?.profilePicture || 'uploads/default-profile.png'}`}
                         alt={recipe.user?.name || 'User'}
                         className="w-full h-full object-cover"
                       />
@@ -90,7 +104,7 @@ const CategoryRecipes = () => {
                     </h3>
                     
                     <button 
-                      className="bg-white text-[#463C33] text-xs font-bold rounded-full py-2 px-4 w-full"
+                      className="bg-white text-[#463C33] text-xs font-bold rounded-full py-2 px-4 w-full hover:bg-gray-100 transition-colors"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -105,6 +119,12 @@ const CategoryRecipes = () => {
             </div>
           ))}
         </div>
+
+        {recipes.length === 0 && !loading && (
+          <div className="text-center text-gray-500 mt-8">
+            No recipes found
+          </div>
+        )}
       </div>
     </div>
   );
