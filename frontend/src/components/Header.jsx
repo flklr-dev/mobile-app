@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaHeart, FaBell, FaChevronLeft } from 'react-icons/fa';
 import api from '../config/axios';
-import logo from './uploads/pantrypals.png';
+import logo from '/images/pantrypals.png';
 
 const Header = () => {
   const navigate = useNavigate();
