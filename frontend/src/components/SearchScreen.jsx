@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
 import Header from '../components/Header';
 import BottomNavbar from './BottomNavbar';
@@ -8,7 +8,6 @@ const SearchScreen = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Handle search input focus
   const handleSearchFocus = () => {
     navigate('/search-results', { 
       state: { 
@@ -18,15 +17,57 @@ const SearchScreen = () => {
     });
   };
 
-  // Handle category/ingredient click
   const handleCategoryClick = (category, type) => {
     navigate('/search-results', { 
       state: { 
         query: category,
-        type: type // 'category' or 'ingredient'
+        type: type
       }
     });
   };
+
+  const ingredients = [
+    { id: 1, name: "Egg", image: "/images/egg.png" },
+    { id: 2, name: "Chicken", image: "/images/chicken.png" },
+    { id: 3, name: "Pasta", image: "/images/pasta.png" },
+    { id: 4, name: "Rice", image: "/images/rice.png" },
+    { id: 5, name: "Beef", image: "/images/beef.png" },
+    { id: 6, name: "Pork", image: "/images/pork.png" },
+    { id: 7, name: "Banana", image: "/images/banana.png" },
+    { id: 8, name: "Milk", image: "/images/milk.png" },
+    { id: 9, name: "Cheese", image: "/images/cheese.png" },
+    { id: 10, name: "Chocolate", image: "/images/chocolate.png" },
+    { id: 11, name: "Salmon", image: "/images/salmon.png" },
+    { id: 12, name: "Shrimp", image: "/images/shrimp.png" },
+    { id: 13, name: "Strawberries", image: "/images/strawberry.png" },
+    { id: 14, name: "Grapes", image: "/images/grapes.png" },
+    { id: 15, name: "Potato", image: "/images/potato.png" },
+    { id: 16, name: "Tomato", image: "/images/tomato.png" },
+    { id: 17, name: "Peanut Butter", image: "/images/peanut-butter.png" },
+    { id: 18, name: "Bread", image: "/images/bread.png" },
+    { id: 19, name: "Brocolli", image: "/images/brocolli.png" },
+    { id: 20, name: "Carrot", image: "/images/carrot.png" },
+    { id: 21, name: "Coconut Milk", image: "/images/coconut-milk.png" },
+    { id: 22, name: "Green Beans", image: "/images/green-beans.png" },
+    { id: 23, name: "Spinach", image: "/images/spinach.png" },
+    { id: 24, name: "Lettuce", image: "/images/lettuce.png" },
+    { id: 25, name: "Pineapple", image: "/images/pineapple.png" },
+    { id: 26, name: "Cucumber", image: "/images/cucumber.png" },
+    { id: 27, name: "Sweet Potato", image: "/images/sweet-potato.png" },
+    { id: 28, name: "Corn", image: "/images/corn.png" },
+    { id: 29, name: "Eggplant", image: "/images/eggplant.png" },
+    { id: 30, name: "Squash", image: "/images/squash.png" },
+    { id: 31, name: "Kangkong", image: "/images/kangkong.png" },
+    { id: 32, name: "Tofu", image: "/images/tofu.png" },
+  ];
+
+  const meals = [
+    { name: 'Breakfast', image: 'meals/breakfast.png' },
+    { name: 'Lunch', image: 'meals/lunch.png' },
+    { name: 'Dinner', image: 'meals/dinner.png' },
+    { name: 'Snacks', image: 'meals/snacks.png' },
+    { name: 'Desserts', image: 'meals/desserts.png' }
+  ];
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -54,62 +95,20 @@ const SearchScreen = () => {
       <section className="px-4 py-6">
         <h2 className="text-xl font-semibold text-orange-600">By Ingredients</h2>
         <div className="flex space-x-2 overflow-x-auto py-4 no-scrollbar">
-          <div 
-            className="flex flex-col items-center min-w-[80px] cursor-pointer"
-            onClick={() => handleCategoryClick('Egg', 'ingredient')}
-          >
-            <img src="src/assets/images/egg.png" alt="Egg" className="w-14 h-14 object-cover rounded-full" />
-            <label className="text-[#463C33] text-sm">Egg</label>
-          </div>
-          <div 
-            className="flex flex-col items-center min-w-[80px] cursor-pointer"
-            onClick={() => handleCategoryClick('Chicken', 'ingredient')}
-          >
-            <img src="src/assets/images/chicken.png" alt="Chicken" className="w-14 h-14 object-cover rounded-full" />
-            <label className="text-[#463C33] text-sm">Chicken</label>
-          </div>
-          <div 
-            className="flex flex-col items-center min-w-[80px] cursor-pointer"
-            onClick={() => handleCategoryClick('Pasta', 'ingredient')}
-          >
-            <img src="src/assets/images/pasta.png" alt="Pasta" className="w-14 h-14 object-cover rounded-full" />
-            <label className="text-[#463C33] text-sm">Pasta</label>
-          </div>
-          <div 
-            className="flex flex-col items-center min-w-[80px] cursor-pointer"
-            onClick={() => handleCategoryClick('Egg', 'ingredient')}
-          >
-            <img src="src/assets/images/egg.png" alt="Egg" className="w-14 h-14 object-cover rounded-full" />
-            <label className="text-[#463C33] text-sm">Egg</label>
-          </div>
-          <div 
-            className="flex flex-col items-center min-w-[80px] cursor-pointer"
-            onClick={() => handleCategoryClick('Chicken', 'ingredient')}
-          >
-            <img src="src/assets/images/chicken.png" alt="Chicken" className="w-14 h-14 object-cover rounded-full" />
-            <label className="text-[#463C33] text-sm">Chicken</label>
-          </div>
-          <div 
-            className="flex flex-col items-center min-w-[80px] cursor-pointer"
-            onClick={() => handleCategoryClick('Pasta', 'ingredient')}
-          >
-            <img src="src/assets/images/pasta.png" alt="Pasta" className="w-14 h-14 object-cover rounded-full" />
-            <label className="text-[#463C33] text-sm">Pasta</label>
-          </div>
-          <div 
-            className="flex flex-col items-center min-w-[80px] cursor-pointer"
-            onClick={() => handleCategoryClick('Egg', 'ingredient')}
-          >
-            <img src="src/assets/images/egg.png" alt="Egg" className="w-14 h-14 object-cover rounded-full" />
-            <label className="text-[#463C33] text-sm">Egg</label>
-          </div>
-          <div 
-            className="flex flex-col items-center min-w-[80px] cursor-pointer"
-            onClick={() => handleCategoryClick('Chicken', 'ingredient')}
-          >
-            <img src="src/assets/images/chicken.png" alt="Chicken" className="w-14 h-14 object-cover rounded-full" />
-            <label className="text-[#463C33] text-sm">Chicken</label>
-          </div>
+          {ingredients.map((ingredient) => (
+            <div 
+              key={ingredient.name}
+              className="flex flex-col items-center min-w-[80px] cursor-pointer"
+              onClick={() => handleCategoryClick(ingredient.name, 'ingredient')}
+            >
+              <img 
+                src={`${import.meta.env.VITE_PROD_BASE_URL}/${ingredient.image}`} 
+                alt={ingredient.name} 
+                className="w-14 h-14 object-cover rounded-full"
+              />
+              <label className="text-[#463C33] text-sm">{ingredient.name}</label>
+            </div>
+          ))}
         </div>
         <div className="flex justify-center mt-4">
           <button 
@@ -125,59 +124,35 @@ const SearchScreen = () => {
       <section className="px-4 py-6 pt-0 pb-24">
         <h2 className="text-xl font-semibold mb-4 text-orange-600">By Meal</h2>
         <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col space-y-0">
-            <div 
-              onClick={() => handleCategoryClick('Breakfast', 'category')} 
-              className="cursor-pointer"
-            >
-              <img
-                src="src/assets/images/breakfast.png"
-                alt="Breakfast"
-                className="w-full h-[85%] object-cover rounded-xl"
-              />
-            </div>
-            <div 
-              onClick={() => handleCategoryClick('Lunch', 'category')}
-              className="cursor-pointer"
-            >
-              <img
-                src="src/assets/images/lunch.png"
-                alt="Lunch"
-                className="w-full h-[85%] object-cover rounded-xl"
-              />
-            </div>
-            <div 
-              onClick={() => handleCategoryClick('Dinner', 'category')}
-              className="cursor-pointer"
-            >
-              <img
-                src="src/assets/images/dinner.png"
-                alt="Dinner"
-                className="w-full h-[85%] object-cover rounded-xl"
-              />
-            </div>
+          <div className="flex flex-col space-y-3">
+            {meals.slice(0, 3).map((meal) => (
+              <div 
+                key={meal.name}
+                onClick={() => handleCategoryClick(meal.name, 'category')} 
+                className="cursor-pointer h-32"
+              >
+                <img
+                  src={`${import.meta.env.VITE_PROD_BASE_URL}/${meal.image}`}
+                  alt={meal.name}
+                  className="w-full h-full object-cover rounded-xl"
+                />
+              </div>
+            ))}
           </div>
-          <div className="flex flex-col space-y-0">
-            <div 
-              onClick={() => handleCategoryClick('Snacks', 'category')}
-              className="cursor-pointer"
-            >
-              <img
-                src="src/assets/images/snacks.png"
-                alt="Snacks"
-                className="w-full h-[85%] object-cover rounded-xl"
-              />
-            </div>
-            <div 
-              onClick={() => handleCategoryClick('Desserts', 'category')}
-              className="cursor-pointer"
-            >
-              <img
-                src="src/assets/images/desserts.png"
-                alt="Desserts"
-                className="w-full h-[85%] object-cover rounded-xl"
-              />
-            </div>
+          <div className="flex flex-col space-y-3">
+            {meals.slice(3).map((meal) => (
+              <div 
+                key={meal.name}
+                onClick={() => handleCategoryClick(meal.name, 'category')}
+                className="cursor-pointer h-32"
+              >
+                <img
+                  src={`${import.meta.env.VITE_PROD_BASE_URL}/${meal.image}`}
+                  alt={meal.name}
+                  className="w-full h-full object-cover rounded-xl"
+                />
+              </div>
+            ))}
           </div>
         </div>
       </section>
