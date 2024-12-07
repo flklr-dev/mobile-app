@@ -120,37 +120,47 @@ const SearchScreen = () => {
         </div>
       </section>
 
-      {/* By Meal Section */}
+      {/* By Meal Section - Updated styling */}
       <section className="px-4 py-6 pt-0 pb-24">
         <h2 className="text-xl font-semibold mb-4 text-orange-600">By Meal</h2>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col space-y-3">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-4">
             {meals.slice(0, 3).map((meal) => (
               <div 
                 key={meal.name}
                 onClick={() => handleCategoryClick(meal.name, 'category')} 
-                className="cursor-pointer h-32"
+                className="relative cursor-pointer h-[100px] rounded-2xl overflow-hidden bg-[#463C33]"
               >
                 <img
                   src={meal.image}
                   alt={meal.name}
-                  className="w-full h-full object-cover rounded-xl"
+                  className="w-full h-full object-cover"
                 />
+                <div className="absolute inset-0 bg-black/20">
+                  <span className="absolute top-3 left-3 text-white text-xl font-bold">
+                    {meal.name}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
-          <div className="flex flex-col space-y-3">
+          <div className="flex flex-col gap-4">
             {meals.slice(3).map((meal) => (
               <div 
                 key={meal.name}
                 onClick={() => handleCategoryClick(meal.name, 'category')}
-                className="cursor-pointer h-32"
+                className="relative cursor-pointer h-[100px] rounded-2xl overflow-hidden bg-[#463C33]"
               >
                 <img
                   src={meal.image}
                   alt={meal.name}
-                  className="w-full h-full object-cover rounded-xl"
+                  className="w-full h-full object-cover"
                 />
+                <div className="absolute inset-0 bg-black/20">
+                  <span className="absolute top-3 left-3 text-white text-xl font-bold">
+                    {meal.name}
+                  </span>
+                </div>
               </div>
             ))}
           </div>

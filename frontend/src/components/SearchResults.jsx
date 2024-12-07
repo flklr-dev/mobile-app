@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaSearch, FaChevronLeft, FaHeart, FaRegHeart } from 'react-icons/fa';
-import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
+import api from '../config/axios';
 
 const SearchResults = () => {
   const location = useLocation();
@@ -13,24 +13,19 @@ const SearchResults = () => {
   const [recipes, setRecipes] = useState([]);
   const [filteredRecipes, setFilteredRecipes] = useState([]);
   const [likedRecipes, setLikedRecipes] = useState(new Set());
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchRecipesAndUserData = async () => {
       try {
-        // Get user's liked recipes first
-        const userResponse = await axios.get("http://localhost:5000/auth/profile", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        });
-        
-        // Initialize liked recipes Set with user's liked recipes
+        setLoading(true);
+        // Get user's liked recipes
+        const userResponse = await api.get("/auth/profile");
         const likedIds = new Set(userResponse.data.likedRecipes.map(recipe => recipe._id));
         setLikedRecipes(likedIds);
 
-        // Then fetch all recipes
-        const recipesResponse = await axios.get("http://localhost:5000/recipes", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        });
-
+        // Fetch all recipes
+        const recipesResponse = await api.get("/recipes");
         const recipesWithUserData = recipesResponse.data.map(recipe => ({
           ...recipe,
           user: {
@@ -41,10 +36,14 @@ const SearchResults = () => {
 
         setRecipes(recipesWithUserData);
         filterRecipes(recipesWithUserData, searchQuery, searchType);
-
       } catch (error) {
         console.error("Error fetching data:", error);
-        toast.error("Failed to load recipes");
+        toast.error("Failed to load recipes", {
+          position: "top-center",
+          autoClose: 2000
+        });
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -61,7 +60,7 @@ const SearchResults = () => {
     
     const filtered = recipeList.filter(recipe => {
       const titleMatch = recipe.title.toLowerCase().includes(query.toLowerCase());
-      const categoryMatch = recipe.category.toLowerCase() === query.toLowerCase();
+      const categoryMatch = recipe.category?.toLowerCase() === query.toLowerCase();
       const ingredientMatch = recipe.ingredients.some(ingredient =>
         searchTerms.some(term => ingredient.toLowerCase().includes(term))
       );
@@ -87,13 +86,7 @@ const SearchResults = () => {
 
   const toggleHeart = async (recipeId) => {
     try {
-      const response = await axios.post(
-        `http://localhost:5000/recipes/like/${recipeId}`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
-      );
+      await api.post(`/recipes/like/${recipeId}`);
 
       setLikedRecipes(prev => {
         const newLikedRecipes = new Set(prev);
@@ -111,6 +104,14 @@ const SearchResults = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white pb-24">
       {/* Header */}
@@ -122,7 +123,7 @@ const SearchResults = () => {
         </div>
       </div>
 
-      {/* Search Input Section - Moved below header */}
+      {/* Search Input Section */}
       <div className="mt-20 px-4 py-4">
         <div className="flex items-center p-2 rounded-full border-2 border-orange-500">
           <FaSearch size={20} className="text-orange-500 mr-3" />
@@ -146,7 +147,7 @@ const SearchResults = () => {
                 <div className="relative">
                   <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={`http://localhost:5000/${recipe.image}`}
+                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
                       alt={recipe.title}
                       className="w-full h-28 object-cover"
                     />
@@ -176,10 +177,10 @@ const SearchResults = () => {
                       <div className="flex justify-between items-center mb-1">
                         <div className="flex items-center space-x-1">
                           <FaHeart size={12} className="text-white" />
-                          <span className="text-white text-xs">{recipe.likes}</span>
+                          <span className="text-white text-xs">{recipe.likes?.length || 0}</span>
                         </div>
                         <img
-                          src={`http://localhost:5000/${recipe.user?.profilePicture}`}
+                          src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user?.profilePicture}`}
                           alt={recipe.user?.name}
                           className="w-6 h-6 rounded-full object-cover border-2 border-white cursor-pointer"
                           onClick={(e) => {
@@ -196,7 +197,7 @@ const SearchResults = () => {
                     </div>
                     
                     <button 
-                      className="bg-white text-[#463C33] text-xs font-bold rounded-full py-2 px-4 w-full mt-auto"
+                      className="bg-white text-[#463C33] text-xs font-bold rounded-full py-2 px-4 w-full mt-auto hover:bg-gray-100 transition-colors"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
