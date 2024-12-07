@@ -14,18 +14,21 @@ const SearchResults = () => {
   const [filteredRecipes, setFilteredRecipes] = useState([]);
   const [likedRecipes, setLikedRecipes] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
 
+  // Initial data fetch
   useEffect(() => {
-    const fetchRecipesAndUserData = async () => {
+    const fetchInitialData = async () => {
       try {
         setLoading(true);
-        // Get user's liked recipes
-        const userResponse = await api.get("/auth/profile");
+        const [userResponse, recipesResponse] = await Promise.all([
+          api.get("/auth/profile"),
+          api.get("/recipes")
+        ]);
+
         const likedIds = new Set(userResponse.data.likedRecipes.map(recipe => recipe._id));
         setLikedRecipes(likedIds);
 
-        // Fetch all recipes
-        const recipesResponse = await api.get("/recipes");
         const recipesWithUserData = recipesResponse.data.map(recipe => ({
           ...recipe,
           user: {
@@ -38,17 +41,22 @@ const SearchResults = () => {
         filterRecipes(recipesWithUserData, searchQuery, searchType);
       } catch (error) {
         console.error("Error fetching data:", error);
-        toast.error("Failed to load recipes", {
-          position: "top-center",
-          autoClose: 2000
-        });
+        toast.error("Failed to load recipes");
       } finally {
         setLoading(false);
+        setInitialLoad(false);
       }
     };
 
-    fetchRecipesAndUserData();
-  }, [searchQuery, searchType]);
+    fetchInitialData();
+  }, []); // Only run on mount
+
+  // Handle search filtering
+  useEffect(() => {
+    if (!initialLoad) {
+      filterRecipes(recipes, searchQuery, searchType);
+    }
+  }, [searchQuery, searchType, initialLoad]);
 
   const filterRecipes = (recipeList, query, type) => {
     if (!query) {
@@ -79,9 +87,7 @@ const SearchResults = () => {
   };
 
   const handleSearchChange = (e) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    filterRecipes(recipes, query, searchType);
+    setSearchQuery(e.target.value);
   };
 
   const toggleHeart = async (recipeId) => {
@@ -103,14 +109,6 @@ const SearchResults = () => {
       toast.error("Failed to update favorite status");
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-white pb-24">
@@ -140,7 +138,11 @@ const SearchResults = () => {
 
       {/* Search Results */}
       <div className="px-4">
-        {filteredRecipes.length > 0 ? (
+        {initialLoad ? (
+          <div className="flex items-center justify-center mt-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+          </div>
+        ) : filteredRecipes.length > 0 ? (
           <div className="grid grid-cols-2 gap-3">
             {filteredRecipes.map((recipe) => (
               <div key={recipe._id} className="bg-[#463C33] rounded-lg shadow-md overflow-hidden h-[250px]">
