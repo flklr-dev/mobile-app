@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from '../config/axios';
 import { FaChevronLeft, FaPencilAlt, FaTrash } from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -16,28 +16,16 @@ const MyRecipesScreen = () => {
   useEffect(() => {
     const fetchUserAndRecipes = async () => {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          navigate('/login');
-          return;
-        }
-
-        // Fetch user data using the /auth/user endpoint which includes the user ID
-        const userResponse = await axios.get("http://localhost:5000/auth/user", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
+        // Fetch user data using the api instance
+        const userResponse = await api.get("/auth/user");
         if (!userResponse.data || !userResponse.data._id) {
           throw new Error("User data not found");
         }
 
         setUser(userResponse.data);
 
-        // Now fetch recipes using the user ID
-        const recipesResponse = await axios.get(`http://localhost:5000/recipes/user/${userResponse.data._id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
+        // Fetch recipes using the user ID
+        const recipesResponse = await api.get(`/recipes/user/${userResponse.data._id}`);
         setRecipes(recipesResponse.data);
         setLoading(false);
       } catch (err) {
@@ -68,18 +56,9 @@ const MyRecipesScreen = () => {
 
   const handleDeleteConfirm = async () => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("Authentication error. Please login again.");
-        navigate('/login');
-        return;
-      }
-
       const loadingToast = toast.loading("Deleting recipe...");
 
-      await axios.delete(`http://localhost:5000/recipes/${recipeToDelete._id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.delete(`/recipes/${recipeToDelete._id}`);
 
       toast.dismiss(loadingToast);
       toast.success("Recipe deleted successfully!");
@@ -122,7 +101,7 @@ const MyRecipesScreen = () => {
           <div className="flex flex-col items-center">
             <div className="relative">
               <img
-                src={`http://localhost:5000/${user.profilePicture}`}
+                src={`${import.meta.env.VITE_PROD_BASE_URL}/${user.profilePicture}`}
                 alt="User Avatar"
                 className="w-24 h-24 object-cover rounded-full ring-4 ring-orange-500/20"
               />
@@ -145,7 +124,7 @@ const MyRecipesScreen = () => {
               >
                 <div className="flex items-center flex-1">
                   <img
-                    src={`http://localhost:5000/${recipe.image}`}
+                    src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
                     alt={recipe.title}
                     className="w-20 h-20 object-cover rounded-lg"
                   />
