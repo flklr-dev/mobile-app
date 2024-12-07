@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaChevronLeft} from 'react-icons/fa';
-import axios from 'axios'; 
+import { FaChevronLeft } from 'react-icons/fa';
+import api from '../config/axios';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const AddRecipeScreen = () => {
   const navigate = useNavigate();
@@ -42,69 +44,82 @@ const AddRecipeScreen = () => {
   };
 
   const saveRecipe = async () => {
+    // Validation
     if (!recipeTitle || !description || !category || !servingSize) {
-        alert("All required fields must be filled!");
-        return;
+      toast.error("Please fill in all required fields!", {
+        position: "top-center",
+        autoClose: 2000,
+      });
+      return;
     }
 
     const totalMinutes = parseInt(hours || 0) * 60 + parseInt(minutes || 0);
-
-    // Format time string based on input
-    let timeString = "";
-    if (totalMinutes >= 60) {
-        const formattedHours = Math.floor(totalMinutes / 60);
-        const formattedMinutes = totalMinutes % 60;
-        timeString =
-            formattedMinutes > 0
-                ? `${formattedHours} hr ${formattedMinutes} min`
-                : `${formattedHours} hr`;
-    } else {
-        timeString = `${totalMinutes} min`;
+    if (totalMinutes === 0) {
+      toast.error("Please specify cooking time!", {
+        position: "top-center",
+        autoClose: 2000,
+      });
+      return;
     }
 
-    // Prepare the form data
-    const formData = new FormData();
-    formData.append("title", recipeTitle);
-    formData.append("description", description);
-    formData.append("category", category);
-    formData.append("servingSize", servingSize);
-    formData.append("ingredients", JSON.stringify(ingredients));
-    formData.append("cookingInstructions", JSON.stringify(instructions));
-    formData.append("authorNotes", authorNotes);
-    formData.append("isPublic", isPublic);
-    formData.append("time", timeString); // Save time in the formatted string
-    if (coverImage) formData.append("image", coverImage);
-
-    const token = localStorage.getItem("token");
-    if (!token) {
-        alert("You must be logged in to save a recipe!");
-        return;
+    // Format time string
+    let timeString = "";
+    if (totalMinutes >= 60) {
+      const formattedHours = Math.floor(totalMinutes / 60);
+      const formattedMinutes = totalMinutes % 60;
+      timeString = formattedMinutes > 0
+        ? `${formattedHours} hr ${formattedMinutes} min`
+        : `${formattedHours} hr`;
+    } else {
+      timeString = `${totalMinutes} min`;
     }
 
     try {
-        const response = await axios.post("http://localhost:5000/recipes", formData, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-                "Content-Type": "multipart/form-data",
-            },
-        });
+      const loadingToast = toast.loading("Saving recipe...", {
+        position: "top-center",
+      });
 
-        if (response.status === 201) {
-            alert("Recipe saved successfully!");
-            navigate("/home");
-        }
+      const formData = new FormData();
+      formData.append("title", recipeTitle);
+      formData.append("description", description);
+      formData.append("category", category);
+      formData.append("servingSize", servingSize);
+      formData.append("ingredients", JSON.stringify(ingredients));
+      formData.append("cookingInstructions", JSON.stringify(instructions));
+      formData.append("authorNotes", authorNotes);
+      formData.append("isPublic", isPublic);
+      formData.append("time", timeString);
+      if (coverImage) formData.append("image", coverImage);
+
+      await api.post("/recipes", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      toast.dismiss(loadingToast);
+      toast.success("Recipe saved successfully!", {
+        position: "top-center",
+        autoClose: 2000,
+      });
+
+      setTimeout(() => {
+        navigate("/home");
+      }, 2000);
+
     } catch (error) {
-        console.error("Error saving recipe:", error);
-        if (error.response && error.response.data) {
-            alert(`Failed to save recipe: ${error.response.data.message}`);
-        } else {
-            alert("Failed to save recipe. Please try again.");
-        }
+      console.error("Error saving recipe:", error);
+      toast.error(error.response?.data?.message || "Failed to save recipe", {
+        position: "top-center",
+        autoClose: 2000,
+      });
     }
-};
+  };
 
   return (
     <div className="flex flex-col bg-gray-100 min-h-screen">
+      <ToastContainer />
+      
       {/* Header Section */}
       <div className="fixed top-0 p-4 left-0 w-full z-10 flex items-center bg-orange-500 shadow-lg">
       <button onClick={goBack} className="text-white text-2xl">
@@ -219,19 +234,20 @@ const AddRecipeScreen = () => {
         {/* Ingredients */}
         <label className="text-orange-500 font-bold mb-2">Ingredients</label>
         {ingredients.map((ingredient, index) => (
-          <div key={index} className="flex items-center mb-4">
+          <div key={index} className="flex items-center gap-2 mb-4">
             <input
               type="text"
               placeholder="Enter ingredient"
               value={ingredient}
               onChange={(e) => updateIngredient(e.target.value, index)}
-              className="flex-1 p-3 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="flex-1 min-w-0 p-3 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
             <button
               onClick={() => deleteIngredient(index)}
-              className="ml-2 bg-red-500 text-white p-2 rounded-full"
+              className="shrink-0 w-10 h-10 flex items-center justify-center bg-red-500 text-white rounded-full hover:bg-red-600"
+              aria-label="Delete ingredient"
             >
-              Delete
+              ×
             </button>
           </div>
         ))}
@@ -243,23 +259,22 @@ const AddRecipeScreen = () => {
         </button>
 
         {/* Cooking Instructions */}
-        <label className="text-orange-500 font-bold mb-2">
-          Cooking Instructions
-        </label>
+        <label className="text-orange-500 font-bold mb-2">Cooking Instructions</label>
         {instructions.map((instruction, index) => (
-          <div key={index} className="flex items-center mb-4">
+          <div key={index} className="flex items-center gap-2 mb-4">
             <input
               type="text"
               placeholder="Enter instruction"
               value={instruction}
               onChange={(e) => updateInstruction(e.target.value, index)}
-              className="flex-1 p-3 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="flex-1 min-w-0 p-3 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
             <button
               onClick={() => deleteInstruction(index)}
-              className="ml-2 bg-red-500 text-white p-2 rounded-full"
+              className="shrink-0 w-10 h-10 flex items-center justify-center bg-red-500 text-white rounded-full hover:bg-red-600"
+              aria-label="Delete instruction"
             >
-              Delete
+              ×
             </button>
           </div>
         ))}
