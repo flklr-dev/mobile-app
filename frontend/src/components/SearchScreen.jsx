@@ -102,7 +102,7 @@ const SearchScreen = () => {
               onClick={() => handleCategoryClick(ingredient.name, 'ingredient')}
             >
               <img 
-                src={`${import.meta.env.VITE_PROD_BASE_URL}${ingredient.image}`}
+                src={ingredient.image}
                 alt={ingredient.name} 
                 className="w-14 h-14 object-cover rounded-full"
               />
