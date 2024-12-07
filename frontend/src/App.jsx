@@ -18,10 +18,12 @@ import SearchResults from './components/SearchResults';
 import AllIngredients from './components/AllIngredients';
 import MyRecipesScreen from "./components/MyRecipesScreen";
 import EditRecipeScreen from "./components/EditRecipeScreen";
+import ScrollToTop from './components/ScrollToTop';
 
 const App = () => {
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<LoadingScreen />} />
         <Route path="/register" element={<RegisterScreen />} />
