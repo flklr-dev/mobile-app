@@ -19,7 +19,7 @@ const LoadingScreen = () => {
         navigate('/onboarding1');
       } else {
         // Returning user - check if logged in
-        navigate(token ? '/home' : '/auth');
+        navigate(token ? '/home' : '/login');
       }
     }, 3000);
 
