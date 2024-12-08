@@ -22,6 +22,7 @@ import ScrollToTop from './components/ScrollToTop';
 import Onboarding1 from './components/Onboarding1';
 import Onboarding2 from './components/Onboarding2';
 import Onboarding3 from './components/Onboarding3';
+import AuthChoice from './components/AuthChoice';
 
 const App = () => {
   return (
@@ -50,6 +51,7 @@ const App = () => {
         <Route path="/all-ingredients" element={<AllIngredients />} />
         <Route path="/my-recipes" element={<MyRecipesScreen />} />
         <Route path="/edit-recipe/:recipeId" element={<EditRecipeScreen />} />
+        <Route path="/auth" element={<AuthChoice />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>

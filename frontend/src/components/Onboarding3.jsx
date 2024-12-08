@@ -40,7 +40,7 @@ const Onboarding3 = () => {
       {/* Navigation Section - removed dots, only Get Started button */}
       <div className="mt-auto">
         <button 
-          onClick={() => navigate('/login')} 
+          onClick={() => navigate('/auth')} 
           className="w-full bg-white text-orange-400 px-6 py-3 rounded-full text-sm font-bold"
         >
           Get Started
