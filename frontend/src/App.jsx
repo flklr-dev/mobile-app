@@ -19,12 +19,18 @@ import AllIngredients from './components/AllIngredients';
 import MyRecipesScreen from "./components/MyRecipesScreen";
 import EditRecipeScreen from "./components/EditRecipeScreen";
 import ScrollToTop from './components/ScrollToTop';
+import Onboarding1 from './components/Onboarding1';
+import Onboarding2 from './components/Onboarding2';
+import Onboarding3 from './components/Onboarding3';
 
 const App = () => {
   return (
     <Router>
       <ScrollToTop />
       <Routes>
+        <Route path="/onboarding1" element={<Onboarding1 />} />
+        <Route path="/onboarding2" element={<Onboarding2 />} />
+        <Route path="/onboarding3" element={<Onboarding3 />} />
         <Route path="/" element={<LoadingScreen />} />
         <Route path="/register" element={<RegisterScreen />} />
         <Route path="/login" element={<LoginScreen />} />
