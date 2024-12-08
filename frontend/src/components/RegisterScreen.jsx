@@ -10,6 +10,15 @@ const RegisterScreen = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isChecked, setIsChecked] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+
+  // Handle social login attempts
+  const handleSocialLogin = () => {
+    setShowModal(true);
+    setTimeout(() => {
+      setShowModal(false);
+    }, 2000); // Modal will disappear after 2 seconds
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -55,6 +64,15 @@ const RegisterScreen = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen mx-4 bg-white px-4 py-8 md:py-16">
       <ToastContainer />
+      
+      {/* Coming Soon Modal */}
+      {showModal && (
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
+                    bg-black/80 text-white px-6 py-4 rounded-lg z-50 text-center">
+          This feature will be available soon!
+        </div>
+      )}
+
       <div className="w-full max-w-md mb-8">
         <h1 className="text-3xl font-bold text-orange-500 mb-3">
           Create an Account
@@ -126,10 +144,16 @@ const RegisterScreen = () => {
       </div>
 
       <div className="w-full max-w-md flex justify-center gap-6">
-        <button className="flex items-center justify-center p-4 border rounded-lg text-gray-700 hover:bg-gray-100 transition">
+        <button 
+          onClick={handleSocialLogin}
+          className="flex items-center justify-center p-4 border rounded-lg text-gray-700 hover:bg-gray-100 transition"
+        >
           <FaGoogle className="text-red-500" size={24} />
         </button>
-        <button className="flex items-center justify-center p-4 border rounded-lg text-gray-700 hover:bg-gray-100 transition">
+        <button 
+          onClick={handleSocialLogin}
+          className="flex items-center justify-center p-4 border rounded-lg text-gray-700 hover:bg-gray-100 transition"
+        >
           <FaFacebook className="text-blue-500" size={24} />
         </button>
       </div>
