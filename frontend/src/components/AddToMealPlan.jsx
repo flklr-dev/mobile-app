@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaChevronLeft } from 'react-icons/fa';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import api from '../config/axios';
 
 const AddToMealPlan = () => {
@@ -16,6 +14,11 @@ const AddToMealPlan = () => {
     preSelectedCategory ? [preSelectedCategory] : []
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Modal state
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [statusType, setStatusType] = useState('');
 
   // Get week days starting from today
   const getWeekDays = () => {
@@ -50,9 +53,23 @@ const AddToMealPlan = () => {
   const handleSubmit = async () => {
     if (isSubmitting) return;
 
+    // Validate selections
+    if (selectedDays.length === 0) {
+      setStatusMessage('Please select at least one day');
+      setStatusType('error');
+      setShowStatusModal(true);
+      return;
+    }
+
+    if (selectedCategories.length === 0) {
+      setStatusMessage('Please select at least one meal category');
+      setStatusType('error');
+      setShowStatusModal(true);
+      return;
+    }
+
     try {
       setIsSubmitting(true);
-      const loadingToast = toast.loading("Adding to meal plan...");
       
       // Create meal plan entries for each selected day and category combination
       const mealPlanEntries = selectedDays.flatMap(date => 
@@ -67,11 +84,10 @@ const AddToMealPlan = () => {
         mealPlans: mealPlanEntries
       });
 
-      toast.dismiss(loadingToast);
-      toast.success('Added to meal plan successfully!', {
-        position: "top-center",
-        autoClose: 2000
-      });
+      // Success modal
+      setStatusMessage('Added to meal plan successfully!');
+      setStatusType('success');
+      setShowStatusModal(true);
 
       // Navigate back to meal plan after short delay
       setTimeout(() => {
@@ -80,13 +96,73 @@ const AddToMealPlan = () => {
 
     } catch (error) {
       console.error('Error adding to meal plan:', error);
-      toast.error(error.response?.data?.message || 'Failed to add to meal plan', {
-        position: "top-center",
-        autoClose: 3000
-      });
+      
+      // Error modal
+      setStatusMessage(error.response?.data?.message || 'Failed to add to meal plan');
+      setStatusType('error');
+      setShowStatusModal(true);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const StatusModal = () => {
+    if (!showStatusModal) return null;
+
+    const isSuccess = statusType === 'success';
+    const textColor = isSuccess ? 'text-green-800' : 'text-red-800';
+    const iconColor = isSuccess ? 'text-green-600' : 'text-red-600';
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className={`w-[90%] max-w-md p-6 rounded-xl shadow-xl bg-white`}>
+          <div className="flex flex-col items-center space-y-4">
+            {isSuccess ? (
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className={`h-16 w-16 ${iconColor}`} 
+                viewBox="0 0 20 20" 
+                fill="currentColor"
+              >
+                <path 
+                  fillRule="evenodd" 
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" 
+                  clipRule="evenodd" 
+                />
+              </svg>
+            ) : (
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className={`h-16 w-16 ${iconColor}`} 
+                viewBox="0 0 20 20" 
+                fill="currentColor"
+              >
+                <path 
+                  fillRule="evenodd" 
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" 
+                  clipRule="evenodd" 
+                />
+              </svg>
+            )}
+            
+            <p className={`text-center text-lg font-semibold ${textColor}`}>
+              {statusMessage}
+            </p>
+            
+            <button 
+              onClick={() => setShowStatusModal(false)} 
+              className={`px-6 py-2 rounded-lg ${
+                isSuccess 
+                  ? 'bg-green-500 text-white hover:bg-green-600' 
+                  : 'bg-red-500 text-white hover:bg-red-600'
+              }`}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (!recipe) {
@@ -99,7 +175,9 @@ const AddToMealPlan = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <ToastContainer />
+      {/* Status Modal */}
+      <StatusModal />
+
       {/* Header */}
       <div className="fixed top-0 left-0 w-full z-10 bg-orange-500 shadow-md">
         <div className="flex items-center p-4">
@@ -198,4 +276,4 @@ const AddToMealPlan = () => {
   );
 };
 
-export default AddToMealPlan; 
+export default AddToMealPlan;

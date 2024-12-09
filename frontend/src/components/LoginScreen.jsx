@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css"
 import { FaGoogle, FaFacebook } from "react-icons/fa";
 import api from '../config/axios';
 
@@ -18,6 +16,8 @@ const LoginScreen = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [showCodeSentModal, setShowCodeSentModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     // Check localStorage for existing cooldown
@@ -44,6 +44,8 @@ const LoginScreen = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setErrorMessage("");
+    setSuccessMessage("");
 
     try {
       const response = await api.post("/auth/login", {
@@ -67,10 +69,7 @@ const LoginScreen = () => {
         // Update axios default headers
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-        toast.success("Login successful!", {
-          position: "top-center",
-          autoClose: 1000,
-        });
+        setSuccessMessage("Login successful!");
 
         // Use navigate instead of window.location
         setTimeout(() => {
@@ -79,18 +78,16 @@ const LoginScreen = () => {
       }
     } catch (err) {
       console.error("Login error:", err);
-      toast.error(
-        err.response?.data?.message || "Login failed. Please try again.",
-        {
-          position: "top-center",
-          autoClose: 3000,
-        }
+      setErrorMessage(
+        err.response?.data?.message || "Login failed. Please try again."
       );
     }
   };
 
   const handleForgotPassword = async (e) => {
     e.preventDefault();
+    setErrorMessage("");
+    setSuccessMessage("");
     
     const storedEmail = localStorage.getItem('resetEmailCooldown');
     
@@ -98,10 +95,10 @@ const LoginScreen = () => {
       const remainingTime = Math.ceil((900000 - (Date.now() - lastCodeSentTime)) / 1000 / 60);
       
       if (storedEmail === resetEmail) {
-        toast.error(`Please wait ${remainingTime} minutes before requesting another code`);
+        setErrorMessage(`Please wait ${remainingTime} minutes before requesting another code`);
         return;
       } else if (storedEmail) {
-        toast.error(`Another email is in cooldown. Please wait ${remainingTime} minutes`);
+        setErrorMessage(`Another email is in cooldown. Please wait ${remainingTime} minutes`);
         return;
       }
     }
@@ -122,7 +119,7 @@ const LoginScreen = () => {
         setResetStep(2);
       }, 3000);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to send reset code");
+      setErrorMessage(err.response?.data?.message || "Failed to send reset code");
     } finally {
       setIsCodeSending(false);
     }
@@ -130,6 +127,9 @@ const LoginScreen = () => {
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
+    setErrorMessage("");
+    setSuccessMessage("");
+
     try {
       const response = await api.post("/auth/reset-password", {
         email: resetEmail,
@@ -137,6 +137,7 @@ const LoginScreen = () => {
         newPassword
       });
       setShowSuccessModal(true);
+      setSuccessMessage("Password reset successful!");
       
       // Clear cooldown after successful reset
       localStorage.removeItem('resetEmailCooldown');
@@ -150,14 +151,50 @@ const LoginScreen = () => {
         setResetStep(1);
       }, 3000);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to reset password");
+      setErrorMessage(err.response?.data?.message || "Failed to reset password");
     }
+  };
+
+  const closeErrorModal = () => {
+    setErrorMessage("");
+  };
+
+  const closeSuccessModal = () => {
+    setSuccessMessage("");
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white py-8 md:py-16">
       <div className="w-full max-w-md px-8">
-        <ToastContainer />
+        {/* Error Modal */}
+        {errorMessage && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
+              <div className="text-center">
+                <h3 className="text-xl font-semibold text-red-600 mb-2">Error</h3>
+                <p className="text-gray-600 mb-4">{errorMessage}</p>
+                <button
+                  onClick={closeErrorModal}
+                  className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success Modal */}
+        {successMessage && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
+              <div className="text-center">
+                <h3 className="text-xl font-semibold text-green-600 mb-2">Success</h3>
+                <p className="text-gray-600">{successMessage}</p>
+              </div>
+            </div>
+          </div>
+        )}
         
         {showModal && (
           <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
@@ -371,6 +408,7 @@ const LoginScreen = () => {
 
         <p className="mt-6 text-gray-700 text-center">
           Don't have an account?{" "}
+
           <button
             type="button"
             className="text-orange-500 font-bold underline"

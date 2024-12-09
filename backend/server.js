@@ -12,7 +12,7 @@ const allowedOrigins = [
   'https://mobile-app-2-s9az.onrender.com', // Your deployed frontend URL
   'http://localhost:5173',                   // Local development URL
   'capacitor://localhost',                   // Add this for mobile app
-  'http://localhost:500'                         // Add this for mobile app
+  'http://localhost:500'                     // Add this for mobile app
 ];
 
 // Updated CORS configuration

@@ -76,6 +76,9 @@ const upload = multer({
 
 // Add a recipe
 router.post("/", authenticateToken, upload.single("image"), async (req, res) => {
+  console.log('Incoming request data:', req.body);
+  console.log('Uploaded file:', req.file);
+
   try {
     console.log('Starting recipe creation...');
     console.log('Request body:', req.body);
@@ -95,7 +98,7 @@ router.post("/", authenticateToken, upload.single("image"), async (req, res) => 
 
     // Validate required fields
     if (!title || !description || !category || !servingSize || !time) {
-      console.log('Missing required fields');
+      console.log('Missing required fields:', { title, description, category, servingSize, time });
       return res.status(400).json({ message: "Missing required fields" });
     }
 
@@ -145,7 +148,7 @@ router.post("/", authenticateToken, upload.single("image"), async (req, res) => 
 
     // Save the recipe
     await recipe.save();
-    console.log('Recipe saved successfully');
+    console.log('Recipe saved successfully:', recipe);
 
     res.status(201).json({ 
       message: "Recipe created successfully",
