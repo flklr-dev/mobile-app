@@ -18,13 +18,18 @@ const EditProfileScreen = () => {
     const fetchUserProfile = async () => {
       try {
         const { data } = await api.get("/auth/profile");
-
+        
         setUserData({
           name: data.name,
           aboutMe: data.aboutMe || "",
           profilePicture: null,
         });
-        setImagePreview(`${import.meta.env.VITE_PROD_BASE_URL}/${data.profilePicture}`);
+
+        if (data.profilePicture) {
+          const timestamp = Date.now();
+          const baseUrl = import.meta.env.VITE_PROD_BASE_URL || '';
+          setImagePreview(`${baseUrl}/${data.profilePicture}?t=${timestamp}`);
+        }
       } catch (error) {
         console.error(error);
         toast.error("Failed to fetch profile details");
@@ -62,16 +67,22 @@ const EditProfileScreen = () => {
     try {
       const formData = new FormData();
       formData.append("name", userData.name);
-      formData.append("aboutMe", userData.aboutMe);
+      formData.append("aboutMe", userData.aboutMe || '');
+      
       if (userData.profilePicture) {
         formData.append("profilePicture", userData.profilePicture);
       }
 
-      await api.put("/auth/update-profile", formData, {
+      const { data } = await api.put("/auth/update-profile", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
+
+      const timestamp = Date.now();
+      const baseUrl = import.meta.env.VITE_PROD_BASE_URL || '';
+      const profilePicture = data.profilePicture ? 
+        `${baseUrl}/${data.profilePicture}?t=${timestamp}` : null;
 
       toast.success("Profile updated successfully!", {
         position: "top-center",

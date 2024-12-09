@@ -331,23 +331,25 @@ router.put('/update-profile', authenticateToken, upload.single('profilePicture')
     };
 
     if (req.file) {
-      updates.profilePicture = req.file.path.replace(/\\/g, '/');
+      updates.profilePicture = req.file.filename; // Store only the filename
+      console.log(`Profile picture saved: ${req.file.path}`); // Debugging: Log the file path
+    } else {
+      console.log('No profile picture uploaded.'); // Debugging: Log if no file was uploaded
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.user.userId,
-      updates,
-      { new: true }
-    );
+    const user = await User.findByIdAndUpdate(req.user.userId, updates, { new: true });
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json(user);
+    res.json({
+      ...user.toObject(),
+      profilePicture: `${req.protocol}://${req.get('host')}/uploads/${user.profilePicture}`
+    });
   } catch (error) {
     console.error('Error updating profile:', error);
-    res.status(500).json({ message: 'Error updating profile', error: error.message });
+    res.status(500).json({ message: 'Error updating profile' });
   }
 });
 
