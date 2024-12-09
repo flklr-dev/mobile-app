@@ -506,4 +506,54 @@ router.post('/forgot-password', async (req, res) => {
   // ... rest of your forgot-password code
 });
 
+// Add this route to get top users based on recipe likes
+router.get("/top-users", async (req, res) => {
+  try {
+    const users = await User.aggregate([
+      // Lookup to get all recipes for each user
+      {
+        $lookup: {
+          from: "recipes",
+          localField: "_id",
+          foreignField: "user",
+          as: "recipes"
+        }
+      },
+      // Add total likes field
+      {
+        $addFields: {
+          totalLikes: {
+            $sum: "$recipes.likes"
+          }
+        }
+      },
+      // Sort by total likes
+      {
+        $sort: {
+          totalLikes: -1
+        }
+      },
+      // Limit to top 10
+      {
+        $limit: 10
+      },
+      // Project only needed fields
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          profilePicture: 1,
+          totalLikes: 1,
+          recipeCount: { $size: "$recipes" }
+        }
+      }
+    ]);
+
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching top users:', error);
+    res.status(500).json({ message: "Error fetching top users" });
+  }
+});
+
 module.exports = router;

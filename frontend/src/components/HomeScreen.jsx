@@ -24,6 +24,7 @@ const HomeScreen = () => {
 
   const [trendingRecipes, setTrendingRecipes] = useState([]);  
   const [heartStates, setHeartStates] = useState({});
+  const [topUsers, setTopUsers] = useState([]);
 
   // Fetch user's liked recipes
   const fetchUserLikedRecipes = async () => {
@@ -293,6 +294,19 @@ const HomeScreen = () => {
       }
     });
   };
+
+  useEffect(() => {
+    const fetchTopUsers = async () => {
+      try {
+        const response = await api.get('/auth/top-users');
+        setTopUsers(response.data);
+      } catch (error) {
+        console.error('Error fetching top users:', error);
+      }
+    };
+
+    fetchTopUsers();
+  }, []);
 
   return (
     <div className="flex flex-col bg-white w-full pb-24">
@@ -780,58 +794,37 @@ const HomeScreen = () => {
           </div>
         </div>
 
-      {/* Quick Links For You */}
+      {/* Best Recipes From */}
       <div className="mt-6 px-4">
-        <h2 className="text-2xl font-extrabold text-orange-500 mb-4">Quick Links For You</h2>
+        <h2 className="text-2xl font-extrabold text-orange-500 mb-4">Best Recipes From</h2>
         <div className="flex space-x-4 overflow-x-auto scroll-smooth no-scrollbar">
-          <div className="flex flex-col items-center flex-shrink-0">
-            <img
-              src="src/assets/baking.png"
-              alt="Baking"
-              className="w-40 h-60 object-cover rounded-md"
-            />
-            <span className="text-[#463C33] text-lg font-bold mt-2">Baking</span>
-          </div>
-          <div className="flex flex-col items-center flex-shrink-0">
-            <img
-              src="src/assets/meal-prep.png"
-              alt="Meal Prep"
-              className="w-40 h-60 object-cover rounded-md"
-            />
-            <span className="text-[#463C33] text-lg font-bold mt-2">Meal Prep</span>
-          </div>
-          <div className="flex flex-col items-center flex-shrink-0">
-            <img
-              src="src/assets/holiday-favorites.png"
-              alt="Meal Prep"
-              className="w-40 h-60 object-cover rounded-md"
-            />
-            <span className="text-[#463C33] text-lg font-bold mt-2">Holiday Favorites</span>
-          </div>
-          <div className="flex flex-col items-center flex-shrink-0">
-            <img
-              src="src/assets/baking.png"
-              alt="Baking"
-              className="w-40 h-60 object-cover rounded-md"
-            />
-            <span className="text-[#463C33] text-lg font-bold mt-2">Baking</span>
-          </div>
-          <div className="flex flex-col items-center flex-shrink-0">
-            <img
-              src="src/assets/meal-prep.png"
-              alt="Meal Prep"
-              className="w-40 h-60 object-cover rounded-md"
-            />
-            <span className="text-[#463C33] text-lg font-bold mt-2">Meal Prep</span>
-          </div>
-          <div className="flex flex-col items-center flex-shrink-0">
-            <img
-              src="src/assets/holiday-favorites.png"
-              alt="Meal Prep"
-              className="w-40 h-60 object-cover rounded-md"
-            />
-            <span className="text-[#463C33] text-lg font-bold mt-2">Holiday Favorites</span>
-          </div>
+          {topUsers.map((user) => (
+            <div 
+              key={user._id}
+              className="flex-shrink-0 w-40 cursor-pointer"
+              onClick={() => navigate(`/user/${user._id}`)}
+            >
+              <div className="relative w-40 h-48 rounded-lg overflow-hidden bg-[#463C33]">
+                <img
+                  src={`${import.meta.env.VITE_PROD_BASE_URL}/${user.profilePicture}`}
+                  alt={user.name}
+                  className="w-full h-32 object-cover"
+                />
+                <div className="absolute inset-x-0 bottom-0 p-3">
+                  <h3 className="text-white font-bold text-sm mb-1 line-clamp-1">
+                    {user.name}
+                  </h3>
+                  <div className="flex items-center justify-between text-white text-xs">
+                    <span>{user.recipeCount} Recipes</span>
+                    <div className="flex items-center space-x-1">
+                      <FaHeart size={12} />
+                      <span>{user.totalLikes}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
