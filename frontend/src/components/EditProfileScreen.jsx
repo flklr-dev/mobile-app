@@ -13,21 +13,31 @@ const EditProfileScreen = () => {
     profilePicture: null,
   });
   const [imagePreview, setImagePreview] = useState(null);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [statusType, setStatusType] = useState("");
+  const [showStatusModal, setShowStatusModal] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
         const { data } = await api.get("/auth/profile");
-
+        
         setUserData({
           name: data.name,
           aboutMe: data.aboutMe || "",
           profilePicture: null,
         });
-        setImagePreview(`${import.meta.env.VITE_PROD_BASE_URL}/${data.profilePicture}`);
+
+        const imageUrl = data.profilePicture?.startsWith('http') 
+          ? data.profilePicture 
+          : `${import.meta.env.VITE_PROD_BASE_URL}/${data.profilePicture}`;
+        
+        setImagePreview(imageUrl);
       } catch (error) {
         console.error(error);
-        toast.error("Failed to fetch profile details");
+        setStatusMessage("Failed to fetch profile details");
+        setStatusType('error');
+        setShowStatusModal(true);
         if (error.response?.status === 401) {
           navigate('/login');
         }
@@ -67,34 +77,24 @@ const EditProfileScreen = () => {
         formData.append("profilePicture", userData.profilePicture);
       }
 
-      await api.put("/auth/update-profile", formData, {
+      const response = await api.put("/auth/update-profile", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-      toast.success("Profile updated successfully!", {
-        position: "top-center",
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      setStatusType('success');
+      setStatusMessage("Profile updated successfully!");
+      setShowStatusModal(true);
 
       setTimeout(() => {
         navigate("/profile");
       }, 2000);
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error(error.response?.data?.message || "Failed to update profile", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      setStatusType('error');
+      setStatusMessage(error.response?.data?.message || "Failed to update profile");
+      setShowStatusModal(true);
     }
   };
 
