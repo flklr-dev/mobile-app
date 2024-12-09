@@ -25,45 +25,53 @@ const HomeScreen = () => {
   const [trendingRecipes, setTrendingRecipes] = useState([]);  
   const [heartStates, setHeartStates] = useState({});
 
-  // Define fetchRecipes function
-  const fetchRecipes = async (category) => {
-    try {
-      const response = await api.get(`/recipes/category/${category}`);
-      const recipesWithLikeState = response.data.map(recipe => ({
-        ...recipe,
-        isLiked: heartStates[recipe._id] || false
-      }));
-      return recipesWithLikeState;
-    } catch (error) {
-      console.error(`Error fetching ${category} recipes:`, error);
-      return [];
-    }
-  };
-
-  // Add this function to fetch user's liked recipes
+  // Fetch user's liked recipes
   const fetchUserLikedRecipes = async () => {
     try {
+      console.log('Fetching user liked recipes...');
       const response = await api.get("/auth/user");
       if (response.data && response.data.likedRecipes) {
         const initialHeartStates = {};
         response.data.likedRecipes.forEach(recipe => {
           initialHeartStates[recipe._id] = true;
         });
+        console.log('Initial heart states:', initialHeartStates);
         setHeartStates(initialHeartStates);
+        return initialHeartStates; // Return the heart states
       }
     } catch (error) {
       console.error("Error fetching liked recipes:", error);
+      return {};
     }
   };
 
   useEffect(() => {
     const initializeRecipes = async () => {
       try {
-        // First fetch liked recipes to initialize heart states
-        await fetchUserLikedRecipes();
+        // First fetch liked recipes and get the heart states
+        const likedStates = await fetchUserLikedRecipes();
+        console.log('Liked states fetched:', likedStates);
 
+        // Fetch trending recipes with liked states
+        const trendingResponse = await api.get("/recipes/trending");
+        const trendingWithLikes = trendingResponse.data.map(recipe => ({
+          ...recipe,
+          isLiked: likedStates[recipe._id] || false
+        }));
+        console.log('Trending recipes with likes:', trendingWithLikes);
+        setTrendingRecipes(trendingWithLikes);
+
+        // Fetch other categories
         const categories = ["breakfast", "lunch", "dinner", "snacks", "desserts"];
-        const results = await Promise.all(categories.map(fetchRecipes));
+        const results = await Promise.all(
+          categories.map(async (category) => {
+            const response = await api.get(`/recipes/category/${category}`);
+            return response.data.map(recipe => ({
+              ...recipe,
+              isLiked: likedStates[recipe._id] || false
+            }));
+          })
+        );
 
         setRecipes({
           breakfast: results[0],
@@ -72,6 +80,7 @@ const HomeScreen = () => {
           snacks: results[3],
           desserts: results[4],
         });
+
       } catch (error) {
         console.error('Error initializing recipes:', error);
       }
@@ -80,10 +89,10 @@ const HomeScreen = () => {
     initializeRecipes();
   }, []);
 
-  // Update the toggleHeart function
+  // Update toggleHeart to handle both regular and trending recipes
   const toggleHeart = async (recipeId) => {
     try {
-      console.log('Attempting to toggle like for recipe:', recipeId);
+      console.log('Toggling heart for recipe:', recipeId);
       
       // Optimistically update UI
       setHeartStates(prev => ({
@@ -94,24 +103,24 @@ const HomeScreen = () => {
       const response = await api.post(`/recipes/like/${recipeId}`);
       console.log('Like response:', response.data);
 
-      // Update regular recipes state
+      // Update regular recipes
       setRecipes(prevRecipes => {
         const updatedRecipes = { ...prevRecipes };
         Object.keys(updatedRecipes).forEach(category => {
           updatedRecipes[category] = updatedRecipes[category].map(recipe =>
             recipe._id === recipeId
-              ? { ...recipe, likes: response.data.likes }
+              ? { ...recipe, likes: response.data.likes, isLiked: response.data.isLiked }
               : recipe
           );
         });
         return updatedRecipes;
       });
 
-      // Update trending recipes state
+      // Update trending recipes
       setTrendingRecipes(prevTrending => 
         prevTrending.map(recipe =>
           recipe._id === recipeId
-            ? { ...recipe, likes: response.data.likes }
+            ? { ...recipe, likes: response.data.likes, isLiked: response.data.isLiked }
             : recipe
         )
       );
@@ -123,7 +132,7 @@ const HomeScreen = () => {
         { position: "top-center", autoClose: 1000 }
       );
     } catch (error) {
-      // Revert the optimistic update on error
+      // Revert the optimistic update
       setHeartStates(prev => ({
         ...prev,
         [recipeId]: !prev[recipeId]
@@ -511,7 +520,7 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                          src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
+                        src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
                         onClick={(e) => {

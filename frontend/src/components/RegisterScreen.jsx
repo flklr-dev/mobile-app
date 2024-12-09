@@ -77,7 +77,7 @@ const RegisterScreen = () => {
         <h1 className="text-3xl font-bold text-orange-500 mb-3">
           Create an Account
         </h1>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-600">
           Get started with PantryPals – your cooking community.
         </p>
       </div>
