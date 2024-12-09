@@ -50,45 +50,38 @@ const AddRecipeScreen = () => {
   const saveRecipe = async () => {
     // Validation
     if (!recipeTitle || !description || !category || !servingSize) {
-      setErrorMessage("Please fill in all required fields!");
-      setShowErrorModal(true);
+      toast.error("Please fill in all required fields!", {
+        position: "top-center",
+        autoClose: 2000,
+      });
       return;
     }
 
     const totalMinutes = parseInt(hours || 0) * 60 + parseInt(minutes || 0);
     if (totalMinutes === 0) {
-      setErrorMessage("Please specify cooking time!");
-      setShowErrorModal(true);
+      toast.error("Please specify cooking time!", {
+        position: "top-center",
+        autoClose: 2000,
+      });
       return;
     }
 
-    // Check if ingredients and instructions are not empty
-    if (ingredients.length === 0 || ingredients.every(ing => ing.trim() === '')) {
-      setErrorMessage("Please add at least one ingredient!");
-      setShowErrorModal(true);
-      return;
-    }
-
-    if (instructions.length === 0 || instructions.every(inst => inst.trim() === '')) {
-      setErrorMessage("Please add at least one instruction!");
-      setShowErrorModal(true);
-      return;
+    // Format time string
+    let timeString = "";
+    if (totalMinutes >= 60) {
+      const formattedHours = Math.floor(totalMinutes / 60);
+      const formattedMinutes = totalMinutes % 60;
+      timeString = formattedMinutes > 0
+        ? `${formattedHours} hr ${formattedMinutes} min`
+        : `${formattedHours} hr`;
+    } else {
+      timeString = `${totalMinutes} min`;
     }
 
     try {
-      setIsSubmitting(true);
-
-      // Format time string
-      let timeString = "";
-      if (totalMinutes >= 60) {
-        const formattedHours = Math.floor(totalMinutes / 60);
-        const formattedMinutes = totalMinutes % 60;
-        timeString = formattedMinutes > 0
-          ? `${formattedHours} hr ${formattedMinutes} min`
-          : `${formattedHours} hr`;
-      } else {
-        timeString = `${totalMinutes} min`;
-      }
+      const loadingToast = toast.loading("Saving recipe...", {
+        position: "top-center",
+      });
 
       // Filter out empty ingredients and instructions
       const filteredIngredients = ingredients.filter(ing => ing.trim() !== '');
@@ -106,26 +99,39 @@ const AddRecipeScreen = () => {
       formData.append("time", timeString);
       if (coverImage) formData.append("image", coverImage);
 
+      console.log('Sending recipe data:', {
+        title: recipeTitle,
+        category,
+        servingSize,
+        ingredients: filteredIngredients,
+        instructions: filteredInstructions,
+        time: timeString
+      });
+
       const response = await api.post("/recipes", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-      console.log('Recipe saved successfully:', response.data);
-      setShowSuccessModal(true);
+      console.log('Recipe saved response:', response.data);
 
-      // Navigate after showing success message
+      toast.dismiss(loadingToast);
+      toast.success("Recipe saved successfully!", {
+        position: "top-center",
+        autoClose: 2000,
+      });
+
       setTimeout(() => {
         navigate("/home");
       }, 2000);
 
     } catch (error) {
-      console.error("Error saving recipe:", error);
-      setErrorMessage(error.response?.data?.message || "Failed to save recipe");
-      setShowErrorModal(true);
-    } finally {
-      setIsSubmitting(false);
+      console.error("Error saving recipe:", error.response?.data || error);
+      toast.error(error.response?.data?.message || "Failed to save recipe", {
+        position: "top-center",
+        autoClose: 2000,
+      });
     }
   };
 
