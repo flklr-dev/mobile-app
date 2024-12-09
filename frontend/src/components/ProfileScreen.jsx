@@ -16,16 +16,6 @@ const ProfileScreen = () => {
       try {
         const { data } = await api.get("/auth/profile");
         setUser(data);
-        
-        // Debugging: Log the retrieved user data
-        console.log('User profile data:', data);
-        
-        // Check if the profile picture is present
-        if (data.profilePicture) {
-          console.log('Profile picture URL:', data.profilePicture);
-        } else {
-          console.log('No profile picture found for the user.');
-        }
       } catch (err) {
         setError("Failed to fetch user profile. Please log in again.");
         console.error(err);
@@ -90,12 +80,9 @@ const ProfileScreen = () => {
           <div className="flex flex-col items-center">
             <div className="relative">
               <img
-                src={`${import.meta.env.VITE_PROD_BASE_URL}/uploads/${user.profilePicture}?t=${Date.now()}`}
+                src={`${import.meta.env.VITE_PROD_BASE_URL}/${user.profilePicture}`}
                 alt="User Avatar"
                 className="w-24 h-24 object-cover rounded-full ring-4 ring-orange-500/20"
-                onError={(e) => {
-                  e.target.src = '/images/default-profile.png'; // Fallback image
-                }}
               />
             </div>
             <h2 className="text-2xl font-bold text-gray-800 mt-4">{user.name || "Loading..."}</h2>

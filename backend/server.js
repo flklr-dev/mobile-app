@@ -8,11 +8,14 @@ const app = express();
 
 // Define allowed origins
 const allowedOrigins = [
-  'http://localhost:5173', // Your Vite development server
-  'https://mobile-app-plum-one.vercel.app' // Your production URL
+  'https://mobile-app-plum-one.vercel.app',  // Vercel production URL
+  'https://mobile-app-2-s9az.onrender.com', // Your deployed frontend URL
+  'http://localhost:5173',                   // Local development URL
+  'capacitor://localhost',                   // Add this for mobile app
+  'http://localhost:500'                         // Add this for mobile app
 ];
 
-// CORS configuration
+// Updated CORS configuration
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -43,9 +46,9 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
-// Serve static files from the 'uploads' directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Serve static files
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, { 
@@ -58,12 +61,10 @@ mongoose.connect(process.env.MONGO_URI, {
   process.exit(1);
 });
 
-
 // Import routes
 const authRoutes = require('./routes/auth');
 const recipeRoutes = require("./routes/recipes");
 const notificationRoutes = require("./routes/notifications");
-
 
 // Use routes
 app.use('/auth', authRoutes);
