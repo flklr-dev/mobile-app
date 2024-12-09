@@ -19,6 +19,10 @@ const AddRecipeScreen = () => {
   const [coverImage, setCoverImage] = useState(null);
   const [hours, setHours] = useState(""); // New state for hours
   const [minutes, setMinutes] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleImagePick = (e) => {
     const file = e.target.files[0];  // Get the first selected file
@@ -46,19 +50,15 @@ const AddRecipeScreen = () => {
   const saveRecipe = async () => {
     // Validation
     if (!recipeTitle || !description || !category || !servingSize) {
-      toast.error("Please fill in all required fields!", {
-        position: "top-center",
-        autoClose: 2000,
-      });
+      setErrorMessage("Please fill in all required fields!");
+      setShowErrorModal(true);
       return;
     }
 
     const totalMinutes = parseInt(hours || 0) * 60 + parseInt(minutes || 0);
     if (totalMinutes === 0) {
-      toast.error("Please specify cooking time!", {
-        position: "top-center",
-        autoClose: 2000,
-      });
+      setErrorMessage("Please specify cooking time!");
+      setShowErrorModal(true);
       return;
     }
 
@@ -75,13 +75,7 @@ const AddRecipeScreen = () => {
     }
 
     try {
-      const loadingToast = toast.loading("Saving recipe...", {
-        position: "top-center",
-      });
-
-      // Filter out empty ingredients and instructions
-      const filteredIngredients = ingredients.filter(ing => ing.trim() !== '');
-      const filteredInstructions = instructions.filter(inst => inst.trim() !== '');
+      setIsSubmitting(true);
 
       const formData = new FormData();
       formData.append("title", recipeTitle.trim());
@@ -111,23 +105,19 @@ const AddRecipeScreen = () => {
       });
 
       console.log('Recipe saved response:', response.data);
+      setShowSuccessModal(true);
 
-      toast.dismiss(loadingToast);
-      toast.success("Recipe saved successfully!", {
-        position: "top-center",
-        autoClose: 2000,
-      });
-
+      // Navigate after showing success message
       setTimeout(() => {
         navigate("/home");
       }, 2000);
 
     } catch (error) {
-      console.error("Error saving recipe:", error.response?.data || error);
-      toast.error(error.response?.data?.message || "Failed to save recipe", {
-        position: "top-center",
-        autoClose: 2000,
-      });
+      console.error("Error saving recipe:", error);
+      setErrorMessage(error.response?.data?.message || "Failed to save recipe");
+      setShowErrorModal(true);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -338,6 +328,56 @@ const AddRecipeScreen = () => {
           Save Recipe
         </button>
       </div>
+
+      {/* Loading Overlay */}
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-5 rounded-lg flex flex-col items-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500 mb-3"></div>
+            <p className="text-gray-700">Saving recipe...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Recipe Saved Successfully!</h3>
+              <p className="text-gray-600 mb-4">Your recipe has been saved and will be redirected shortly.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {showErrorModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error</h3>
+              <p className="text-gray-600 mb-4">{errorMessage}</p>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
