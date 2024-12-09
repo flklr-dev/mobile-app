@@ -119,57 +119,66 @@ router.get("/", authenticateToken, async (req, res) => {
 // Like/Unlike route
 router.post("/like/:id", authenticateToken, async (req, res) => {
   try {
-    const recipeId = req.params.id;
-    const userId = req.user.userId;
-
-    console.log('Like request:', { recipeId, userId });
-
-    // Find the recipe
-    const recipe = await Recipe.findById(recipeId);
+    // Get recipe with populated user field
+    const recipe = await Recipe.findById(req.params.id)
+      .populate('user', 'name');
     if (!recipe) {
       return res.status(404).json({ message: "Recipe not found" });
     }
 
-    // Find the user
-    const user = await User.findById(userId);
-    if (!user) {
+    // Get current user with required fields
+    const currentUser = await User.findById(req.user.userId)
+      .select('name');
+    if (!currentUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if recipe is already liked
-    const isLiked = user.likedRecipes.includes(recipeId);
+    const isLiked = recipe.likes.includes(req.user.userId);
     
     if (isLiked) {
-      // Unlike: Remove from user's liked recipes
-      user.likedRecipes = user.likedRecipes.filter(id => id.toString() !== recipeId);
-      recipe.likes = Math.max(0, recipe.likes - 1); // Ensure likes don't go below 0
+      // Unlike
+      recipe.likes = recipe.likes.filter(id => id.toString() !== req.user.userId);
     } else {
-      // Like: Add to user's liked recipes
-      user.likedRecipes.push(recipeId);
-      recipe.likes = (recipe.likes || 0) + 1;
+      // Like
+      recipe.likes.push(req.user.userId);
+      
+      // Only create notification if it's not the user's own recipe
+      if (recipe.user._id.toString() !== req.user.userId) {
+        try {
+          const newNotification = new Notification({
+            recipient: recipe.user._id,
+            sender: currentUser._id,
+            recipe: recipe._id,
+            type: 'like',
+            message: `${currentUser.name} liked your recipe "${recipe.title}"`,
+            createdAt: new Date()
+          });
+          
+          console.log('Creating notification:', {
+            recipient: recipe.user._id,
+            sender: currentUser._id,
+            recipeName: recipe.title,
+            senderName: currentUser.name
+          });
+
+          await newNotification.save();
+          console.log('Notification created successfully');
+        } catch (notifError) {
+          console.error('Error creating notification:', notifError);
+          // Continue with the like operation even if notification fails
+        }
+      }
     }
 
-    // Save both user and recipe
-    await Promise.all([
-      user.save(),
-      recipe.save()
-    ]);
-
-    console.log('Updated recipe:', {
-      likes: recipe.likes,
-      isLiked: !isLiked
+    await recipe.save();
+    res.json({ 
+      recipeLikes: recipe.likes.length,
+      message: isLiked ? 'Recipe unliked' : 'Recipe liked'
     });
 
-    res.json({
-      likes: recipe.likes,
-      isLiked: !isLiked
-    });
   } catch (error) {
-    console.error('Like toggle error:', error);
-    res.status(500).json({ 
-      message: "Failed to toggle like status",
-      error: error.message 
-    });
+    console.error("Error in like operation:", error);
+    res.status(500).json({ message: error.message });
   }
 });
 

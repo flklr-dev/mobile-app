@@ -24,55 +24,46 @@ const HomeScreen = () => {
 
   const [trendingRecipes, setTrendingRecipes] = useState([]);  
   const [heartStates, setHeartStates] = useState({});
-  const [topUsers, setTopUsers] = useState([]);
 
-  // Fetch user's liked recipes
+  // Define fetchRecipes function
+  const fetchRecipes = async (category) => {
+    try {
+      const response = await api.get(`/recipes/category/${category}`);
+      const recipesWithLikeState = response.data.map(recipe => ({
+        ...recipe,
+        isLiked: heartStates[recipe._id] || false
+      }));
+      return recipesWithLikeState;
+    } catch (error) {
+      console.error(`Error fetching ${category} recipes:`, error);
+      return [];
+    }
+  };
+
+  // Add this function to fetch user's liked recipes
   const fetchUserLikedRecipes = async () => {
     try {
-      console.log('Fetching user liked recipes...');
       const response = await api.get("/auth/user");
       if (response.data && response.data.likedRecipes) {
         const initialHeartStates = {};
         response.data.likedRecipes.forEach(recipe => {
           initialHeartStates[recipe._id] = true;
         });
-        console.log('Initial heart states:', initialHeartStates);
         setHeartStates(initialHeartStates);
-        return initialHeartStates; // Return the heart states
       }
     } catch (error) {
       console.error("Error fetching liked recipes:", error);
-      return {};
     }
   };
 
   useEffect(() => {
     const initializeRecipes = async () => {
       try {
-        // First fetch liked recipes and get the heart states
-        const likedStates = await fetchUserLikedRecipes();
-        console.log('Liked states fetched:', likedStates);
+        // First fetch liked recipes to initialize heart states
+        await fetchUserLikedRecipes();
 
-        // Fetch trending recipes with liked states
-        const trendingResponse = await api.get("/recipes/trending");
-        const trendingWithLikes = trendingResponse.data.map(recipe => ({
-          ...recipe,
-          isLiked: likedStates[recipe._id] || false
-        }));
-        console.log('Trending recipes with likes:', trendingWithLikes);
-        setTrendingRecipes(trendingWithLikes);
-
-        // Fetch other categories
         const categories = ["breakfast", "lunch", "dinner", "snacks", "desserts"];
-        const results = await Promise.all(
-          categories.map(async (category) => {
-            const response = await api.get(`/recipes/category/${category}`);
-            return response.data.map(recipe => ({
-              ...recipe,
-              isLiked: likedStates[recipe._id] || false
-            }));
-          })
-        );
+        const results = await Promise.all(categories.map(fetchRecipes));
 
         setRecipes({
           breakfast: results[0],
@@ -81,7 +72,6 @@ const HomeScreen = () => {
           snacks: results[3],
           desserts: results[4],
         });
-
       } catch (error) {
         console.error('Error initializing recipes:', error);
       }
@@ -90,42 +80,31 @@ const HomeScreen = () => {
     initializeRecipes();
   }, []);
 
-  // Update toggleHeart to handle both regular and trending recipes
+  // Update the toggleHeart function
   const toggleHeart = async (recipeId) => {
     try {
-      console.log('Toggling heart for recipe:', recipeId);
-      
-      // Optimistically update UI
+      const response = await api.post(`/recipes/like/${recipeId}`);
+
+      // Update heart states
       setHeartStates(prev => ({
         ...prev,
-        [recipeId]: !prev[recipeId]
+        [recipeId]: response.data.isLiked
       }));
 
-      const response = await api.post(`/recipes/like/${recipeId}`);
-      console.log('Like response:', response.data);
-
-      // Update regular recipes
+      // Update recipes state
       setRecipes(prevRecipes => {
         const updatedRecipes = { ...prevRecipes };
         Object.keys(updatedRecipes).forEach(category => {
           updatedRecipes[category] = updatedRecipes[category].map(recipe =>
             recipe._id === recipeId
-              ? { ...recipe, likes: response.data.likes, isLiked: response.data.isLiked }
+              ? { ...recipe, likes: response.data.recipeLikes }
               : recipe
           );
         });
         return updatedRecipes;
       });
 
-      // Update trending recipes
-      setTrendingRecipes(prevTrending => 
-        prevTrending.map(recipe =>
-          recipe._id === recipeId
-            ? { ...recipe, likes: response.data.likes, isLiked: response.data.isLiked }
-            : recipe
-        )
-      );
-
+      // Show success toast
       toast.success(
         response.data.isLiked
           ? "Recipe added to favorites!"
@@ -133,13 +112,7 @@ const HomeScreen = () => {
         { position: "top-center", autoClose: 1000 }
       );
     } catch (error) {
-      // Revert the optimistic update
-      setHeartStates(prev => ({
-        ...prev,
-        [recipeId]: !prev[recipeId]
-      }));
-      
-      console.error("Error toggling like state:", error.response?.data || error.message);
+      console.error("Error toggling like state:", error.message);
       toast.error("Failed to update favorite status");
     }
   };
@@ -294,19 +267,6 @@ const HomeScreen = () => {
       }
     });
   };
-
-  useEffect(() => {
-    const fetchTopUsers = async () => {
-      try {
-        const response = await api.get('/auth/top-users');
-        setTopUsers(response.data);
-      } catch (error) {
-        console.error('Error fetching top users:', error);
-      }
-    };
-
-    fetchTopUsers();
-  }, []);
 
   return (
     <div className="flex flex-col bg-white w-full pb-24">
@@ -534,7 +494,7 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                        src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
+                          src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
                         onClick={(e) => {
@@ -794,37 +754,58 @@ const HomeScreen = () => {
           </div>
         </div>
 
-      {/* Best Recipes From */}
+      {/* Quick Links For You */}
       <div className="mt-6 px-4">
-        <h2 className="text-2xl font-extrabold text-orange-500 mb-4">Best Recipes From</h2>
+        <h2 className="text-2xl font-extrabold text-orange-500 mb-4">Quick Links For You</h2>
         <div className="flex space-x-4 overflow-x-auto scroll-smooth no-scrollbar">
-          {topUsers.map((user) => (
-            <div 
-              key={user._id}
-              className="flex-shrink-0 w-40 cursor-pointer"
-              onClick={() => navigate(`/user/${user._id}`)}
-            >
-              <div className="relative w-40 h-48 rounded-lg overflow-hidden bg-[#463C33]">
-                <img
-                  src={`${import.meta.env.VITE_PROD_BASE_URL}/${user.profilePicture}`}
-                  alt={user.name}
-                  className="w-full h-32 object-cover"
-                />
-                <div className="absolute inset-x-0 bottom-0 p-3">
-                  <h3 className="text-white font-bold text-sm mb-1 line-clamp-1">
-                    {user.name}
-                  </h3>
-                  <div className="flex items-center justify-between text-white text-xs">
-                    <span>{user.recipeCount} Recipes</span>
-                    <div className="flex items-center space-x-1">
-                      <FaHeart size={12} />
-                      <span>{user.totalLikes}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+          <div className="flex flex-col items-center flex-shrink-0">
+            <img
+              src="src/assets/baking.png"
+              alt="Baking"
+              className="w-40 h-60 object-cover rounded-md"
+            />
+            <span className="text-[#463C33] text-lg font-bold mt-2">Baking</span>
+          </div>
+          <div className="flex flex-col items-center flex-shrink-0">
+            <img
+              src="src/assets/meal-prep.png"
+              alt="Meal Prep"
+              className="w-40 h-60 object-cover rounded-md"
+            />
+            <span className="text-[#463C33] text-lg font-bold mt-2">Meal Prep</span>
+          </div>
+          <div className="flex flex-col items-center flex-shrink-0">
+            <img
+              src="src/assets/holiday-favorites.png"
+              alt="Meal Prep"
+              className="w-40 h-60 object-cover rounded-md"
+            />
+            <span className="text-[#463C33] text-lg font-bold mt-2">Holiday Favorites</span>
+          </div>
+          <div className="flex flex-col items-center flex-shrink-0">
+            <img
+              src="src/assets/baking.png"
+              alt="Baking"
+              className="w-40 h-60 object-cover rounded-md"
+            />
+            <span className="text-[#463C33] text-lg font-bold mt-2">Baking</span>
+          </div>
+          <div className="flex flex-col items-center flex-shrink-0">
+            <img
+              src="src/assets/meal-prep.png"
+              alt="Meal Prep"
+              className="w-40 h-60 object-cover rounded-md"
+            />
+            <span className="text-[#463C33] text-lg font-bold mt-2">Meal Prep</span>
+          </div>
+          <div className="flex flex-col items-center flex-shrink-0">
+            <img
+              src="src/assets/holiday-favorites.png"
+              alt="Meal Prep"
+              className="w-40 h-60 object-cover rounded-md"
+            />
+            <span className="text-[#463C33] text-lg font-bold mt-2">Holiday Favorites</span>
+          </div>
         </div>
       </div>
 
