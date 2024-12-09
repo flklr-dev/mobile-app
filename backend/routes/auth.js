@@ -7,21 +7,54 @@ const Recipe = require("../models/Recipe");
 const Notification = require("../models/Notification");
 const crypto = require('crypto');
 const nodemailer = require('nodemailer'); // You'll need to install this: npm install nodemailer
+const AWS = require('aws-sdk');
+const path = require('path');
+const fs = require('fs');
 
 const router = express.Router();
+
+// Configure AWS S3
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION
+});
+
+const s3 = new AWS.S3();
 
 // Configure storage for multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/"); // Save files to the 'uploads' folder
+    const uploadPath = process.env.NODE_ENV === 'production' 
+      ? '/tmp' 
+      : path.join(__dirname, '../uploads');
+    
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`); // Save files with unique names
-  },
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
+  }
 });
 
+const upload = multer({ storage });
 
-const upload = multer({ storage: storage });
+// Upload to S3 function
+const uploadToS3 = async (file) => {
+  const fileContent = fs.readFileSync(file.path);
+  const params = {
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: `profiles/${file.filename}`,
+    Body: fileContent,
+    ContentType: file.mimetype,
+    ACL: 'public-read'
+  };
+
+  return s3.upload(params).promise();
+};
 
 // Register route
 router.post("/register", async (req, res) => {
@@ -325,31 +358,27 @@ router.get('/profile/:userId', authenticateToken, async (req, res) => {
 
 router.put('/update-profile', authenticateToken, upload.single('profilePicture'), async (req, res) => {
   try {
-    const updates = {
-      name: req.body.name,
-      aboutMe: req.body.aboutMe,
-    };
+    const { name, aboutMe } = req.body;
+    let profilePicturePath = undefined;
 
     if (req.file) {
-      updates.profilePicture = req.file.filename; // Store only the filename
-      console.log(`Profile picture saved: ${req.file.path}`); // Debugging: Log the file path
-    } else {
-      console.log('No profile picture uploaded.'); // Debugging: Log if no file was uploaded
+      updates.profilePicture = req.file.path.replace(/\\/g, '/');
     }
 
-    const user = await User.findByIdAndUpdate(req.user.userId, updates, { new: true });
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      updates,
+      { new: true }
+    );
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    res.json({
-      ...user.toObject(),
-      profilePicture: `${req.protocol}://${req.get('host')}/uploads/${user.profilePicture}`
-    });
+    res.json(user);
   } catch (error) {
     console.error('Error updating profile:', error);
-    res.status(500).json({ message: 'Error updating profile' });
+    res.status(500).json({ message: 'Error updating profile', error: error.message });
   }
 });
 

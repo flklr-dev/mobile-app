@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaChevronLeft } from 'react-icons/fa';
 import api from '../config/axios';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 const AddRecipeScreen = () => {
   const navigate = useNavigate();
@@ -19,6 +17,13 @@ const AddRecipeScreen = () => {
   const [coverImage, setCoverImage] = useState(null);
   const [hours, setHours] = useState(""); // New state for hours
   const [minutes, setMinutes] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [statusType, setStatusType] = useState(''); // 'success' or 'error'
 
   const handleImagePick = (e) => {
     const file = e.target.files[0];  // Get the first selected file
@@ -46,62 +51,61 @@ const AddRecipeScreen = () => {
   const saveRecipe = async () => {
     // Validation
     if (!recipeTitle || !description || !category || !servingSize) {
-      toast.error("Please fill in all required fields!", {
-        position: "top-center",
-        autoClose: 2000,
-      });
+      setStatusMessage("Please fill in all required fields!");
+      setStatusType('error');
+      setShowStatusModal(true);
       return;
     }
 
     const totalMinutes = parseInt(hours || 0) * 60 + parseInt(minutes || 0);
     if (totalMinutes === 0) {
-      toast.error("Please specify cooking time!", {
-        position: "top-center",
-        autoClose: 2000,
-      });
+      setStatusMessage("Please specify cooking time!");
+      setStatusType('error');
+      setShowStatusModal(true);
       return;
     }
 
-    // Format time string
-    let timeString = "";
-    if (totalMinutes >= 60) {
-      const formattedHours = Math.floor(totalMinutes / 60);
-      const formattedMinutes = totalMinutes % 60;
-      timeString = formattedMinutes > 0
-        ? `${formattedHours} hr ${formattedMinutes} min`
-        : `${formattedHours} hr`;
-    } else {
-      timeString = `${totalMinutes} min`;
-    }
-
     try {
-      const loadingToast = toast.loading("Saving recipe...", {
-        position: "top-center",
-      });
+      setIsSubmitting(true);
+
+      // Format time string
+      let timeString = "";
+      if (totalMinutes >= 60) {
+        const formattedHours = Math.floor(totalMinutes / 60);
+        const formattedMinutes = totalMinutes % 60;
+        timeString = formattedMinutes > 0
+          ? `${formattedHours} hr ${formattedMinutes} min`
+          : `${formattedHours} hr`;
+      } else {
+        timeString = `${totalMinutes} min`;
+      }
+
+      // Filter out empty ingredients and instructions
+      const filteredIngredients = ingredients.filter(ing => ing.trim() !== '');
+      const filteredInstructions = instructions.filter(inst => inst.trim() !== '');
 
       const formData = new FormData();
-      formData.append("title", recipeTitle);
-      formData.append("description", description);
+      formData.append("title", recipeTitle.trim());
+      formData.append("description", description.trim());
       formData.append("category", category);
       formData.append("servingSize", servingSize);
-      formData.append("ingredients", JSON.stringify(ingredients));
-      formData.append("cookingInstructions", JSON.stringify(instructions));
-      formData.append("authorNotes", authorNotes);
+      formData.append("ingredients", JSON.stringify(filteredIngredients));
+      formData.append("cookingInstructions", JSON.stringify(filteredInstructions));
+      formData.append("authorNotes", authorNotes.trim());
       formData.append("isPublic", isPublic);
       formData.append("time", timeString);
       if (coverImage) formData.append("image", coverImage);
 
-      await api.post("/recipes", formData, {
+      const response = await api.post("/recipes", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-      toast.dismiss(loadingToast);
-      toast.success("Recipe saved successfully!", {
-        position: "top-center",
-        autoClose: 2000,
-      });
+      console.log('Recipe saved response:', response.data);
+      setStatusType('success');
+      setStatusMessage("Recipe saved successfully!");
+      setShowStatusModal(true);
 
       setTimeout(() => {
         navigate("/home");
@@ -109,17 +113,16 @@ const AddRecipeScreen = () => {
 
     } catch (error) {
       console.error("Error saving recipe:", error);
-      toast.error(error.response?.data?.message || "Failed to save recipe", {
-        position: "top-center",
-        autoClose: 2000,
-      });
+      setStatusType('error');
+      setStatusMessage(error.response?.data?.message || "Failed to save recipe");
+      setShowStatusModal(true);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="flex flex-col bg-gray-100 min-h-screen">
-      <ToastContainer />
-      
       {/* Header Section */}
       <div className="fixed top-0 p-4 left-0 w-full z-10 flex items-center bg-orange-500 shadow-lg">
       <button onClick={goBack} className="text-white text-2xl">
@@ -323,6 +326,51 @@ const AddRecipeScreen = () => {
           Save Recipe
         </button>
       </div>
+
+      {/* Status Message Modal */}
+      {showStatusModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
+            <div className="text-center">
+              {statusType === 'success' ? (
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                </div>
+              ) : (
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </div>
+              )}
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {statusType === 'success' ? 'Success!' : 'Error'}
+              </h3>
+              <p className="text-gray-600 mb-4">{statusMessage}</p>
+              {statusType === 'error' && (
+                <button
+                  onClick={() => setShowStatusModal(false)}
+                  className="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 transition-colors"
+                >
+                  Close
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading Overlay */}
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-5 rounded-lg flex flex-col items-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500 mb-3"></div>
+            <p className="text-gray-700">Saving recipe...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

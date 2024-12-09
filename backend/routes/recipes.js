@@ -1,5 +1,7 @@
 const express = require("express");
 const multer = require("multer");
+const path = require("path");
+const fs = require('fs');
 const Recipe = require("../models/Recipe");
 const User = require("../models/User");
 const Comment = require("../models/Comment");
@@ -7,66 +9,170 @@ const { authenticateToken } = require("../middleware/auth");
 const router = express.Router();
 const mongoose = require("mongoose");
 const Notification = require("../models/Notification");
+const AWS = require('aws-sdk');
+
+// Configure AWS SDK
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION
+});
+
+const s3 = new AWS.S3();
+
+const uploadToS3 = (file) => {
+  const fileContent = fs.readFileSync(file.path);
+  const params = {
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: `uploads/${file.filename}`,
+    Body: fileContent,
+    ContentType: file.mimetype,
+    ACL: 'public-read'
+  };
+
+  return s3.upload(params).promise();
+};
+
+// Create uploads directory if it doesn't exist
+const createUploadsDirectory = () => {
+  const uploadDir = path.join(__dirname, '../uploads');
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+  return uploadDir;
+};
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
     // Set the destination where files will be uploaded
     destination: (req, file, cb) => {
-        const uploadPath = process.env.NODE_ENV === 'production' 
-            ? '/opt/render/project/src/uploads/'
-            : 'uploads/';
+        const uploadPath = createUploadsDirectory();
         cb(null, uploadPath);
     },
     // Define how the filename will be stored
     filename: (req, file, cb) => {
-        // Store the file with a timestamp and original file name
-        cb(null, `${Date.now()}-${file.originalname}`);
+        // Create unique filename
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
     },
 });
 
-const upload = multer({ storage });
+// File filter
+const fileFilter = (req, file, cb) => {
+    // Accept images only
+    if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+        return cb(new Error('Only image files are allowed!'), false);
+    }
+    cb(null, true);
+};
+
+const upload = multer({ 
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    }
+});
 
 // Add a recipe
 router.post("/", authenticateToken, upload.single("image"), async (req, res) => {
-    try {
-        // Check if a file was uploaded
-        if (!req.file) {
-            return res.status(400).json({ message: "No image file uploaded." });
-        }
+  try {
+    console.log('Starting recipe creation...');
+    console.log('Request body:', req.body);
+    console.log('File:', req.file);
 
-        const {
-            title,
-            description,
-            category,
-            servingSize,
-            ingredients,
-            cookingInstructions,
-            authorNotes,
-            isPublic,
-            time,
-        } = req.body;
+    const {
+      title,
+      description,
+      category,
+      servingSize,
+      ingredients,
+      cookingInstructions,
+      authorNotes,
+      isPublic,
+      time
+    } = req.body;
 
-        // Create the recipe and save it to the database
-        const recipe = new Recipe({
-            title,
-            description,
-            image: req.file ? req.file.path : null, // Save the file path in MongoDB
-            category,
-            servingSize,
-            ingredients: JSON.parse(ingredients), // Parse ingredients as an array
-            cookingInstructions: JSON.parse(cookingInstructions), // Parse instructions as an array
-            authorNotes,
-            isPublic: isPublic === "true", // Convert the public flag
-            user: req.user.userId, // User ID from JWT token
-            time,
-        });
-
-        await recipe.save();
-        res.status(201).json({ message: "Recipe added successfully", recipe });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Failed to add recipe" });
+    // Validate required fields
+    if (!title || !description || !category || !servingSize || !time) {
+      console.log('Missing required fields');
+      return res.status(400).json({ message: "Missing required fields" });
     }
+
+    // Parse JSON strings safely
+    let parsedIngredients, parsedInstructions;
+    try {
+      parsedIngredients = typeof ingredients === 'string' 
+        ? JSON.parse(ingredients) 
+        : ingredients;
+
+      parsedInstructions = typeof cookingInstructions === 'string'
+        ? JSON.parse(cookingInstructions)
+        : cookingInstructions;
+    } catch (parseError) {
+      console.error('Error parsing JSON:', parseError);
+      return res.status(400).json({ message: "Invalid ingredients or instructions format" });
+    }
+
+    // Handle image path
+    let imagePath = null;
+    if (req.file) {
+      if (process.env.NODE_ENV === 'production') {
+        const uploadResult = await uploadToS3(req.file);
+        imagePath = uploadResult.Location; // S3 URL
+      } else {
+        imagePath = req.file.path.replace(/\\/g, '/'); // Local path
+      }
+    }
+
+    // Create new recipe object
+    const recipe = new Recipe({
+      user: req.user.userId,
+      title: title.trim(),
+      description: description.trim(),
+      category,
+      servingSize,
+      ingredients: parsedIngredients,
+      cookingInstructions: parsedInstructions,
+      authorNotes: authorNotes ? authorNotes.trim() : "",
+      isPublic: isPublic === "true",
+      time,
+      image: imagePath,
+      likes: 0
+    });
+
+    console.log('Recipe object created:', recipe);
+
+    // Save the recipe
+    await recipe.save();
+    console.log('Recipe saved successfully');
+
+    res.status(201).json({ 
+      message: "Recipe created successfully",
+      recipe 
+    });
+
+  } catch (error) {
+    console.error('Error creating recipe:', error);
+    
+    // Handle specific errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ 
+        message: "Validation error", 
+        errors: Object.values(error.errors).map(err => err.message)
+      });
+    }
+
+    if (error.code === 11000) {
+      return res.status(400).json({ message: "Duplicate recipe title" });
+    }
+
+    // Generic error
+    res.status(500).json({ 
+      message: "Error creating recipe",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
 });
 
 router.get("/category/:category", authenticateToken, async (req, res) => {
