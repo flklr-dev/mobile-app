@@ -79,23 +79,38 @@ const AddRecipeScreen = () => {
         position: "top-center",
       });
 
+      // Filter out empty ingredients and instructions
+      const filteredIngredients = ingredients.filter(ing => ing.trim() !== '');
+      const filteredInstructions = instructions.filter(inst => inst.trim() !== '');
+
       const formData = new FormData();
-      formData.append("title", recipeTitle);
-      formData.append("description", description);
+      formData.append("title", recipeTitle.trim());
+      formData.append("description", description.trim());
       formData.append("category", category);
       formData.append("servingSize", servingSize);
-      formData.append("ingredients", JSON.stringify(ingredients));
-      formData.append("cookingInstructions", JSON.stringify(instructions));
-      formData.append("authorNotes", authorNotes);
+      formData.append("ingredients", JSON.stringify(filteredIngredients));
+      formData.append("cookingInstructions", JSON.stringify(filteredInstructions));
+      formData.append("authorNotes", authorNotes.trim());
       formData.append("isPublic", isPublic);
       formData.append("time", timeString);
       if (coverImage) formData.append("image", coverImage);
 
-      await api.post("/recipes", formData, {
+      console.log('Sending recipe data:', {
+        title: recipeTitle,
+        category,
+        servingSize,
+        ingredients: filteredIngredients,
+        instructions: filteredInstructions,
+        time: timeString
+      });
+
+      const response = await api.post("/recipes", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
+
+      console.log('Recipe saved response:', response.data);
 
       toast.dismiss(loadingToast);
       toast.success("Recipe saved successfully!", {
@@ -108,7 +123,7 @@ const AddRecipeScreen = () => {
       }, 2000);
 
     } catch (error) {
-      console.error("Error saving recipe:", error);
+      console.error("Error saving recipe:", error.response?.data || error);
       toast.error(error.response?.data?.message || "Failed to save recipe", {
         position: "top-center",
         autoClose: 2000,
