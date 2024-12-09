@@ -5,6 +5,8 @@ const multer = require("multer");
 const User = require("../models/User");
 const Recipe = require("../models/Recipe");
 const Notification = require("../models/Notification");
+const crypto = require('crypto');
+const nodemailer = require('nodemailer'); // You'll need to install this: npm install nodemailer
 
 const router = express.Router();
 
@@ -383,6 +385,125 @@ router.put("/notifications/mark-all-read", authenticateToken, async (req, res) =
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+});
+
+// Generate and send reset code
+router.post("/forgot-password", async (req, res) => {
+  try {
+    console.log('Starting forgot password process...');
+    const { email } = req.body;
+    console.log('Email received:', email);
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      console.log('User not found:', email);
+      return res.status(404).json({ message: "User not found" });
+    }
+    console.log('User found:', user.email);
+
+    // Generate a 6-digit reset code
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log('Generated reset code:', resetCode);
+
+    // Configure email transporter
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      },
+      debug: true, // Add debug mode
+      logger: true // Add logging
+    });
+
+    // Verify transporter
+    try {
+      console.log('Verifying email configuration...');
+      await transporter.verify();
+      console.log('Email configuration is valid');
+    } catch (verifyError) {
+      console.error('Email verification failed:', verifyError);
+      return res.status(500).json({ 
+        message: "Email configuration error",
+        error: verifyError.message 
+      });
+    }
+
+    // Send email
+    try {
+      console.log('Attempting to send email...');
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: 'Password Reset Code - PantryPals',
+        text: `Your password reset code is: ${resetCode}\nThis code will expire in 1 hour.`,
+        html: `
+          <h2>Password Reset Code</h2>
+          <p>Your password reset code is: <strong>${resetCode}</strong></p>
+          <p>This code will expire in 1 hour.</p>
+          <p>If you didn't request this reset, please ignore this email.</p>
+        `
+      });
+      console.log('Email sent successfully');
+
+      // Save reset code to user
+      user.resetCode = resetCode;
+      user.resetCodeExpiry = Date.now() + 3600000;
+      await user.save();
+      console.log('Reset code saved to user');
+
+      res.json({ message: "Reset code sent to email" });
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError);
+      res.status(500).json({ 
+        message: "Failed to send reset code email",
+        error: emailError.message
+      });
+    }
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Verify reset code and update password
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { email, resetCode, newPassword } = req.body;
+    const user = await User.findOne({ 
+      email,
+      resetCode,
+      resetCodeExpiry: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired reset code" });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update user's password and clear reset code fields
+    user.password = hashedPassword;
+    user.resetCode = undefined;
+    user.resetCodeExpiry = undefined;
+    await user.save();
+
+    res.json({ message: "Password updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Test route to verify the endpoint
+router.get('/test', (req, res) => {
+  res.json({ message: 'Auth routes are working' });
+});
+
+// Forgot password route
+router.post('/forgot-password', async (req, res) => {
+  console.log('Received forgot password request:', req.body); // Add this log
+  // ... rest of your forgot-password code
 });
 
 module.exports = router;

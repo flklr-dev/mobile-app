@@ -18,7 +18,9 @@ const userSchema = new mongoose.Schema({
             type: Date, 
             default: Date.now 
         }
-    }]
+    }],
+    resetCode: String,
+    resetCodeExpiry: Date
 }, {
     timestamps: true
 });

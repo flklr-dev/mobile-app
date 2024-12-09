@@ -89,6 +89,15 @@ app.use((err, req, res, next) => {
   });
 });
 
+console.log('Registered routes:', app._router.stack
+  .filter(r => r.route)
+  .map(r => `${Object.keys(r.route.methods)} ${r.route.path}`));
+
+console.log('Email Config:', {
+  user: process.env.EMAIL_USER,
+  pass: process.env.EMAIL_PASS?.substring(0, 4) + '...' // Show only first 4 chars for security
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

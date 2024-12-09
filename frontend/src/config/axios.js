@@ -4,6 +4,8 @@ const baseURL = import.meta.env.VITE_ENV === 'production'
   ? import.meta.env.VITE_PROD_BASE_URL
   : import.meta.env.VITE_DEV_BASE_URL;
 
+console.log('API Base URL:', baseURL);
+
 const api = axios.create({
   baseURL,
   withCredentials: true,
@@ -26,14 +28,16 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor with better error handling
+// Response interceptor
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error:', error);
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Check if we're not already on the login page
+      if (!window.location.pathname.includes('/login')) {
+        localStorage.clear(); // Clear all storage
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

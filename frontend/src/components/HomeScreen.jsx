@@ -83,28 +83,39 @@ const HomeScreen = () => {
   // Update the toggleHeart function
   const toggleHeart = async (recipeId) => {
     try {
-      const response = await api.post(`/recipes/like/${recipeId}`);
-
-      // Update heart states
+      console.log('Attempting to toggle like for recipe:', recipeId);
+      
+      // Optimistically update UI
       setHeartStates(prev => ({
         ...prev,
-        [recipeId]: response.data.isLiked
+        [recipeId]: !prev[recipeId]
       }));
 
-      // Update recipes state
+      const response = await api.post(`/recipes/like/${recipeId}`);
+      console.log('Like response:', response.data);
+
+      // Update regular recipes state
       setRecipes(prevRecipes => {
         const updatedRecipes = { ...prevRecipes };
         Object.keys(updatedRecipes).forEach(category => {
           updatedRecipes[category] = updatedRecipes[category].map(recipe =>
             recipe._id === recipeId
-              ? { ...recipe, likes: response.data.recipeLikes }
+              ? { ...recipe, likes: response.data.likes }
               : recipe
           );
         });
         return updatedRecipes;
       });
 
-      // Show success toast
+      // Update trending recipes state
+      setTrendingRecipes(prevTrending => 
+        prevTrending.map(recipe =>
+          recipe._id === recipeId
+            ? { ...recipe, likes: response.data.likes }
+            : recipe
+        )
+      );
+
       toast.success(
         response.data.isLiked
           ? "Recipe added to favorites!"
@@ -112,7 +123,13 @@ const HomeScreen = () => {
         { position: "top-center", autoClose: 1000 }
       );
     } catch (error) {
-      console.error("Error toggling like state:", error.message);
+      // Revert the optimistic update on error
+      setHeartStates(prev => ({
+        ...prev,
+        [recipeId]: !prev[recipeId]
+      }));
+      
+      console.error("Error toggling like state:", error.response?.data || error.message);
       toast.error("Failed to update favorite status");
     }
   };
