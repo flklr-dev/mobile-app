@@ -38,7 +38,8 @@ const FavoriteRecipes = () => {
 
   const toggleHeart = async (recipeId) => {
     try {
-      await api.post(`/recipes/${recipeId}/like`);
+      const response = await api.post(`/recipes/like/${recipeId}`);
+      console.log('Like response:', response.data);
 
       setHeartStates(prev => ({
         ...prev,
@@ -56,6 +57,11 @@ const FavoriteRecipes = () => {
       );
     } catch (error) {
       console.error("Error toggling like:", error);
+      setHeartStates(prev => ({
+        ...prev,
+        [recipeId]: !prev[recipeId]
+      }));
+      
       toast.error("Failed to update favorite status", {
         position: "top-center",
         autoClose: 2000,
