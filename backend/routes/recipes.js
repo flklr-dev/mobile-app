@@ -9,6 +9,29 @@ const { authenticateToken } = require("../middleware/auth");
 const router = express.Router();
 const mongoose = require("mongoose");
 const Notification = require("../models/Notification");
+const AWS = require('aws-sdk');
+
+// Configure AWS SDK
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION
+});
+
+const s3 = new AWS.S3();
+
+const uploadToS3 = (file) => {
+  const fileContent = fs.readFileSync(file.path);
+  const params = {
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: `uploads/${file.filename}`,
+    Body: fileContent,
+    ContentType: file.mimetype,
+    ACL: 'public-read'
+  };
+
+  return s3.upload(params).promise();
+};
 
 // Create uploads directory if it doesn't exist
 const createUploadsDirectory = () => {
@@ -94,8 +117,12 @@ router.post("/", authenticateToken, upload.single("image"), async (req, res) => 
     // Handle image path
     let imagePath = null;
     if (req.file) {
-      // Store relative path from uploads directory
-      imagePath = `uploads/${path.basename(req.file.path)}`;
+      if (process.env.NODE_ENV === 'production') {
+        const uploadResult = await uploadToS3(req.file);
+        imagePath = uploadResult.Location; // S3 URL
+      } else {
+        imagePath = req.file.path.replace(/\\/g, '/'); // Local path
+      }
     }
 
     // Create new recipe object

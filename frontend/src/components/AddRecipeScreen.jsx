@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaChevronLeft } from 'react-icons/fa';
 import api from '../config/axios';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 const AddRecipeScreen = () => {
   const navigate = useNavigate();
@@ -53,38 +51,34 @@ const AddRecipeScreen = () => {
   const saveRecipe = async () => {
     // Validation
     if (!recipeTitle || !description || !category || !servingSize) {
-      toast.error("Please fill in all required fields!", {
-        position: "top-center",
-        autoClose: 2000,
-      });
+      setStatusMessage("Please fill in all required fields!");
+      setStatusType('error');
+      setShowStatusModal(true);
       return;
     }
 
     const totalMinutes = parseInt(hours || 0) * 60 + parseInt(minutes || 0);
     if (totalMinutes === 0) {
-      toast.error("Please specify cooking time!", {
-        position: "top-center",
-        autoClose: 2000,
-      });
+      setStatusMessage("Please specify cooking time!");
+      setStatusType('error');
+      setShowStatusModal(true);
       return;
     }
 
-    // Format time string
-    let timeString = "";
-    if (totalMinutes >= 60) {
-      const formattedHours = Math.floor(totalMinutes / 60);
-      const formattedMinutes = totalMinutes % 60;
-      timeString = formattedMinutes > 0
-        ? `${formattedHours} hr ${formattedMinutes} min`
-        : `${formattedHours} hr`;
-    } else {
-      timeString = `${totalMinutes} min`;
-    }
-
     try {
-      const loadingToast = toast.loading("Saving recipe...", {
-        position: "top-center",
-      });
+      setIsSubmitting(true);
+
+      // Format time string
+      let timeString = "";
+      if (totalMinutes >= 60) {
+        const formattedHours = Math.floor(totalMinutes / 60);
+        const formattedMinutes = totalMinutes % 60;
+        timeString = formattedMinutes > 0
+          ? `${formattedHours} hr ${formattedMinutes} min`
+          : `${formattedHours} hr`;
+      } else {
+        timeString = `${totalMinutes} min`;
+      }
 
       // Filter out empty ingredients and instructions
       const filteredIngredients = ingredients.filter(ing => ing.trim() !== '');
@@ -102,15 +96,6 @@ const AddRecipeScreen = () => {
       formData.append("time", timeString);
       if (coverImage) formData.append("image", coverImage);
 
-      console.log('Sending recipe data:', {
-        title: recipeTitle,
-        category,
-        servingSize,
-        ingredients: filteredIngredients,
-        instructions: filteredInstructions,
-        time: timeString
-      });
-
       const response = await api.post("/recipes", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -118,30 +103,26 @@ const AddRecipeScreen = () => {
       });
 
       console.log('Recipe saved response:', response.data);
-
-      toast.dismiss(loadingToast);
-      toast.success("Recipe saved successfully!", {
-        position: "top-center",
-        autoClose: 2000,
-      });
+      setStatusType('success');
+      setStatusMessage("Recipe saved successfully!");
+      setShowStatusModal(true);
 
       setTimeout(() => {
         navigate("/home");
       }, 2000);
 
     } catch (error) {
-      console.error("Error saving recipe:", error.response?.data || error);
-      toast.error(error.response?.data?.message || "Failed to save recipe", {
-        position: "top-center",
-        autoClose: 2000,
-      });
+      console.error("Error saving recipe:", error);
+      setStatusType('error');
+      setStatusMessage(error.response?.data?.message || "Failed to save recipe");
+      setShowStatusModal(true);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="flex flex-col bg-gray-100 min-h-screen">
-      <ToastContainer />
-      
       {/* Header Section */}
       <div className="fixed top-0 p-4 left-0 w-full z-10 flex items-center bg-orange-500 shadow-lg">
       <button onClick={goBack} className="text-white text-2xl">
