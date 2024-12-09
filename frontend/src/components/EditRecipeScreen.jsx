@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FaChevronLeft } from 'react-icons/fa';
 import api from '../config/axios';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 const EditRecipeScreen = () => {
   const navigate = useNavigate();
@@ -23,14 +21,16 @@ const EditRecipeScreen = () => {
   const [hours, setHours] = useState("");
   const [minutes, setMinutes] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchRecipe = async () => {
       try {
-        console.log('Fetching recipe with ID:', recipeId);
         const response = await api.get(`/recipes/${recipeId}`);
         const recipe = response.data;
-        console.log('Fetched recipe:', recipe);
         
         // Populate all fields
         setRecipeTitle(recipe.title);
@@ -58,7 +58,8 @@ const EditRecipeScreen = () => {
         setLoading(false);
       } catch (error) {
         console.error('Error fetching recipe:', error);
-        toast.error('Failed to fetch recipe details');
+        setErrorMessage('Failed to fetch recipe details');
+        setShowErrorModal(true);
         navigate('/my-recipes');
       }
     };
@@ -94,65 +95,58 @@ const EditRecipeScreen = () => {
   const updateRecipe = async () => {
     // Validation
     if (!recipeTitle || !description || !category || !servingSize) {
-      toast.error("Please fill in all required fields!", {
-        position: "top-center",
-        autoClose: 1000,
-      });
+      setErrorMessage("Please fill in all required fields!");
+      setShowErrorModal(true);
       return;
     }
 
     const totalMinutes = parseInt(hours || 0) * 60 + parseInt(minutes || 0);
     if (totalMinutes === 0) {
-      toast.error("Please specify cooking time!", {
-        position: "top-center",
-        autoClose: 1000,
-      });
+      setErrorMessage("Please specify cooking time!");
+      setShowErrorModal(true);
       return;
-    }
-
-    // Format time string
-    let timeString = "";
-    if (totalMinutes >= 60) {
-      const formattedHours = Math.floor(totalMinutes / 60);
-      const formattedMinutes = totalMinutes % 60;
-      timeString = formattedMinutes > 0
-        ? `${formattedHours} hr ${formattedMinutes} min`
-        : `${formattedHours} hr`;
-    } else {
-      timeString = `${totalMinutes} min`;
     }
 
     // Check if ingredients and instructions are not empty
-    if (ingredients.length === 0) {
-      toast.error("Please add at least one ingredient!", {
-        position: "top-center",
-        autoClose: 1000,
-      });
+    if (ingredients.length === 0 || ingredients.every(ing => ing.trim() === '')) {
+      setErrorMessage("Please add at least one ingredient!");
+      setShowErrorModal(true);
       return;
     }
 
-    if (instructions.length === 0) {
-      toast.error("Please add at least one instruction!", {
-        position: "top-center",
-        autoClose: 1000,
-      });
+    if (instructions.length === 0 || instructions.every(inst => inst.trim() === '')) {
+      setErrorMessage("Please add at least one instruction!");
+      setShowErrorModal(true);
       return;
     }
 
     try {
-      // Show loading toast
-      const loadingToast = toast.loading("Updating recipe...", {
-        position: "top-center",
-      });
+      setIsSubmitting(true);
+
+      // Format time string
+      let timeString = "";
+      if (totalMinutes >= 60) {
+        const formattedHours = Math.floor(totalMinutes / 60);
+        const formattedMinutes = totalMinutes % 60;
+        timeString = formattedMinutes > 0
+          ? `${formattedHours} hr ${formattedMinutes} min`
+          : `${formattedHours} hr`;
+      } else {
+        timeString = `${totalMinutes} min`;
+      }
+
+      // Filter out empty ingredients and instructions
+      const filteredIngredients = ingredients.filter(ing => ing.trim() !== '');
+      const filteredInstructions = instructions.filter(inst => inst.trim() !== '');
 
       const formData = new FormData();
-      formData.append("title", recipeTitle);
-      formData.append("description", description);
+      formData.append("title", recipeTitle.trim());
+      formData.append("description", description.trim());
       formData.append("category", category);
       formData.append("servingSize", servingSize);
-      formData.append("ingredients", JSON.stringify(ingredients));
-      formData.append("cookingInstructions", JSON.stringify(instructions));
-      formData.append("authorNotes", authorNotes);
+      formData.append("ingredients", JSON.stringify(filteredIngredients));
+      formData.append("cookingInstructions", JSON.stringify(filteredInstructions));
+      formData.append("authorNotes", authorNotes.trim());
       formData.append("isPublic", isPublic);
       formData.append("time", timeString);
       if (coverImage) formData.append("image", coverImage);
@@ -163,12 +157,7 @@ const EditRecipeScreen = () => {
         },
       });
 
-      // Dismiss loading toast and show success
-      toast.dismiss(loadingToast);
-      toast.success("Recipe updated successfully!", {
-        position: "top-center",
-        autoClose: 2000,
-      });
+      setShowSuccessModal(true);
 
       // Navigate after showing success message
       setTimeout(() => {
@@ -177,10 +166,10 @@ const EditRecipeScreen = () => {
 
     } catch (error) {
       console.error("Error updating recipe:", error);
-      toast.error(error.response?.data?.message || "Failed to update recipe", {
-        position: "top-center",
-        autoClose: 1000,
-      });
+      setErrorMessage(error.response?.data?.message || "Failed to update recipe");
+      setShowErrorModal(true);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -195,8 +184,6 @@ const EditRecipeScreen = () => {
   // Return the same JSX as AddRecipeScreen but with updateRecipe instead of saveRecipe
   return (
     <div className="flex flex-col bg-gray-100 min-h-screen">
-      <ToastContainer />
-      
       {/* Header Section */}
       <div className="fixed top-0 p-4 left-0 w-full z-10 flex items-center bg-orange-500 shadow-lg">
         <button onClick={goBack} className="text-white text-2xl">
@@ -398,6 +385,56 @@ const EditRecipeScreen = () => {
           Update Recipe
         </button>
       </div>
+
+      {/* Loading Overlay */}
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-5 rounded-lg flex flex-col items-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500 mb-3"></div>
+            <p className="text-gray-700">Updating recipe...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Recipe Updated Successfully!</h3>
+              <p className="text-gray-600 mb-4">Your recipe has been updated and you will be redirected shortly.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {showErrorModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error</h3>
+              <p className="text-gray-600 mb-4">{errorMessage}</p>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

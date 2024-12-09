@@ -62,20 +62,37 @@ const AddRecipeScreen = () => {
       return;
     }
 
-    // Format time string
-    let timeString = "";
-    if (totalMinutes >= 60) {
-      const formattedHours = Math.floor(totalMinutes / 60);
-      const formattedMinutes = totalMinutes % 60;
-      timeString = formattedMinutes > 0
-        ? `${formattedHours} hr ${formattedMinutes} min`
-        : `${formattedHours} hr`;
-    } else {
-      timeString = `${totalMinutes} min`;
+    // Check if ingredients and instructions are not empty
+    if (ingredients.length === 0 || ingredients.every(ing => ing.trim() === '')) {
+      setErrorMessage("Please add at least one ingredient!");
+      setShowErrorModal(true);
+      return;
+    }
+
+    if (instructions.length === 0 || instructions.every(inst => inst.trim() === '')) {
+      setErrorMessage("Please add at least one instruction!");
+      setShowErrorModal(true);
+      return;
     }
 
     try {
       setIsSubmitting(true);
+
+      // Format time string
+      let timeString = "";
+      if (totalMinutes >= 60) {
+        const formattedHours = Math.floor(totalMinutes / 60);
+        const formattedMinutes = totalMinutes % 60;
+        timeString = formattedMinutes > 0
+          ? `${formattedHours} hr ${formattedMinutes} min`
+          : `${formattedHours} hr`;
+      } else {
+        timeString = `${totalMinutes} min`;
+      }
+
+      // Filter out empty ingredients and instructions
+      const filteredIngredients = ingredients.filter(ing => ing.trim() !== '');
+      const filteredInstructions = instructions.filter(inst => inst.trim() !== '');
 
       const formData = new FormData();
       formData.append("title", recipeTitle.trim());
@@ -89,22 +106,13 @@ const AddRecipeScreen = () => {
       formData.append("time", timeString);
       if (coverImage) formData.append("image", coverImage);
 
-      console.log('Sending recipe data:', {
-        title: recipeTitle,
-        category,
-        servingSize,
-        ingredients: filteredIngredients,
-        instructions: filteredInstructions,
-        time: timeString
-      });
-
       const response = await api.post("/recipes", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-      console.log('Recipe saved response:', response.data);
+      console.log('Recipe saved successfully:', response.data);
       setShowSuccessModal(true);
 
       // Navigate after showing success message
@@ -350,7 +358,7 @@ const AddRecipeScreen = () => {
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Recipe Saved Successfully!</h3>
-              <p className="text-gray-600 mb-4">Your recipe has been saved and will be redirected shortly.</p>
+              <p className="text-gray-600 mb-4">Your recipe has been saved and you will be redirected shortly.</p>
             </div>
           </div>
         </div>
