@@ -76,13 +76,36 @@ const upload = multer({
 
 // Add a recipe
 router.post("/", authenticateToken, upload.single("image"), async (req, res) => {
-  console.log('Incoming request data:', req.body);
+  console.log('FULL REQUEST DETAILS:');
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Request User:', JSON.stringify(req.user, null, 2));
+  console.log('Incoming request body:', JSON.stringify(req.body, null, 2));
   console.log('Uploaded file:', req.file);
 
   try {
-    console.log('Starting recipe creation...');
-    console.log('Request body:', req.body);
-    console.log('File:', req.file);
+    // Detailed authentication logging
+    if (!req.user) {
+      console.error('CRITICAL: No user object in request');
+      return res.status(401).json({ 
+        message: "Authentication failed", 
+        details: "No user object found in request" 
+      });
+    }
+
+    // Extract user ID with multiple fallback methods
+    const userId = 
+      req.user._id || 
+      req.user.userId || 
+      req.user.id || 
+      (req.user.sub ? req.user.sub : null);
+
+    if (!userId) {
+      console.error('CRITICAL: Cannot extract user ID', req.user);
+      return res.status(401).json({ 
+        message: "Authentication failed", 
+        details: "Unable to extract user ID" 
+      });
+    }
 
     const {
       title,
@@ -96,41 +119,103 @@ router.post("/", authenticateToken, upload.single("image"), async (req, res) => 
       time
     } = req.body;
 
-    // Validate required fields
-    if (!title || !description || !category || !servingSize || !time) {
-      console.log('Missing required fields:', { title, description, category, servingSize, time });
-      return res.status(400).json({ message: "Missing required fields" });
+    // Detailed field logging
+    console.log('Parsed Fields:', {
+      userId,
+      title, 
+      description, 
+      category, 
+      servingSize, 
+      ingredientsType: typeof ingredients,
+      ingredientsValue: ingredients,
+      cookingInstructionsType: typeof cookingInstructions,
+      cookingInstructionsValue: cookingInstructions,
+      authorNotes, 
+      isPublic, 
+      time
+    });
+
+    // Validate required fields with more detailed checks
+    const requiredFields = [
+      { name: 'title', value: title },
+      { name: 'description', value: description },
+      { name: 'category', value: category },
+      { name: 'servingSize', value: servingSize },
+      { name: 'time', value: time }
+    ];
+
+    const missingFields = requiredFields
+      .filter(field => !field.value || field.value.trim() === '')
+      .map(field => field.name);
+
+    if (missingFields.length > 0) {
+      console.log('Missing fields:', missingFields);
+      return res.status(400).json({ 
+        message: `Missing required fields: ${missingFields.join(', ')}` 
+      });
     }
 
-    // Parse JSON strings safely
-    let parsedIngredients, parsedInstructions;
+    // Parse JSON strings safely with more error details
+    let parsedIngredients = [], parsedInstructions = [];
     try {
+      // Extremely robust parsing
       parsedIngredients = typeof ingredients === 'string' 
         ? JSON.parse(ingredients) 
-        : ingredients;
+        : Array.isArray(ingredients) 
+          ? ingredients 
+          : [];
 
       parsedInstructions = typeof cookingInstructions === 'string'
         ? JSON.parse(cookingInstructions)
-        : cookingInstructions;
+        : Array.isArray(cookingInstructions)
+          ? cookingInstructions
+          : [];
+
+      // Additional validation for ingredients and instructions
+      if (!Array.isArray(parsedIngredients) || !Array.isArray(parsedInstructions)) {
+        throw new Error('Ingredients and instructions must be arrays');
+      }
+
+      if (parsedIngredients.length === 0 || parsedInstructions.length === 0) {
+        return res.status(400).json({ 
+          message: "Recipe must have at least one ingredient and one instruction" 
+        });
+      }
     } catch (parseError) {
-      console.error('Error parsing JSON:', parseError);
-      return res.status(400).json({ message: "Invalid ingredients or instructions format" });
+      console.error('CRITICAL JSON Parsing Error:', parseError);
+      console.error('Ingredients:', ingredients);
+      console.error('Cooking Instructions:', cookingInstructions);
+      return res.status(400).json({ 
+        message: "Invalid ingredients or instructions format",
+        error: parseError.message,
+        ingredients,
+        cookingInstructions
+      });
     }
 
     // Handle image path
     let imagePath = null;
     if (req.file) {
-      if (process.env.NODE_ENV === 'production') {
-        const uploadResult = await uploadToS3(req.file);
-        imagePath = uploadResult.Location; // S3 URL
-      } else {
-        imagePath = req.file.path.replace(/\\/g, '/'); // Local path
+      try {
+        if (process.env.NODE_ENV === 'production') {
+          const uploadResult = await uploadToS3(req.file);
+          imagePath = uploadResult.Location; // S3 URL
+        } else {
+          // Ensure path uses forward slashes for consistency
+          imagePath = req.file.path.replace(/\\/g, '/').replace(/.*uploads/, 'uploads');
+        }
+      } catch (uploadError) {
+        console.error('Image upload error:', uploadError);
+        return res.status(500).json({ 
+          message: "Failed to upload image", 
+          error: uploadError.message 
+        });
       }
     }
 
-    // Create new recipe object
+    // Create new recipe object with more robust validation
     const recipe = new Recipe({
-      user: req.user.userId,
+      user: userId,  // Use extracted user ID
       title: title.trim(),
       description: description.trim(),
       category,
@@ -138,42 +223,63 @@ router.post("/", authenticateToken, upload.single("image"), async (req, res) => 
       ingredients: parsedIngredients,
       cookingInstructions: parsedInstructions,
       authorNotes: authorNotes ? authorNotes.trim() : "",
-      isPublic: isPublic === "true",
+      isPublic: isPublic === "true" || isPublic === true,
       time,
       image: imagePath,
-      likes: 0
+      likes: []  // Initialize as empty array
     });
 
-    console.log('Recipe object created:', recipe);
+    console.log('Recipe object to save:', JSON.stringify(recipe, null, 2));
 
-    // Save the recipe
-    await recipe.save();
-    console.log('Recipe saved successfully:', recipe);
+    // Save the recipe with error handling
+    try {
+      await recipe.save();
+      console.log('Recipe saved successfully:', recipe._id);
 
-    res.status(201).json({ 
-      message: "Recipe created successfully",
-      recipe 
-    });
+      res.status(201).json({ 
+        message: "Recipe created successfully",
+        recipe: {
+          _id: recipe._id,
+          title: recipe.title,
+          category: recipe.category
+        }
+      });
+    } catch (saveError) {
+      console.error('CRITICAL Recipe save error:', saveError);
+      
+      // Handle specific Mongoose validation errors
+      if (saveError.name === 'ValidationError') {
+        const validationErrors = Object.values(saveError.errors)
+          .map(err => err.message);
+        
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: validationErrors 
+        });
+      }
 
-  } catch (error) {
-    console.error('Error creating recipe:', error);
-    
-    // Handle specific errors
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({ 
-        message: "Validation error", 
-        errors: Object.values(error.errors).map(err => err.message)
+      // Handle duplicate key errors
+      if (saveError.code === 11000) {
+        return res.status(400).json({ 
+          message: "A recipe with this title already exists" 
+        });
+      }
+
+      // Generic save error
+      res.status(500).json({ 
+        message: "Error saving recipe",
+        error: process.env.NODE_ENV === 'development' ? saveError.message : undefined,
+        details: JSON.stringify(saveError)
       });
     }
 
-    if (error.code === 11000) {
-      return res.status(400).json({ message: "Duplicate recipe title" });
-    }
-
-    // Generic error
+  } catch (error) {
+    console.error('CRITICAL Unexpected error in recipe creation:', error);
+    
     res.status(500).json({ 
-      message: "Error creating recipe",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Unexpected error creating recipe",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      details: JSON.stringify(error)
     });
   }
 });

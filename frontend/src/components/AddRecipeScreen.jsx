@@ -55,15 +55,18 @@ const AddRecipeScreen = () => {
     }
 
     // Validate ingredients and instructions
-    if (ingredients.length === 0 || ingredients.some(ing => !ing.trim())) {
-      setStatusMessage("Please add at least one ingredient and make sure none are empty!");
+    const cleanedIngredients = ingredients.filter(ing => ing.trim());
+    const cleanedInstructions = instructions.filter(inst => inst.trim());
+
+    if (cleanedIngredients.length === 0) {
+      setStatusMessage("Please add at least one ingredient!");
       setStatusType('error');
       setShowStatusModal(true);
       return;
     }
 
-    if (instructions.length === 0 || instructions.some(inst => !inst.trim())) {
-      setStatusMessage("Please add at least one cooking instruction and make sure none are empty!");
+    if (cleanedInstructions.length === 0) {
+      setStatusMessage("Please add at least one cooking instruction!");
       setStatusType('error');
       setShowStatusModal(true);
       return;
@@ -90,9 +93,6 @@ const AddRecipeScreen = () => {
       formData.append("servingSize", servingSize);
       
       // Ensure ingredients and instructions are properly stringified
-      const cleanedIngredients = ingredients.filter(ing => ing.trim());
-      const cleanedInstructions = instructions.filter(inst => inst.trim());
-      
       formData.append("ingredients", JSON.stringify(cleanedIngredients));
       formData.append("cookingInstructions", JSON.stringify(cleanedInstructions));
       formData.append("authorNotes", authorNotes ? authorNotes.trim() : "");
@@ -112,30 +112,44 @@ const AddRecipeScreen = () => {
         headers: {
           "Content-Type": "multipart/form-data",
         },
+        // Add timeout to handle network issues
+        timeout: 30000 // 30 seconds
       });
 
       setStatusMessage("Recipe saved successfully!");
       setStatusType('success');
       setShowStatusModal(true);
+      
+      // Navigate after a short delay to show success message
       setTimeout(() => {
         navigate("/home");
       }, 2000);
     } catch (error) {
       console.error("Full error object:", error);
-      console.error("Error response:", error.response);
       
       let errorMsg = "Failed to save recipe. Please try again.";
+      
+      // Handle different types of errors
       if (error.response) {
-        // The request was made and the server responded with a status code
-        errorMsg = error.response.data.message || 
-                   error.response.data.error || 
-                   errorMsg;
-        console.error("Server error details:", error.response.data);
+        // Server responded with an error
+        if (error.response.data && error.response.data.message) {
+          errorMsg = error.response.data.message;
+        }
+        
+        // Log specific error details for debugging
+        if (error.response.data && error.response.data.errors) {
+          console.error("Validation errors:", error.response.data.errors);
+          errorMsg += `. Details: ${error.response.data.errors.join(', ')}`;
+        }
       } else if (error.request) {
-        // The request was made but no response was received
-        errorMsg = "No response received from server. Please check your connection.";
+        // Request made but no response received
+        errorMsg = "No response from server. Please check your internet connection.";
+      } else if (error.code === 'ECONNABORTED') {
+        // Request timed out
+        errorMsg = "Request timed out. Please check your internet connection.";
       }
 
+      // Set error message and show modal
       setStatusMessage(errorMsg);
       setStatusType('error');
       setShowStatusModal(true);
