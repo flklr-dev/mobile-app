@@ -1,8 +1,7 @@
 import { useState } from "react";
 import api from '../config/axios'; // Use the configured axios instance
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { FaFacebook, FaGoogle } from "react-icons/fa";
+import { Navigate, useNavigate } from "react-router-dom";
 
 const RegisterScreen = () => {
   const [name, setName] = useState("");
@@ -11,6 +10,10 @@ const RegisterScreen = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isChecked, setIsChecked] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   // Handle social login attempts
   const handleSocialLogin = () => {
@@ -20,56 +23,112 @@ const RegisterScreen = () => {
     }, 2000); // Modal will disappear after 2 seconds
   };
 
+  // Close error modal
+  const closeErrorModal = () => {
+    setErrorMessage("");
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
 
-    if (!isChecked) {
-      toast.error("Please agree to the terms and conditions.", {
-        position: "top-center",
-        autoClose: 1000,
-      });
+    // Validate inputs
+    if (!name || !email || !password || !confirmPassword) {
+      setErrorMessage("Please fill in all fields");
       return;
     }
 
     if (password !== confirmPassword) {
-      toast.error("Passwords do not match.", {
-        position: "top-center",
-        autoClose: 3000,
-      });
+      setErrorMessage("Passwords do not match");
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setErrorMessage("Please enter a valid email address");
+      return;
+    }
+
+    // Password strength validation
+    if (password.length < 8) {
+      setErrorMessage("Password must be at least 8 characters long");
+      return;
+    }
+
+    if (!isChecked) {
+      setErrorMessage("Please agree to the terms and conditions.");
       return;
     }
 
     try {
-      await api.post("/auth/register", {
+      // Set submitting state
+      setIsSubmitting(true);
+
+      const response = await api.post("/auth/register", {
         name,
         email,
-        password,
+        password
       });
 
-      // Show success toast and redirect
-      toast.success("Registration successful! Redirecting to login...", {
-        position: "top-center",
-        autoClose: 2000,
-      });
-      setTimeout(() => (window.location.href = "/login"), 1000);
-    } catch (err) {
-      // Show error toast
-      toast.error(err.response?.data?.message || "Registration failed.", {
-        position: "top-center",
-        autoClose: 3000,
-      });
+      // Clear submitting state
+      setIsSubmitting(false);
+
+      // Show success message
+      setSuccessMessage("Registration successful! Redirecting to login...");
+
+      // Redirect to login after a short delay
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+
+    } catch (error) {
+      // Clear submitting state
+      setIsSubmitting(false);
+
+      // Set error message
+      const errorMsg = error.response?.data?.message || "Registration failed";
+      setErrorMessage(errorMsg);
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen mx-4 bg-white px-4 py-8 md:py-16">
-      <ToastContainer />
       
       {/* Coming Soon Modal */}
       {showModal && (
         <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
                     bg-black/80 text-white px-6 py-4 rounded-lg z-50 text-center">
           This feature will be available soon!
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {errorMessage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-red-600 mb-2">Error</h3>
+              <p className="text-gray-600 mb-4">{errorMessage}</p>
+              <button
+                onClick={closeErrorModal}
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {successMessage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-green-600 mb-2">Success</h3>
+              <p className="text-gray-600">{successMessage}</p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -130,10 +189,10 @@ const RegisterScreen = () => {
 
         <button
           type="submit"
-          className={`w-full py-2 bg-orange-500 text-white rounded-lg font-bold hover:bg-orange-600 transition ${!isChecked ? 'opacity-50 cursor-not-allowed' : ''}`}
-          disabled={!isChecked}
+          className={`w-full py-2 bg-orange-500 text-white rounded-lg font-bold hover:bg-orange-600 transition ${!isChecked || isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={!isChecked || isSubmitting}
         >
-          Register
+          {isSubmitting ? "Registering..." : "Register"}
         </button>
       </form>
 
@@ -160,9 +219,10 @@ const RegisterScreen = () => {
 
       <p className="mt-6 text-gray-700">
         Already have an account?{" "}
+
         <button
           className="text-orange-500 font-bold underline"
-          onClick={() => (window.location.href = "/login")}
+          onClick={() => navigate("/login")}
         >
           Log In
         </button>
