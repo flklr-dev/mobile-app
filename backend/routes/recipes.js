@@ -2,13 +2,13 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require('fs');
+const mongoose = require("mongoose");
 const Recipe = require("../models/Recipe");
 const User = require("../models/User");
 const Comment = require("../models/Comment");
+const Notification = require("../models/Notification");
 const { authenticateToken } = require("../middleware/auth");
 const router = express.Router();
-const mongoose = require("mongoose");
-const Notification = require("../models/Notification");
 const AWS = require('aws-sdk');
 
 // Configure AWS SDK
@@ -211,7 +211,6 @@ router.get("/category/:category", authenticateToken, async (req, res) => {
   }
 });
 
-
 // Get all public recipes (for the search)
 router.get("/", authenticateToken, async (req, res) => {
   try {
@@ -225,60 +224,36 @@ router.get("/", authenticateToken, async (req, res) => {
   }
 });
 
-// Like/Unlike route
-router.post("/like/:id", authenticateToken, async (req, res) => {
+// Like/Unlike a recipe
+router.post("/like/:recipeId", authenticateToken, async (req, res) => {
   try {
-    const recipeId = req.params.id;
-    const userId = req.user.userId;
+    const { recipeId } = req.params;
+    const userId = req.user._id;
 
-    console.log('Like request:', { recipeId, userId });
-
-    // Find the recipe
     const recipe = await Recipe.findById(recipeId);
     if (!recipe) {
       return res.status(404).json({ message: "Recipe not found" });
     }
 
-    // Find the user
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    const isLiked = recipe.likes.includes(userId);
 
-    // Check if recipe is already liked
-    const isLiked = user.likedRecipes.includes(recipeId);
-    
     if (isLiked) {
-      // Unlike: Remove from user's liked recipes
-      user.likedRecipes = user.likedRecipes.filter(id => id.toString() !== recipeId);
-      recipe.likes = Math.max(0, recipe.likes - 1); // Ensure likes don't go below 0
+      // Unlike
+      recipe.likes = recipe.likes.filter(id => id.toString() !== userId.toString());
     } else {
-      // Like: Add to user's liked recipes
-      user.likedRecipes.push(recipeId);
-      recipe.likes = (recipe.likes || 0) + 1;
+      // Like
+      recipe.likes.push(userId);
     }
 
-    // Save both user and recipe
-    await Promise.all([
-      user.save(),
-      recipe.save()
-    ]);
+    await recipe.save();
 
-    console.log('Updated recipe:', {
-      likes: recipe.likes,
-      isLiked: !isLiked
-    });
-
-    res.json({
-      likes: recipe.likes,
-      isLiked: !isLiked
+    res.json({ 
+      message: isLiked ? "Recipe unliked" : "Recipe liked",
+      likes: recipe.likes.length  // Return the updated likes count
     });
   } catch (error) {
-    console.error('Like toggle error:', error);
-    res.status(500).json({ 
-      message: "Failed to toggle like status",
-      error: error.message 
-    });
+    console.error("Error toggling like:", error);
+    res.status(500).json({ message: "Failed to toggle like" });
   }
 });
 
@@ -337,36 +312,49 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
 
 // Add a comment to a recipe
 router.post("/:recipeId/comments", authenticateToken, async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { text } = req.body;
-    const recipe = await Recipe.findById(req.params.recipeId);
+    const recipeId = req.params.recipeId;
+    const userId = req.user.userId;
+
+    const recipe = await Recipe.findById(recipeId).session(session);
     if (!recipe) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(404).json({ message: "Recipe not found" });
     }
 
-    const user = await User.findById(req.user.userId);
+    const user = await User.findById(userId).session(session);
     if (!user) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(404).json({ message: "User not found" });
     }
 
     const comment = new Comment({
       text,
-      user: req.user.userId,
-      recipe: req.params.recipeId
+      user: userId,
+      recipe: recipeId
     });
-    await comment.save();
+    await comment.save({ session });
     
     // Create notification if the recipe owner is not the same as the commenter
-    if (recipe.user.toString() !== req.user.userId) {
+    if (recipe.user.toString() !== userId) {
       const notification = new Notification({
         recipient: recipe.user,
-        sender: user._id,
-        recipe: recipe._id,
+        sender: userId,
+        recipe: recipeId,
         type: 'comment',
         message: `${user.name || 'Someone'} commented on your recipe "${recipe.title}"`
       });
-      await notification.save();
+      await notification.save({ session });
     }
+
+    await session.commitTransaction();
+    session.endSession();
 
     // Populate user details before sending response
     const populatedComment = await Comment.findById(comment._id)
@@ -374,8 +362,11 @@ router.post("/:recipeId/comments", authenticateToken, async (req, res) => {
     
     res.status(201).json(populatedComment);
   } catch (error) {
-    console.error("Error adding comment:", error);
-    res.status(500).json({ message: error.message });
+    await session.abortTransaction();
+    session.endSession();
+
+    console.error('Error adding comment:', error);
+    res.status(500).json({ message: 'Failed to add comment', error: error.message });
   }
 });
 

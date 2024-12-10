@@ -3,56 +3,37 @@ const router = express.Router();
 const Notification = require("../models/Notification");
 const { authenticateToken } = require("../middleware/auth");
 
-// Get user's notifications
+// Get user notifications
 router.get("/", authenticateToken, async (req, res) => {
   try {
+    console.log(`Fetching notifications for user: ${req.user.userId}`);
+
+    // Find notifications for the current user, sorted by most recent first
     const notifications = await Notification.find({ recipient: req.user.userId })
-      .populate({
-        path: 'sender',
-        select: 'name profilePicture'
-      })
-      .populate({
-        path: 'recipe',
-        select: 'title'
-      })
-      .sort({ createdAt: -1 });
-    
-    // Transform the data to ensure proper structure
-    const formattedNotifications = notifications.map(notification => ({
-      _id: notification._id,
-      message: notification.message,
-      read: notification.read,
-      createdAt: notification.createdAt,
-      type: notification.type,
-      sender: {
-        _id: notification.sender._id,
-        name: notification.sender.name || 'Unknown User',
-        profilePicture: notification.sender.profilePicture
-      },
-      recipe: {
-        _id: notification.recipe._id,
-        title: notification.recipe.title
-      }
-    }));
+      .populate('sender', 'name profilePicture')
+      .populate('recipe', 'title image')
+      .sort({ createdAt: -1 })
+      .limit(50);  // Limit to last 50 notifications
 
-    res.json(formattedNotifications);
-  } catch (error) {
-    console.error("Error fetching notifications:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
+    console.log(`Found ${notifications.length} notifications`);
+    console.log('Sample notification:', notifications[0]);
 
-// Mark notification as read
-router.post("/:notificationId/read", authenticateToken, async (req, res) => {
-  try {
-    const notification = await Notification.findOneAndUpdate(
-      { _id: req.params.notificationId, recipient: req.user.userId },
-      { read: true },
-      { new: true }
+    // Mark notifications as read (optional, can be done separately)
+    const updateResult = await Notification.updateMany(
+      { recipient: req.user.userId, read: false },
+      { $set: { read: true } }
     );
-    res.json(notification);
+
+    console.log('Notifications marked as read:', updateResult);
+
+    res.json(notifications);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Detailed error fetching notifications:', error);
+    res.status(500).json({ 
+      message: "Failed to fetch notifications", 
+      error: error.message,
+      stack: error.stack 
+    });
   }
 });
 
@@ -61,31 +42,17 @@ router.post("/mark-all-read", authenticateToken, async (req, res) => {
   try {
     await Notification.updateMany(
       { recipient: req.user.userId, read: false },
-      { read: true }
+      { $set: { read: true } }
     );
+
     res.json({ message: "All notifications marked as read" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Add this route to your notifications.js
-router.delete("/:notificationId", authenticateToken, async (req, res) => {
-  try {
-    const notification = await Notification.findOneAndDelete({
-      _id: req.params.notificationId,
-      recipient: req.user.userId
+    console.error('Error marking notifications as read:', error);
+    res.status(500).json({ 
+      message: "Failed to mark notifications as read", 
+      error: error.message 
     });
-    
-    if (!notification) {
-      return res.status(404).json({ message: "Notification not found" });
-    }
-    
-    res.json({ message: "Notification deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting notification:", error);
-    res.status(500).json({ message: error.message });
   }
 });
 
-module.exports = router; 
+module.exports = router;

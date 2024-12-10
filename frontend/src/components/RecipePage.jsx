@@ -2,7 +2,21 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import api from '../config/axios';
-import { FaChevronLeft, FaHeart, FaRegHeart, FaShare, FaClock, FaListUl, FaUtensils, FaStickyNote } from "react-icons/fa";
+import { 
+  FaChevronLeft, 
+  FaHeart, 
+  FaRegHeart, 
+  FaShareAlt, 
+  FaFacebook, 
+  FaTwitter, 
+  FaWhatsapp, 
+  FaLink, 
+  FaEnvelope, 
+  FaClock, 
+  FaListUl, 
+  FaUtensils, 
+  FaStickyNote 
+} from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { formatDistanceToNow, isWithinInterval, subMinutes } from 'date-fns';
@@ -21,6 +35,7 @@ const RecipePage = () => {
   const [activeReplyId, setActiveReplyId] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
     fetchRecipeAndMore();
@@ -162,6 +177,7 @@ const RecipePage = () => {
     try {
       const response = await api.post(`/recipes/like/${recipeId}`);
 
+      // Update liked recipes set
       setLikedRecipes(prev => {
         const newSet = new Set(prev);
         if (newSet.has(recipeId)) {
@@ -172,22 +188,25 @@ const RecipePage = () => {
         return newSet;
       });
 
-      // Update likes count in moreRecipes
-      setMoreRecipes(prev => 
-        prev.map(recipe => 
-          recipe._id === recipeId 
-            ? { ...recipe, likes: response.data.recipeLikes }
-            : recipe
-        )
-      );
-
-      // Also update main recipe likes if it's the same recipe
+      // Update likes count in the current recipe
       if (recipe && recipe._id === recipeId) {
         setRecipe(prev => ({
           ...prev,
-          likes: response.data.recipeLikes
+          likes: response.data.likes  // Use the likes count from the server response
         }));
       }
+
+      // Update likes count in more recipes list
+      setMoreRecipes(prev => 
+        prev.map(r => 
+          r._id === recipeId 
+            ? { 
+                ...r, 
+                likes: response.data.likes 
+              } 
+            : r
+        )
+      );
 
       toast.success(
         likedRecipes.has(recipeId)
@@ -229,6 +248,65 @@ const RecipePage = () => {
       .replace(' hour ago', 'h ago')
       .replace(' days ago', 'd ago')
       .replace(' day ago', 'd ago');
+  };
+
+  const handleShare = () => {
+    setShowShareModal(true);
+  };
+
+  const shareOnPlatform = (platform) => {
+    if (!recipe) return;
+
+    const recipeUrl = `${window.location.origin}/recipes/${recipe._id}`;
+    const shareText = `Check out this delicious recipe: ${recipe.title}`;
+
+    const platforms = {
+      facebook: () => {
+        const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(recipeUrl)}`;
+        window.open(url, '_blank');
+      },
+      twitter: () => {
+        const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(recipeUrl)}`;
+        window.open(url, '_blank');
+      },
+      whatsapp: () => {
+        const url = `https://wa.me/?text=${encodeURIComponent(`${shareText} - ${recipeUrl}`)}`;
+        window.open(url, '_blank');
+      },
+      email: () => {
+        const subject = encodeURIComponent(`Check out this recipe: ${recipe.title}`);
+        const body = encodeURIComponent(`
+I found an amazing recipe that you might love!
+
+Recipe: ${recipe.title}
+Description: ${recipe.description}
+
+Check it out here: ${recipeUrl}
+
+Enjoy cooking!
+        `);
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+      },
+      copy: () => {
+        navigator.clipboard.writeText(recipeUrl).then(() => {
+          toast.success('Recipe link copied to clipboard!', {
+            position: "top-center",
+            autoClose: 2000
+          });
+        }).catch(err => {
+          console.error('Failed to copy: ', err);
+          toast.error('Failed to copy link', {
+            position: "top-center",
+            autoClose: 2000
+          });
+        });
+      }
+    };
+
+    if (platforms[platform]) {
+      platforms[platform]();
+      setShowShareModal(false);
+    }
   };
 
   if (error) {
@@ -276,8 +354,11 @@ const RecipePage = () => {
             <FaChevronLeft className="text-white" size={24} />
           </button>
           <div className="flex gap-4">
-            <button className="bg-black bg-opacity-60 p-2 rounded-full shadow-lg">
-              <FaShare className="text-white" size={24} />
+            <button 
+              onClick={handleShare}
+              className="bg-black bg-opacity-60 p-2 rounded-full shadow-lg"
+            >
+              <FaShareAlt className="text-white" size={24} />
             </button>
             <button
               onClick={() => handleToggleLike(recipe._id)}
@@ -614,9 +695,65 @@ const RecipePage = () => {
         </div>
       )}
 
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-[#463C33]">Share Recipe</h3>
+              <button 
+                onClick={() => setShowShareModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <SharePlatformButton 
+                icon={<FaFacebook className="text-3xl text-blue-600" />}
+                label="Facebook"
+                onClick={() => shareOnPlatform('facebook')}
+              />
+              <SharePlatformButton 
+                icon={<FaTwitter className="text-3xl text-blue-400" />}
+                label="Twitter"
+                onClick={() => shareOnPlatform('twitter')}
+              />
+              <SharePlatformButton 
+                icon={<FaWhatsapp className="text-3xl text-green-500" />}
+                label="WhatsApp"
+                onClick={() => shareOnPlatform('whatsapp')}
+              />
+              <SharePlatformButton 
+                icon={<FaEnvelope className="text-3xl text-red-500" />}
+                label="Email"
+                onClick={() => shareOnPlatform('email')}
+              />
+              <SharePlatformButton 
+                icon={<FaLink className="text-3xl text-gray-700" />}
+                label="Copy Link"
+                onClick={() => shareOnPlatform('copy')}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <ToastContainer />
     </div>
   );
 };
 
-export default RecipePage; 
+// Helper component for share platform buttons
+const SharePlatformButton = ({ icon, label, onClick }) => (
+  <button 
+    onClick={onClick}
+    className="flex flex-col items-center justify-center space-y-2 p-3 hover:bg-gray-100 rounded-lg transition-colors"
+  >
+    {icon}
+    <span className="text-xs text-gray-700">{label}</span>
+  </button>
+);
+
+export default RecipePage;

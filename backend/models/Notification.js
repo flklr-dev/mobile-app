@@ -31,12 +31,24 @@ const notificationSchema = new mongoose.Schema({
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
+    expires: 30 * 24 * 60 * 60 // Expire after 30 days
   }
+}, {
+  timestamps: true  // Add createdAt and updatedAt fields
 });
 
 // Add indexes for better query performance
 notificationSchema.index({ recipient: 1, createdAt: -1 });
 notificationSchema.index({ read: 1 });
+notificationSchema.index({ type: 1 });
 
-module.exports = mongoose.model("Notification", notificationSchema); 
+// Validation to ensure recipient and sender are different
+notificationSchema.pre('validate', function(next) {
+  if (this.recipient.equals(this.sender)) {
+    return next(new Error('Recipient and sender cannot be the same'));
+  }
+  next();
+});
+
+module.exports = mongoose.model("Notification", notificationSchema);

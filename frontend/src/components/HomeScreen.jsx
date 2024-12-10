@@ -25,6 +25,14 @@ const HomeScreen = () => {
   const [trendingRecipes, setTrendingRecipes] = useState([]);  
   const [heartStates, setHeartStates] = useState({});
   const [topUsers, setTopUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState({
+    trending: true,
+    breakfast: true,
+    lunch: true,
+    dinner: true,
+    snacks: true,
+    desserts: true
+  });
 
   // Fetch user's liked recipes
   const fetchUserLikedRecipes = async () => {
@@ -61,6 +69,7 @@ const HomeScreen = () => {
         }));
         console.log('Trending recipes with likes:', trendingWithLikes);
         setTrendingRecipes(trendingWithLikes);
+        setIsLoading(prev => ({ ...prev, trending: false }));
 
         // Fetch other categories
         const categories = ["breakfast", "lunch", "dinner", "snacks", "desserts"];
@@ -82,23 +91,40 @@ const HomeScreen = () => {
           desserts: results[4],
         });
 
+        setIsLoading({
+          trending: false,
+          breakfast: false,
+          lunch: false,
+          dinner: false,
+          snacks: false,
+          desserts: false
+        });
+
       } catch (error) {
         console.error('Error initializing recipes:', error);
+        setIsLoading({
+          trending: false,
+          breakfast: false,
+          lunch: false,
+          dinner: false,
+          snacks: false,
+          desserts: false
+        });
       }
     };
 
     initializeRecipes();
   }, []);
 
-  // Update toggleHeart to handle both regular and trending recipes
   const toggleHeart = async (recipeId) => {
     try {
       console.log('Toggling heart for recipe:', recipeId);
       
       // Optimistically update UI
+      const newLikedState = !heartStates[recipeId];
       setHeartStates(prev => ({
         ...prev,
-        [recipeId]: !prev[recipeId]
+        [recipeId]: newLikedState
       }));
 
       const response = await api.post(`/recipes/like/${recipeId}`);
@@ -126,6 +152,12 @@ const HomeScreen = () => {
         )
       );
 
+      // Ensure heart states stay in sync
+      setHeartStates(prev => ({
+        ...prev,
+        [recipeId]: response.data.isLiked
+      }));
+
       toast.success(
         response.data.isLiked
           ? "Recipe added to favorites!"
@@ -136,7 +168,7 @@ const HomeScreen = () => {
       // Revert the optimistic update
       setHeartStates(prev => ({
         ...prev,
-        [recipeId]: !prev[recipeId]
+        [recipeId]: !newLikedState
       }));
       
       console.error("Error toggling like state:", error.response?.data || error.message);
@@ -180,81 +212,16 @@ const HomeScreen = () => {
   ];
 
   useEffect(() => {
-    const fetchRecipes = async (category) => {
+    const fetchTopUsers = async () => {
       try {
-          const response = await api.get(`/recipes/category/${category}`);
-          return response.data; // Prioritized recipes with `isLiked` flag
+        const response = await api.get('/auth/top-users');
+        setTopUsers(response.data);
       } catch (error) {
-          console.error(`Error fetching ${category} recipes:`, error);
-          return [];
+        console.error('Error fetching top users:', error);
       }
-  };
-  
-    const fetchAllRecipes = async () => {
-      const categories = ["breakfast", "lunch", "dinner", "snacks", "desserts"];
-      const results = await Promise.all(categories.map(fetchRecipes));
-      setRecipes({
-        breakfast: results[0],
-        lunch: results[1],
-        dinner: results[2],
-        snacks: results[3],
-        desserts: results[4],
-      });
-
-      const userResponse = await api.get("/auth/profile");
-      const likedRecipes = userResponse.data.likedRecipes.reduce((state, id) => {
-        state[id] = true;
-        return state;
-      }, {});
-      setHeartStates(likedRecipes);
     };
 
-    fetchAllRecipes();
-
-    const initializeRecipes = async () => {
-      const categories = ["breakfast", "lunch", "dinner", "snacks", "desserts"];
-      const updatedRecipes = {};
-
-      for (const category of categories) {
-          const data = await fetchRecipes(category);
-          updatedRecipes[category] = data;
-
-          // Update heartStates for each recipe
-          setHeartStates((prev) => ({
-              ...prev,
-              ...data.reduce((acc, recipe) => {
-                  acc[recipe._id] = recipe.isLiked;
-                  return acc;
-              }, {}),
-          }));
-      }
-
-      setRecipes(updatedRecipes);
-  };
-
-  initializeRecipes();
-
-  const fetchTrendingRecipes = async () => {
-      try {
-          const response = await api.get("/recipes/trending");
-          setTrendingRecipes(response.data);
-      } catch (error) {
-          console.error("Error fetching trending recipes:", error);
-      }
-  };
-  fetchRecipes();
-  fetchTrendingRecipes();
-
-  const initializeData = async () => {
-      try {
-          const response = await api.get("/recipes/trending");
-          setTrendingRecipes(response.data);
-      } catch (error) {
-          console.error("Error fetching trending recipes:", error);
-      }
-  };
-
-  initializeData();
+    fetchTopUsers();
   }, []);
 
   const sliderSettings = {
@@ -295,19 +262,6 @@ const HomeScreen = () => {
     });
   };
 
-  useEffect(() => {
-    const fetchTopUsers = async () => {
-      try {
-        const response = await api.get('/auth/top-users');
-        setTopUsers(response.data);
-      } catch (error) {
-        console.error('Error fetching top users:', error);
-      }
-    };
-
-    fetchTopUsers();
-  }, []);
-
   return (
     <div className="flex flex-col bg-white w-full pb-24">
       <ToastContainer />
@@ -315,113 +269,124 @@ const HomeScreen = () => {
 
       <div className="mt-24">
         <h2 className="text-2xl font-extrabold text-orange-500 mb-6 text-center">Trending Recipes</h2>
-        <Slider {...sliderSettings}>
-            {trendingRecipes.map((recipe, index) => (
-                <div
-                    key={recipe._id}
-                    className={`transition-transform duration-300 ease-in-out ${
-                        index === Math.floor(trendingRecipes.length / 2)
-                            ? "scale-90"
-                            : "scale-90"
-                    }`}
-                >
-                    <div className="bg-[#463C33] rounded-lg shadow-md overflow-hidden flex-shrink-0 w-60">
-                        <div className="relative">
-                        <Link to={`/recipes/${recipe._id}`}>
-                          <img
-                            src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
-                            alt={recipe.title}
-                            className="w-full h-56 object-cover"
-                          />
-                          <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
-                            {recipe.time}
-                          </span>
-                        </Link>
-                            <button
-                              className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
-                              onClick={() => toggleHeart(recipe._id)}
-                            >
-                              {heartStates[recipe._id] ? (
-                                <FaHeart size={20} className="text-white" />
-                              ) : (
-                                <FaRegHeart size={20} className="text-white" />
-                              )}
-                            </button>
-                        </div>
-                        <div className="flex justify-between p-4">
-                            <div className="flex items-center space-x-2">
-                                <FaHeart size={16} className="text-white" />
-                                <span className="text-white">{recipe.likes}</span>
-                            </div>
-                            <img
-                                src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
-                                alt={recipe.user.name}
-                                className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  navigate(`/user/${recipe.user._id}`);
-                                }}
-                            />
-                        </div>
-                        <div className="p-4 flex flex-col justify-between" style={{ minHeight: "130px" }}>
-                            <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">{recipe.title}</h3>
-                            <button 
-                              className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-3 w-full"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                navigate('/add-to-meal-plan', { state: { recipe } });
-                              }}
-                            >
-                              Add to Meal Plan
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            ))}
-        </Slider>
-    </div>
-
-        {/* Categories Section */}
-        <div className="mt-10 px-4">
-          <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Categories</h2>
-          <div className="overflow-x-auto scroll-smooth no-scrollbar mt-4">
-            <div className="flex" style={{ gap: "1rem", width: "100%" }}>
-              {categories.map((category) => (
-                <div
-                  key={category.id}
-                  className="flex flex-col items-center justify-center flex-shrink-0 cursor-pointer"
-                  style={{ width: "calc(25% - 1rem)", height: "auto" }}
-                  onClick={() => handleIngredientClick(category.name)}
-                >
-                  <img
-                    src={category.image}
-                    alt={category.name}
-                    className="w-16 h-16 md:w-20 md:h-20"
-                  />
-                  <span className="text-[#463C33] text-xs font-bold mt-2 text-center h-8 flex items-center">
-                    {category.name}
-                  </span>
-                </div>
-              ))}
-            </div>
+        {isLoading.trending ? (
+          <div className="flex justify-center items-center h-[200px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
           </div>
-          
-          {/* Show All Ingredients Button */}
-          <div className="flex justify-center mt-4">
-            <button 
-              onClick={() => navigate('/all-ingredients')}
-              className="text-orange-500 text-sm font-medium underline"
-            >
-              Show all ingredients
-            </button>
+        ) : (
+          <Slider {...sliderSettings}>
+            {trendingRecipes.map((recipe, index) => (
+              <div
+                key={recipe._id}
+                className={`transition-transform duration-300 ease-in-out ${
+                  index === Math.floor(trendingRecipes.length / 2)
+                    ? "scale-90"
+                    : "scale-90"
+                }`}
+              >
+                <div className="bg-[#463C33] rounded-lg shadow-md overflow-hidden flex-shrink-0 w-60">
+                  <div className="relative">
+                  <Link to={`/recipes/${recipe._id}`}>
+                    <img
+                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
+                      alt={recipe.title}
+                      className="w-full h-56 object-cover"
+                    />
+                    <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
+                      {recipe.time}
+                    </span>
+                  </Link>
+                    <button
+                      className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
+                      onClick={() => toggleHeart(recipe._id)}
+                    >
+                      {heartStates[recipe._id] ? (
+                        <FaHeart size={20} className="text-white" />
+                      ) : (
+                        <FaRegHeart size={20} className="text-white" />
+                      )}
+                    </button>
+                  </div>
+                  <div className="flex justify-between p-4">
+                    <div className="flex items-center space-x-2">
+                      <FaHeart size={16} className="text-white" />
+                      <span className="text-white">{recipe.likes}</span>
+                    </div>
+                    <img
+                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
+                      alt={recipe.user.name}
+                      className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        navigate(`/user/${recipe.user._id}`);
+                      }}
+                    />
+                  </div>
+                  <div className="p-4 flex flex-col justify-between" style={{ minHeight: "130px" }}>
+                    <h3 className="text-white font-bold text-lg -mt-5 line-clamp-2">{recipe.title}</h3>
+                    <button 
+                      className="bg-white text-[#463C33] font-bold rounded-full py-2 px-4 mt-3 w-full"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        navigate('/add-to-meal-plan', { state: { recipe } });
+                      }}
+                    >
+                      Add to Meal Plan
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </Slider>
+        )}
+      </div>
+
+      {/* Categories Section */}
+      <div className="mt-10 px-4">
+        <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Categories</h2>
+        <div className="overflow-x-auto scroll-smooth no-scrollbar mt-4">
+          <div className="flex" style={{ gap: "1rem", width: "100%" }}>
+            {categories.map((category) => (
+              <div
+                key={category.id}
+                className="flex flex-col items-center justify-center flex-shrink-0 cursor-pointer"
+                style={{ width: "calc(25% - 1rem)", height: "auto" }}
+                onClick={() => handleIngredientClick(category.name)}
+              >
+                <img
+                  src={category.image}
+                  alt={category.name}
+                  className="w-16 h-16 md:w-20 md:h-20"
+                />
+                <span className="text-[#463C33] text-xs font-bold mt-2 text-center h-8 flex items-center">
+                  {category.name}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
+        
+        {/* Show All Ingredients Button */}
+        <div className="flex justify-center mt-4">
+          <button 
+            onClick={() => navigate('/all-ingredients')}
+            className="text-orange-500 text-sm font-medium underline"
+          >
+            Show all ingredients
+          </button>
+        </div>
+      </div>
 
-        {/* Breakfast */}
-        <div className="mt-10 pl-4">
-          <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Breakfast</h2>
+      {/* Breakfast */}
+      <div className="mt-10 pl-4">
+        <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Breakfast</h2>
+        {isLoading.breakfast ? (
+          <div className="flex justify-center items-center h-[200px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        ) : (
           <div className="flex gap-4 overflow-x-auto scroll-smooth mt-4 no-scrollbar">
             {recipes.breakfast?.map((recipe) => (
               <div key={recipe._id} className="bg-[#463C33] rounded-lg w-60 shadow-md overflow-hidden flex-shrink-0">
@@ -492,11 +457,17 @@ const HomeScreen = () => {
               </div>
             ))}
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Lunch */}
-        <div className="mt-10 pl-4">
-          <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Lunch</h2>
+      {/* Lunch */}
+      <div className="mt-10 pl-4">
+        <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Lunch</h2>
+        {isLoading.lunch ? (
+          <div className="flex justify-center items-center h-[200px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        ) : (
           <div className="flex gap-4 overflow-x-auto scroll-smooth mt-4 no-scrollbar">
             {recipes.lunch?.map((recipe) => (
               <div key={recipe._id} className="bg-[#463C33] rounded-lg w-60 shadow-md overflow-hidden flex-shrink-0">
@@ -567,11 +538,17 @@ const HomeScreen = () => {
               </div>
             ))}
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Dinner */}
-        <div className="mt-10 pl-4">
-          <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Dinner</h2>
+      {/* Dinner */}
+      <div className="mt-10 pl-4">
+        <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Dinner</h2>
+        {isLoading.dinner ? (
+          <div className="flex justify-center items-center h-[200px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        ) : (
           <div className="flex gap-4 overflow-x-auto scroll-smooth mt-4 no-scrollbar">
             {recipes.dinner?.map((recipe) => (
               <div key={recipe._id} className="bg-[#463C33] rounded-lg w-60 shadow-md overflow-hidden flex-shrink-0">
@@ -609,7 +586,7 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                          src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
+                        src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
                         onClick={(e) => {
@@ -642,11 +619,17 @@ const HomeScreen = () => {
               </div>
             ))}
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Snacks */}
-        <div className="mt-10 pl-4">
-          <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Snacks</h2>
+      {/* Snacks */}
+      <div className="mt-10 pl-4">
+        <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Snacks</h2>
+        {isLoading.snacks ? (
+          <div className="flex justify-center items-center h-[200px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        ) : (
           <div className="flex gap-4 overflow-x-auto scroll-smooth mt-4 no-scrollbar">
             {recipes.snacks?.map((recipe) => (
               <div key={recipe._id} className="bg-[#463C33] rounded-lg w-60 shadow-md overflow-hidden flex-shrink-0">
@@ -717,11 +700,17 @@ const HomeScreen = () => {
               </div>
             ))}
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Desserts */}
-        <div className="mt-10 pl-4">
-          <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Desserts</h2>
+      {/* Desserts */}
+      <div className="mt-10 pl-4">
+        <h2 className="text-2xl font-extrabold text-orange-500 mb-6">Desserts</h2>
+        {isLoading.desserts ? (
+          <div className="flex justify-center items-center h-[200px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        ) : (
           <div className="flex gap-4 overflow-x-auto scroll-smooth mt-4 no-scrollbar">
             {recipes.desserts?.map((recipe) => (
               <div key={recipe._id} className="bg-[#463C33] rounded-lg w-60 shadow-md overflow-hidden flex-shrink-0">
@@ -792,7 +781,8 @@ const HomeScreen = () => {
               </div>
             ))}
           </div>
-        </div>
+        )}
+      </div>
 
       {/* Best Recipes From */}
       <div className="mt-6 px-4">

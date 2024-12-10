@@ -506,53 +506,84 @@ router.post('/forgot-password', async (req, res) => {
   // ... rest of your forgot-password code
 });
 
-// Add this route to get top users based on recipe likes
+// Get top users (only users with uploaded recipes)
 router.get("/top-users", async (req, res) => {
   try {
-    const users = await User.aggregate([
-      // Lookup to get all recipes for each user
+    // First, find users who have uploaded at least one recipe
+    const usersWithRecipes = await Recipe.distinct('user');
+    
+    if (usersWithRecipes.length === 0) {
+      return res.json([]);
+    }
+
+    // Then aggregate their recipe stats
+    const userRecipes = await Recipe.aggregate([
       {
-        $lookup: {
-          from: "recipes",
-          localField: "_id",
-          foreignField: "user",
-          as: "recipes"
+        $match: {
+          user: { $in: usersWithRecipes }
         }
       },
-      // Add total likes field
       {
-        $addFields: {
-          totalLikes: {
-            $sum: "$recipes.likes"
-          }
+        $group: {
+          _id: '$user',
+          recipeCount: { $sum: 1 },
+          totalLikes: { $sum: { $ifNull: ['$likes', 0] } }
         }
       },
-      // Sort by total likes
       {
-        $sort: {
-          totalLikes: -1
+        $match: {
+          recipeCount: { $gt: 0 }  // Extra check to ensure user has recipes
         }
       },
-      // Limit to top 10
+      {
+        $sort: { 
+          totalLikes: -1,
+          recipeCount: -1 
+        }
+      },
       {
         $limit: 10
-      },
-      // Project only needed fields
-      {
-        $project: {
-          _id: 1,
-          name: 1,
-          profilePicture: 1,
-          totalLikes: 1,
-          recipeCount: { $size: "$recipes" }
-        }
       }
     ]);
 
-    res.json(users);
+    if (userRecipes.length === 0) {
+      return res.json([]);
+    }
+
+    // Get user details for the top users
+    const topUsers = await User.find(
+      { 
+        _id: { $in: userRecipes.map(user => user._id) }
+      },
+      'name profilePicture'
+    );
+
+    // Combine user details with their recipe stats
+    const enrichedTopUsers = topUsers.map(user => {
+      const userStats = userRecipes.find(stats => stats._id.equals(user._id));
+      if (!userStats) return null; // Skip if no stats found (shouldn't happen)
+      
+      return {
+        _id: user._id,
+        name: user.name,
+        profilePicture: user.profilePicture,
+        recipeCount: userStats.recipeCount,
+        totalLikes: userStats.totalLikes
+      };
+    }).filter(Boolean); // Remove any null entries
+
+    // Final sort to ensure order
+    enrichedTopUsers.sort((a, b) => {
+      if (b.totalLikes !== a.totalLikes) {
+        return b.totalLikes - a.totalLikes;
+      }
+      return b.recipeCount - a.recipeCount;
+    });
+
+    res.json(enrichedTopUsers);
   } catch (error) {
     console.error('Error fetching top users:', error);
-    res.status(500).json({ message: "Error fetching top users" });
+    res.status(500).json({ message: 'Error fetching top users', error: error.message });
   }
 });
 

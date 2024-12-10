@@ -92,7 +92,30 @@ const SearchResults = () => {
 
   const toggleHeart = async (recipeId) => {
     try {
-      await api.post(`/recipes/like/${recipeId}`);
+      const response = await api.post(`/recipes/like/${recipeId}`);
+
+      // Update both filteredRecipes and recipes states
+      setFilteredRecipes(prev => 
+        prev.map(recipe => 
+          recipe._id === recipeId 
+            ? { 
+                ...recipe, 
+                likes: response.data.likes 
+              } 
+            : recipe
+        )
+      );
+
+      setRecipes(prev => 
+        prev.map(recipe => 
+          recipe._id === recipeId 
+            ? { 
+                ...recipe, 
+                likes: response.data.likes 
+              } 
+            : recipe
+        )
+      );
 
       setLikedRecipes(prev => {
         const newLikedRecipes = new Set(prev);
@@ -179,7 +202,11 @@ const SearchResults = () => {
                       <div className="flex justify-between items-center mb-1">
                         <div className="flex items-center space-x-1">
                           <FaHeart size={12} className="text-white" />
-                          <span className="text-white text-xs">{recipe.likes?.length || 0}</span>
+                          <span className="text-white text-xs">
+                            {typeof recipe.likes === 'number' 
+                              ? recipe.likes 
+                              : (recipe.likes?.length || 0)}
+                          </span>
                         </div>
                         <img
                           src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user?.profilePicture}`}
@@ -230,4 +257,4 @@ const SearchResults = () => {
   );
 };
 
-export default SearchResults; 
+export default SearchResults;
