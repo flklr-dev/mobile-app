@@ -3,13 +3,27 @@ import { useNavigate } from "react-router-dom";
 import api from '../config/axios';
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { FaChevronLeft, FaRegHeart, FaClipboardList, FaStore, FaCog, FaPhone, FaRegCommentDots, FaInfoCircle, FaSignOutAlt } from "react-icons/fa";
+import { 
+  FaChevronLeft, 
+  FaRegHeart, 
+  FaClipboardList, 
+  FaStore, 
+  FaCog, 
+  FaPhone, 
+  FaRegCommentDots, 
+  FaInfoCircle, 
+  FaSignOutAlt,
+  FaUtensils,
+  FaHeart,
+  FaUsers
+} from "react-icons/fa";
 
 const ProfileScreen = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState({ name: "", profilePicture: "" });
   const [error, setError] = useState("");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -50,6 +64,58 @@ const ProfileScreen = () => {
       navigate("/login");
     }, 1000);
   };
+
+  const handleAboutClick = () => {
+    setShowAboutModal(true);
+  };
+
+  const AboutPantryPalsModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">About PantryPals</h2>
+          <button 
+            onClick={() => setShowAboutModal(false)}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="space-y-6 text-gray-700">
+          <div className="flex items-center space-x-4 bg-orange-50 p-4 rounded-xl">
+            <FaUtensils className="text-orange-500 text-3xl" />
+            <div>
+              <h3 className="font-bold text-lg">Smart Recipe Management</h3>
+              <p className="text-sm">Discover, save, and organize your favorite recipes effortlessly.</p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-4 bg-orange-50 p-4 rounded-xl">
+            <FaHeart className="text-orange-500 text-3xl" />
+            <div>
+              <h3 className="font-bold text-lg">Personalized Recommendations</h3>
+              <p className="text-sm">Get recipe suggestions tailored to your taste and dietary preferences.</p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-4 bg-orange-50 p-4 rounded-xl">
+            <FaUsers className="text-orange-500 text-3xl" />
+            <div>
+              <h3 className="font-bold text-lg">Community Driven</h3>
+              <p className="text-sm">Share, collaborate, and explore recipes from a vibrant community.</p>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <p className="italic text-sm text-gray-600">
+              Version 1.0.0 • Made with ❤️ by the PantryPals Team
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   if (error) {
     return (
@@ -124,7 +190,7 @@ const ProfileScreen = () => {
 
         {/* Settings List */}
         <div className="mt-6 bg-white rounded-2xl shadow-sm overflow-hidden">
-          {[
+          {[/* eslint-disable react/jsx-key */
             { icon: FaCog, text: "Settings" },
             { icon: FaPhone, text: "Contact Support" },
             { icon: FaRegCommentDots, text: "Submit Feedback" },
@@ -132,7 +198,15 @@ const ProfileScreen = () => {
           ].map((item, index) => (
             <div
               key={index}
-              onClick={() => alert(`${item.text} clicked`)}
+              onClick={() => {
+                if (item.text === "Submit Feedback") {
+                  navigate('/feedback');
+                } else if (item.text === "About PantryPals") {
+                  handleAboutClick();
+                } else {
+                  alert(`${item.text} clicked`);
+                }
+              }}
               className="flex items-center p-4 hover:bg-gray-50 cursor-pointer transition-colors border-b last:border-b-0 border-gray-100"
             >
               <div className="bg-orange-50 p-2 rounded-full">
@@ -183,6 +257,9 @@ const ProfileScreen = () => {
             </div>
           </div>
         )}
+
+        {/* About PantryPals Modal */}
+        {showAboutModal && <AboutPantryPalsModal />}
 
         {/* Bottom Spacing */}
         <div className="h-20" />
