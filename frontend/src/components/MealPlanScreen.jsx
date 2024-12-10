@@ -4,8 +4,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Header from './Header';
 import BottomNavbar from './BottomNavbar';
 import api from '../config/axios';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 const MealPlanScreen = () => {
   const location = useLocation();
