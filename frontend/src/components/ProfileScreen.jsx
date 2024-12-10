@@ -25,6 +25,7 @@ const ProfileScreen = () => {
   const [error, setError] = useState("");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showContactSupportModal, setShowContactSupportModal] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -68,6 +69,10 @@ const ProfileScreen = () => {
 
   const handleAboutClick = () => {
     setShowAboutModal(true);
+  };
+
+  const handleContactSupportClick = () => {
+    setShowContactSupportModal(true);
   };
 
   const AboutPantryPalsModal = () => (
@@ -118,6 +123,56 @@ const ProfileScreen = () => {
     </div>
   );
 
+  const ContactSupportModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Contact Support</h2>
+          <button 
+            onClick={() => setShowContactSupportModal(false)}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="space-y-6 text-gray-700">
+          <div className="bg-orange-50 p-4 rounded-xl">
+            <h3 className="font-bold text-lg mb-2">Need Help?</h3>
+            <p className="text-sm mb-4">We're here to assist you. Feel free to reach out through any of the following channels:</p>
+            
+            <div className="space-y-3">
+              <div className="flex items-center space-x-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <span>Email: kitadriand@gmail.com</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                <span>Facebook: Kit Adrian Diocares</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <span>LinkedIn: Kit Adrian Diocares</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <p className="italic text-sm text-gray-600">
+              We typically respond within 24-48 hours.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen text-red-500">
@@ -129,6 +184,32 @@ const ProfileScreen = () => {
   return (
     <div className="min-h-screen bg-gray-50 relative">
       <ToastContainer />
+      
+      {/* Modals */}
+      {showAboutModal && <AboutPantryPalsModal />}
+      {showContactSupportModal && <ContactSupportModal />}
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+            <h2 className="text-xl font-bold mb-4 text-center">Confirm Logout</h2>
+            <p className="text-gray-600 text-center mb-6">Are you sure you want to log out?</p>
+            <div className="flex justify-between space-x-4">
+              <button 
+                onClick={() => setShowLogoutModal(false)}
+                className="w-full py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleLogoutConfirm}
+                className="w-full py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Header */}
       <div className="fixed top-0 left-0 w-full z-10 bg-orange-500 shadow-md">
@@ -193,14 +274,16 @@ const ProfileScreen = () => {
         <div className="mt-6 bg-white rounded-2xl shadow-sm overflow-hidden">
           {[/* eslint-disable react/jsx-key */
             { icon: FaCog, text: "Settings" },
-            { icon: FaPhone, text: "Contact Support" },
+            { icon: FaPhone, text: "Contact Support", onClick: handleContactSupportClick },
             { icon: FaRegCommentDots, text: "Submit Feedback" },
             { icon: FaInfoCircle, text: "About PantryPals" },
           ].map((item, index) => (
             <div
               key={index}
               onClick={() => {
-                if (item.text === "Submit Feedback") {
+                if (item.onClick) {
+                  item.onClick();
+                } else if (item.text === "Submit Feedback") {
                   navigate('/feedback');
                 } else if (item.text === "About PantryPals") {
                   handleAboutClick();
@@ -230,37 +313,6 @@ const ProfileScreen = () => {
             <span className="ml-4 text-red-500 font-medium">Logout</span>
           </div>
         </div>
-
-        {/* Logout Confirmation Modal */}
-        {showLogoutModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Confirm Logout
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Are you sure you want to logout?
-              </p>
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => setShowLogoutModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-full font-medium hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleLogoutConfirm}
-                  className="flex-1 px-4 py-2 bg-red-500 text-white rounded-full font-medium hover:bg-red-600 transition-colors"
-                >
-                  Logout
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* About PantryPals Modal */}
-        {showAboutModal && <AboutPantryPalsModal />}
 
         {/* Bottom Spacing */}
         <div className="h-20" />
