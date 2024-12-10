@@ -117,11 +117,12 @@ const HomeScreen = () => {
   }, []);
 
   const toggleHeart = async (recipeId) => {
+    let newLikedState;
     try {
       console.log('Toggling heart for recipe:', recipeId);
       
       // Optimistically update UI
-      const newLikedState = !heartStates[recipeId];
+      newLikedState = !heartStates[recipeId];
       setHeartStates(prev => ({
         ...prev,
         [recipeId]: newLikedState
@@ -136,23 +137,14 @@ const HomeScreen = () => {
         Object.keys(updatedRecipes).forEach(category => {
           updatedRecipes[category] = updatedRecipes[category].map(recipe =>
             recipe._id === recipeId
-              ? { ...recipe, likes: response.data.likes, isLiked: response.data.isLiked }
+              ? { ...recipe, likes: response.data.likes }
               : recipe
           );
         });
         return updatedRecipes;
       });
 
-      // Update trending recipes
-      setTrendingRecipes(prevTrending => 
-        prevTrending.map(recipe =>
-          recipe._id === recipeId
-            ? { ...recipe, likes: response.data.likes, isLiked: response.data.isLiked }
-            : recipe
-        )
-      );
-
-      // Ensure heart states stay in sync
+      // Update heart states with server response
       setHeartStates(prev => ({
         ...prev,
         [recipeId]: response.data.isLiked
@@ -165,14 +157,28 @@ const HomeScreen = () => {
         { position: "top-center", autoClose: 1000 }
       );
     } catch (error) {
-      // Revert the optimistic update
+      console.error('Detailed error toggling like:', {
+        message: error.response?.data?.message || error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        fullError: error
+      });
+
+      // Revert the optimistic update on error
       setHeartStates(prev => ({
         ...prev,
         [recipeId]: !newLikedState
       }));
+
+      // More specific error handling
+      const errorMessage = error.response?.data?.message || 
+                           error.response?.data?.error || 
+                           "Failed to update like status";
       
-      console.error("Error toggling like state:", error.response?.data || error.message);
-      toast.error("Failed to update favorite status");
+      toast.error(errorMessage, { 
+        position: "top-center", 
+        autoClose: 2000 
+      });
     }
   };
   

@@ -9,29 +9,6 @@ const Comment = require("../models/Comment");
 const Notification = require("../models/Notification");
 const { authenticateToken } = require("../middleware/auth");
 const router = express.Router();
-const AWS = require('aws-sdk');
-
-// Configure AWS SDK
-AWS.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION
-});
-
-const s3 = new AWS.S3();
-
-const uploadToS3 = (file) => {
-  const fileContent = fs.readFileSync(file.path);
-  const params = {
-    Bucket: process.env.AWS_BUCKET_NAME,
-    Key: `uploads/${file.filename}`,
-    Body: fileContent,
-    ContentType: file.mimetype,
-    ACL: 'public-read'
-  };
-
-  return s3.upload(params).promise();
-};
 
 // Create uploads directory if it doesn't exist
 const createUploadsDirectory = () => {
@@ -51,9 +28,16 @@ const storage = multer.diskStorage({
     },
     // Define how the filename will be stored
     filename: (req, file, cb) => {
-        // Create unique filename
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
+        // Get the original filename without extension
+        const originalNameWithoutExt = path.parse(file.originalname).name
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '-')  // Replace non-alphanumeric chars with dash
+            .replace(/-+/g, '-')         // Replace multiple dashes with single dash
+            .substring(0, 20);           // Limit to 20 characters
+
+        // Create unique filename with timestamp and original name
+        const uniqueFilename = `${Date.now()}-${originalNameWithoutExt}${path.extname(file.originalname)}`;
+        cb(null, uniqueFilename);
     },
 });
 
@@ -72,216 +56,6 @@ const upload = multer({
     limits: {
         fileSize: 5 * 1024 * 1024 // 5MB limit
     }
-});
-
-// Add a recipe
-router.post("/", authenticateToken, upload.single("image"), async (req, res) => {
-  console.log('FULL REQUEST DETAILS:');
-  console.log('Headers:', JSON.stringify(req.headers, null, 2));
-  console.log('Request User:', JSON.stringify(req.user, null, 2));
-  console.log('Incoming request body:', JSON.stringify(req.body, null, 2));
-  console.log('Uploaded file:', req.file);
-
-  try {
-    // Detailed authentication logging
-    if (!req.user) {
-      console.error('CRITICAL: No user object in request');
-      return res.status(401).json({ 
-        message: "Authentication failed", 
-        details: "No user object found in request" 
-      });
-    }
-
-    // Extract user ID with multiple fallback methods
-    const userId = 
-      req.user._id || 
-      req.user.userId || 
-      req.user.id || 
-      (req.user.sub ? req.user.sub : null);
-
-    if (!userId) {
-      console.error('CRITICAL: Cannot extract user ID', req.user);
-      return res.status(401).json({ 
-        message: "Authentication failed", 
-        details: "Unable to extract user ID" 
-      });
-    }
-
-    const {
-      title,
-      description,
-      category,
-      servingSize,
-      ingredients,
-      cookingInstructions,
-      authorNotes,
-      isPublic,
-      time
-    } = req.body;
-
-    // Detailed field logging
-    console.log('Parsed Fields:', {
-      userId,
-      title, 
-      description, 
-      category, 
-      servingSize, 
-      ingredientsType: typeof ingredients,
-      ingredientsValue: ingredients,
-      cookingInstructionsType: typeof cookingInstructions,
-      cookingInstructionsValue: cookingInstructions,
-      authorNotes, 
-      isPublic, 
-      time
-    });
-
-    // Validate required fields with more detailed checks
-    const requiredFields = [
-      { name: 'title', value: title },
-      { name: 'description', value: description },
-      { name: 'category', value: category },
-      { name: 'servingSize', value: servingSize },
-      { name: 'time', value: time }
-    ];
-
-    const missingFields = requiredFields
-      .filter(field => !field.value || field.value.trim() === '')
-      .map(field => field.name);
-
-    if (missingFields.length > 0) {
-      console.log('Missing fields:', missingFields);
-      return res.status(400).json({ 
-        message: `Missing required fields: ${missingFields.join(', ')}` 
-      });
-    }
-
-    // Parse JSON strings safely with more error details
-    let parsedIngredients = [], parsedInstructions = [];
-    try {
-      // Extremely robust parsing
-      parsedIngredients = typeof ingredients === 'string' 
-        ? JSON.parse(ingredients) 
-        : Array.isArray(ingredients) 
-          ? ingredients 
-          : [];
-
-      parsedInstructions = typeof cookingInstructions === 'string'
-        ? JSON.parse(cookingInstructions)
-        : Array.isArray(cookingInstructions)
-          ? cookingInstructions
-          : [];
-
-      // Additional validation for ingredients and instructions
-      if (!Array.isArray(parsedIngredients) || !Array.isArray(parsedInstructions)) {
-        throw new Error('Ingredients and instructions must be arrays');
-      }
-
-      if (parsedIngredients.length === 0 || parsedInstructions.length === 0) {
-        return res.status(400).json({ 
-          message: "Recipe must have at least one ingredient and one instruction" 
-        });
-      }
-    } catch (parseError) {
-      console.error('CRITICAL JSON Parsing Error:', parseError);
-      console.error('Ingredients:', ingredients);
-      console.error('Cooking Instructions:', cookingInstructions);
-      return res.status(400).json({ 
-        message: "Invalid ingredients or instructions format",
-        error: parseError.message,
-        ingredients,
-        cookingInstructions
-      });
-    }
-
-    // Handle image path
-    let imagePath = null;
-    if (req.file) {
-      try {
-        if (process.env.NODE_ENV === 'production') {
-          const uploadResult = await uploadToS3(req.file);
-          imagePath = uploadResult.Location; // S3 URL
-        } else {
-          // Ensure path uses forward slashes for consistency
-          imagePath = req.file.path.replace(/\\/g, '/').replace(/.*uploads/, 'uploads');
-        }
-      } catch (uploadError) {
-        console.error('Image upload error:', uploadError);
-        return res.status(500).json({ 
-          message: "Failed to upload image", 
-          error: uploadError.message 
-        });
-      }
-    }
-
-    // Create new recipe object with more robust validation
-    const recipe = new Recipe({
-      user: userId,  // Use extracted user ID
-      title: title.trim(),
-      description: description.trim(),
-      category,
-      servingSize,
-      ingredients: parsedIngredients,
-      cookingInstructions: parsedInstructions,
-      authorNotes: authorNotes ? authorNotes.trim() : "",
-      isPublic: isPublic === "true" || isPublic === true,
-      time,
-      image: imagePath,
-      likes: []  // Initialize as empty array
-    });
-
-    console.log('Recipe object to save:', JSON.stringify(recipe, null, 2));
-
-    // Save the recipe with error handling
-    try {
-      await recipe.save();
-      console.log('Recipe saved successfully:', recipe._id);
-
-      res.status(201).json({ 
-        message: "Recipe created successfully",
-        recipe: {
-          _id: recipe._id,
-          title: recipe.title,
-          category: recipe.category
-        }
-      });
-    } catch (saveError) {
-      console.error('CRITICAL Recipe save error:', saveError);
-      
-      // Handle specific Mongoose validation errors
-      if (saveError.name === 'ValidationError') {
-        const validationErrors = Object.values(saveError.errors)
-          .map(err => err.message);
-        
-        return res.status(400).json({ 
-          message: "Validation error", 
-          errors: validationErrors 
-        });
-      }
-
-      // Handle duplicate key errors
-      if (saveError.code === 11000) {
-        return res.status(400).json({ 
-          message: "A recipe with this title already exists" 
-        });
-      }
-
-      // Generic save error
-      res.status(500).json({ 
-        message: "Error saving recipe",
-        error: process.env.NODE_ENV === 'development' ? saveError.message : undefined,
-        details: JSON.stringify(saveError)
-      });
-    }
-
-  } catch (error) {
-    console.error('CRITICAL Unexpected error in recipe creation:', error);
-    
-    res.status(500).json({ 
-      message: "Unexpected error creating recipe",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-      details: JSON.stringify(error)
-    });
-  }
 });
 
 router.get("/category/:category", authenticateToken, async (req, res) => {
@@ -336,30 +110,80 @@ router.post("/like/:recipeId", authenticateToken, async (req, res) => {
     const { recipeId } = req.params;
     const userId = req.user._id;
 
+    console.log(`Like Request - RecipeID: ${recipeId}, UserID: ${userId}`);
+    console.log('Full user object:', req.user);
+
+    // Validate input
+    if (!recipeId || !userId) {
+      console.error('Invalid input: Missing recipeId or userId');
+      return res.status(400).json({ message: "Invalid request parameters" });
+    }
+
+    // Additional logging for debugging
+    const userExists = await User.findById(userId);
+    if (!userExists) {
+      console.error(`User not found: ${userId}`);
+      return res.status(404).json({ message: "User not found" });
+    }
+
     const recipe = await Recipe.findById(recipeId);
     if (!recipe) {
+      console.error(`Recipe not found: ${recipeId}`);
       return res.status(404).json({ message: "Recipe not found" });
     }
 
-    const isLiked = recipe.likes.includes(userId);
+    // Check if user has already liked the recipe
+    const userLikedRecipe = await User.findOne({
+      _id: userId,
+      likedRecipes: recipeId
+    });
+
+    let isLiked = !!userLikedRecipe;
+    console.log(`Current like status: ${isLiked}`);
 
     if (isLiked) {
-      // Unlike
-      recipe.likes = recipe.likes.filter(id => id.toString() !== userId.toString());
+      // Unlike: Remove from user's liked recipes and decrement likes
+      await User.findByIdAndUpdate(userId, {
+        $pull: { likedRecipes: recipeId }
+      });
+      recipe.likes = Math.max(0, recipe.likes - 1);
     } else {
-      // Like
-      recipe.likes.push(userId);
+      // Like: Add to user's liked recipes and increment likes
+      await User.findByIdAndUpdate(userId, {
+        $addToSet: { likedRecipes: recipeId }
+      });
+      recipe.likes += 1;
     }
 
     await recipe.save();
 
+    console.log(`Like operation completed. New likes count: ${recipe.likes}`);
+
     res.json({ 
       message: isLiked ? "Recipe unliked" : "Recipe liked",
-      likes: recipe.likes.length  // Return the updated likes count
+      likes: recipe.likes,
+      isLiked: !isLiked  
     });
   } catch (error) {
-    console.error("Error toggling like:", error);
-    res.status(500).json({ message: "Failed to toggle like" });
+    console.error("Detailed error toggling like:", {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      userId: req.user?._id,
+      recipeId: req.params.recipeId
+    });
+    
+    // Log the full error for server-side debugging
+    console.error('Full error object:', error);
+
+    res.status(500).json({ 
+      message: "Failed to toggle like", 
+      error: error.message,
+      details: {
+        name: error.name,
+        stack: error.stack
+      }
+    });
   }
 });
 
@@ -580,6 +404,144 @@ router.delete("/:recipeId/comments/:commentId", authenticateToken, async (req, r
   }
 });
 
+// Create a new recipe
+router.post("/", authenticateToken, upload.single('image'), async (req, res) => {
+  // Log the entire request details for comprehensive debugging
+  console.log('FULL RECIPE CREATION REQUEST:', {
+    headers: req.headers,
+    body: req.body,
+    file: req.file,
+    user: req.user
+  });
+
+  try {
+    const userId = req.user.userId;
+    const { 
+      title, 
+      description, 
+      category, 
+      servingSize, 
+      ingredients, 
+      cookingInstructions, 
+      authorNotes, 
+      isPublic, 
+      time 
+    } = req.body;
+
+    // Comprehensive field validation
+    const validationErrors = [];
+    if (!title || title.trim() === '') validationErrors.push('Title is required');
+    if (!description || description.trim() === '') validationErrors.push('Description is required');
+    if (!category) validationErrors.push('Category is required');
+    if (!servingSize) validationErrors.push('Serving size is required');
+
+    // Check if there are validation errors
+    if (validationErrors.length > 0) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: validationErrors
+      });
+    }
+
+    // Safely parse ingredients and instructions
+    let parsedIngredients = [];
+    let parsedInstructions = [];
+    
+    try {
+      parsedIngredients = JSON.parse(ingredients || '[]');
+      parsedInstructions = JSON.parse(cookingInstructions || '[]');
+    } catch (parseError) {
+      return res.status(400).json({ 
+        message: "Invalid ingredients or instructions format", 
+        error: parseError.message 
+      });
+    }
+
+    // Validate parsed arrays
+    if (!Array.isArray(parsedIngredients) || parsedIngredients.length === 0) {
+      return res.status(400).json({ 
+        message: "At least one ingredient is required" 
+      });
+    }
+
+    if (!Array.isArray(parsedInstructions) || parsedInstructions.length === 0) {
+      return res.status(400).json({ 
+        message: "At least one cooking instruction is required" 
+      });
+    }
+
+    // Validate image upload if required
+    if (!req.file) {
+      return res.status(400).json({
+        message: "Recipe image is required"
+      });
+    }
+
+    // Create recipe object
+    const newRecipe = new Recipe({
+      user: userId,
+      title: title.trim(),
+      description: description.trim(),
+      category,
+      servingSize,
+      ingredients: parsedIngredients.map(ing => ing.trim()).filter(ing => ing !== ''),
+      cookingInstructions: parsedInstructions.map(inst => inst.trim()).filter(inst => inst !== ''),
+      authorNotes: (authorNotes || '').trim(),
+      isPublic: isPublic === 'true' || isPublic === true,
+      time,
+      likes: 0,
+      image: req.file.filename
+    });
+
+    // Validate recipe before saving
+    try {
+      await newRecipe.validate();
+    } catch (validationError) {
+      console.error('Recipe Validation Error:', validationError);
+      return res.status(400).json({ 
+        message: "Recipe validation failed", 
+        errors: validationError.errors 
+      });
+    }
+
+    // Save the recipe
+    const savedRecipe = await newRecipe.save();
+
+    // Log successful recipe creation
+    console.log('Recipe created successfully:', {
+      recipeId: savedRecipe._id,
+      title: savedRecipe.title,
+      imageFilename: savedRecipe.image
+    });
+
+    res.status(201).json({
+      message: "Recipe created successfully",
+      recipe: savedRecipe
+    });
+
+  } catch (error) {
+    // Comprehensive error logging
+    console.error("Detailed Error creating recipe:", {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      body: req.body,
+      file: req.file,
+      user: req.user
+    });
+    
+    // Send a detailed error response
+    res.status(500).json({ 
+      message: "Failed to create recipe", 
+      error: {
+        message: error.message,
+        name: error.name,
+        details: error.stack
+      }
+    });
+  }
+});
+
 // Add or update this PUT route for updating recipes
 router.put("/:id", authenticateToken, upload.single("image"), async (req, res) => {
   try {
@@ -607,7 +569,7 @@ router.put("/:id", authenticateToken, upload.single("image"), async (req, res) =
 
     // Only update image if new one is uploaded
     if (req.file) {
-      updateData.image = req.file.path.replace(/\\/g, '/');
+      updateData.image = `uploads/${req.file.filename}`;
     }
 
     // Update the recipe

@@ -3,16 +3,18 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 const path = require('path');
+const multer = require('multer');
 
 const app = express();
 
 // Define allowed origins
 const allowedOrigins = [
   'https://mobile-app-plum-one.vercel.app',  // Vercel production URL
-  'https://mobile-app-2-s9az.onrender.com', // Your deployed frontend URL
-  'http://localhost:5173',                   // Local development URL
-  'capacitor://localhost',                   // Add this for mobile app
-  'http://localhost:500'                     // Add this for mobile app
+  'https://mobile-app-2-s9az.onrender.com', // Backend production URL
+  'http://localhost:5173',                   // Local frontend
+  'http://localhost:5000',                   // Local backend
+  'capacitor://localhost',                   // Mobile app
+  'http://localhost:500'                     // Additional mobile app
 ];
 
 // Updated CORS configuration
@@ -30,7 +32,14 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept']
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'Origin', 
+    'Accept', 
+    'x-requested-with', 
+    'Access-Control-Allow-Origin'
+  ]
 }));
 
 // Additional headers for CORS
@@ -39,13 +48,22 @@ app.use((req, res, next) => {
   if (allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
   }
-  res.header('Access-Control-Allow-Credentials', true);
+  res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Headers', 
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Allow-Origin'
+  );
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
   next();
 });
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Serve static files
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));

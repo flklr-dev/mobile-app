@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaChevronLeft } from 'react-icons/fa';
 import api from '../config/axios';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 const AddRecipeScreen = () => {
   const navigate = useNavigate();
@@ -19,6 +17,10 @@ const AddRecipeScreen = () => {
   const [coverImage, setCoverImage] = useState(null);
   const [hours, setHours] = useState(""); // New state for hours
   const [minutes, setMinutes] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleImagePick = (e) => {
     const file = e.target.files[0];  // Get the first selected file
@@ -44,30 +46,24 @@ const AddRecipeScreen = () => {
   };
 
   const saveRecipe = async () => {
-    // Validation
+    // Validate required fields
     if (!recipeTitle || !description || !category || !servingSize) {
-      toast.error("Please fill in all required fields!", {
-        position: "top-center",
-        autoClose: 2000,
-      });
+      setErrorMessage("Please fill in all required fields!");
+      setShowErrorModal(true);
       return;
     }
 
     const totalMinutes = parseInt(hours || 0) * 60 + parseInt(minutes || 0);
     if (totalMinutes === 0) {
-      toast.error("Please specify cooking time!", {
-        position: "top-center",
-        autoClose: 2000,
-      });
+      setErrorMessage("Please specify cooking time!");
+      setShowErrorModal(true);
       return;
     }
 
     // Validate image
     if (!coverImage) {
-      toast.error("Please upload a recipe image!", {
-        position: "top-center",
-        autoClose: 2000,
-      });
+      setErrorMessage("Please upload a recipe image!");
+      setShowErrorModal(true);
       return;
     }
 
@@ -84,16 +80,8 @@ const AddRecipeScreen = () => {
     }
 
     try {
-      const loadingToast = toast.loading("Saving recipe...", {
-        position: "top-center",
-      });
+      setIsSubmitting(true);
 
-      const formData = new FormData();
-      formData.append("title", recipeTitle);
-      formData.append("description", description);
-      formData.append("category", category);
-      formData.append("servingSize", servingSize);
-      
       // Ensure ingredients and instructions are valid JSON arrays
       const cleanedIngredients = ingredients
         .filter(ing => ing && ing.trim())
@@ -102,6 +90,27 @@ const AddRecipeScreen = () => {
       const cleanedInstructions = instructions
         .filter(inst => inst && inst.trim())
         .map(inst => inst.trim());
+      
+      // Validate cleaned arrays
+      if (cleanedIngredients.length === 0) {
+        setErrorMessage("Please add at least one ingredient!");
+        setShowErrorModal(true);
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (cleanedInstructions.length === 0) {
+        setErrorMessage("Please add at least one cooking instruction!");
+        setShowErrorModal(true);
+        setIsSubmitting(false);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("title", recipeTitle.trim());
+      formData.append("description", description.trim());
+      formData.append("category", category);
+      formData.append("servingSize", servingSize);
       
       // Append as JSON strings
       formData.append("ingredients", JSON.stringify(cleanedIngredients));
@@ -115,11 +124,6 @@ const AddRecipeScreen = () => {
         formData.append("image", coverImage);
       }
 
-      // Log form data for debugging
-      for (let [key, value] of formData.entries()) {
-        console.log(`${key}: ${value}`);
-      }
-
       const response = await api.post("/recipes", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -127,61 +131,57 @@ const AddRecipeScreen = () => {
         timeout: 30000 // 30 seconds
       });
 
-      toast.dismiss(loadingToast);
-      toast.success("Recipe saved successfully!", {
-        position: "top-center",
-        autoClose: 2000,
-      });
+      setShowSuccessModal(true);
 
+      // Navigate after showing success message
       setTimeout(() => {
         navigate("/home");
       }, 2000);
 
-    } catch (error) {
-      console.error("FULL ERROR DETAILS:", {
-        name: error.name,
-        message: error.message,
-        response: error.response ? {
-          status: error.response.status,
-          data: error.response.data,
-          headers: error.response.headers
+    } catch (apiError) {
+      // Comprehensive error logging
+      console.error("FULL API ERROR DETAILS:", {
+        name: apiError.name,
+        message: apiError.message,
+        response: apiError.response ? {
+          status: apiError.response.status,
+          data: apiError.response.data,
+          headers: apiError.response.headers
         } : null,
-        request: error.request ? 'Request exists' : null,
-        config: error.config ? 'Config exists' : null
+        request: apiError.request ? 'Request exists' : null,
+        config: apiError.config ? 'Config exists' : null
       });
 
       // Detailed error handling
       let errorMessage = "Failed to save recipe";
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        if (error.response.data && error.response.data.message) {
-          errorMessage = error.response.data.message;
+      if (apiError.response) {
+        // Server responded with an error
+        if (apiError.response.data && apiError.response.data.message) {
+          errorMessage = apiError.response.data.message;
         }
 
         // Handle specific error scenarios
-        if (error.response.data.missingFields) {
-          const missingFields = Object.entries(error.response.data.missingFields)
+        if (apiError.response.data.missingFields) {
+          const missingFields = Object.entries(apiError.response.data.missingFields)
             .filter(([_, isMissing]) => isMissing)
             .map(([field]) => field);
           
           errorMessage += `. Missing fields: ${missingFields.join(', ')}`;
         }
-      } else if (error.request) {
-        // The request was made but no response was received
+      } else if (apiError.request) {
+        // Request was made but no response received
         errorMessage = "No response from server. Please check your internet connection.";
       }
 
-      toast.error(errorMessage, {
-        position: "top-center",
-        autoClose: 2000,
-      });
+      setErrorMessage(errorMessage);
+      setShowErrorModal(true);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="flex flex-col bg-gray-100 min-h-screen">
-      <ToastContainer />
       
       {/* Header Section */}
       <div className="fixed top-0 p-4 left-0 w-full z-10 flex items-center bg-orange-500 shadow-lg">
@@ -383,9 +383,59 @@ const AddRecipeScreen = () => {
           onClick={saveRecipe}
           className="w-full py-3 bg-orange-500 text-white rounded-md"
         >
-          Save Recipe
+          {isSubmitting ? 'Saving...' : 'Save Recipe'}
         </button>
       </div>
+
+      {/* Loading Overlay */}
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-5 rounded-lg flex flex-col items-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500 mb-3"></div>
+            <p className="text-gray-700">Saving recipe...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Recipe Saved Successfully!</h3>
+              <p className="text-gray-600 mb-4">Your recipe has been saved and you will be redirected shortly.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {showErrorModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error</h3>
+              <p className="text-gray-600 mb-4">{errorMessage}</p>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
