@@ -108,7 +108,7 @@ router.get("/", authenticateToken, async (req, res) => {
 router.post("/like/:recipeId", authenticateToken, async (req, res) => {
   try {
     const { recipeId } = req.params;
-    const userId = req.user._id;
+    const userId = req.user._id || req.user.userId;
 
     console.log(`Like Request - RecipeID: ${recipeId}, UserID: ${userId}`);
     console.log('Full user object:', req.user);
@@ -169,7 +169,7 @@ router.post("/like/:recipeId", authenticateToken, async (req, res) => {
       message: error.message,
       name: error.name,
       stack: error.stack,
-      userId: req.user?._id,
+      userId: req.user?._id || req.user?.userId,
       recipeId: req.params.recipeId
     });
     

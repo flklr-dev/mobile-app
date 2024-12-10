@@ -116,8 +116,9 @@ const HomeScreen = () => {
     initializeRecipes();
   }, []);
 
-  const toggleHeart = async (recipeId) => {
+  const toggleLike = async (recipeId) => {
     let newLikedState;
+    
     try {
       console.log('Toggling heart for recipe:', recipeId);
       
@@ -127,6 +128,11 @@ const HomeScreen = () => {
         ...prev,
         [recipeId]: newLikedState
       }));
+
+      // Additional error checking
+      if (!recipeId) {
+        throw new Error('Recipe ID is required');
+      }
 
       const response = await api.post(`/recipes/like/${recipeId}`);
       console.log('Like response:', response.data);
@@ -304,7 +310,7 @@ const HomeScreen = () => {
                   </Link>
                     <button
                       className="absolute top-2 right-2 bg-black bg-opacity-50 p-2 rounded-full"
-                      onClick={() => toggleHeart(recipe._id)}
+                      onClick={() => toggleLike(recipe._id)}
                     >
                       {heartStates[recipe._id] ? (
                         <FaHeart size={20} className="text-white" />
@@ -412,7 +418,7 @@ const HomeScreen = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      toggleHeart(recipe._id);
+                      toggleLike(recipe._id);
                     }}
                   >
                     {heartStates[recipe._id] ? (
@@ -493,7 +499,7 @@ const HomeScreen = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      toggleHeart(recipe._id);
+                      toggleLike(recipe._id);
                     }}
                   >
                     {heartStates[recipe._id] ? (
@@ -574,7 +580,7 @@ const HomeScreen = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      toggleHeart(recipe._id);
+                      toggleLike(recipe._id);
                     }}
                   >
                     {heartStates[recipe._id] ? (
@@ -655,7 +661,7 @@ const HomeScreen = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      toggleHeart(recipe._id);
+                      toggleLike(recipe._id);
                     }}
                   >
                     {heartStates[recipe._id] ? (
@@ -736,7 +742,7 @@ const HomeScreen = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      toggleHeart(recipe._id);
+                      toggleLike(recipe._id);
                     }}
                   >
                     {heartStates[recipe._id] ? (
