@@ -34,7 +34,11 @@ const SearchResults = () => {
           user: {
             ...recipe.user,
             profilePicture: recipe.user?.profilePicture || 'uploads/default-profile.png'
-          }
+          },
+          // Ensure likes is a number and default to 0 if not present
+          likes: recipe.likes || 0,
+          // Add isLiked flag for consistent handling
+          isLiked: likedIds.has(recipe._id)
         }));
 
         setRecipes(recipesWithUserData);
@@ -202,11 +206,7 @@ const SearchResults = () => {
                       <div className="flex justify-between items-center mb-1">
                         <div className="flex items-center space-x-1">
                           <FaHeart size={12} className="text-white" />
-                          <span className="text-white text-xs">
-                            {typeof recipe.likes === 'number' 
-                              ? recipe.likes 
-                              : (recipe.likes?.length || 0)}
-                          </span>
+                          <span className="text-white text-xs">{recipe.likes || 0}</span>
                         </div>
                         <img
                           src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user?.profilePicture}`}

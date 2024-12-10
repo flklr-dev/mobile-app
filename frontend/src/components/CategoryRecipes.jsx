@@ -155,7 +155,7 @@ const RecipeCard = ({ recipe, handleAddToMealPlan }) => (
         <div className="flex justify-between items-center mb-1">
           <div className="flex items-center space-x-1">
             <FaHeart size={12} className="text-white" />
-            <span className="text-white text-xs">{recipe.likes?.length || 0}</span>
+            <span className="text-white text-xs">{recipe.likes || 0}</span>
           </div>
           <div className="w-6 h-6 rounded-full overflow-hidden border-2 border-white">
             <img
