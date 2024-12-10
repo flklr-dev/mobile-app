@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaChevronLeft } from 'react-icons/fa';
 import api from '../config/axios';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const AddRecipeScreen = () => {
   const navigate = useNavigate();
@@ -15,12 +17,8 @@ const AddRecipeScreen = () => {
   const [authorNotes, setAuthorNotes] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [coverImage, setCoverImage] = useState(null);
-  const [hours, setHours] = useState("");
+  const [hours, setHours] = useState(""); // New state for hours
   const [minutes, setMinutes] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showStatusModal, setShowStatusModal] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('');
-  const [statusType, setStatusType] = useState(''); // 'success' or 'error'
 
   const handleImagePick = (e) => {
     const file = e.target.files[0];  // Get the first selected file
@@ -48,55 +46,69 @@ const AddRecipeScreen = () => {
   const saveRecipe = async () => {
     // Validation
     if (!recipeTitle || !description || !category || !servingSize) {
-      setStatusMessage("Please fill in all required fields!");
-      setStatusType('error');
-      setShowStatusModal(true);
-      return;
-    }
-
-    // Validate ingredients and instructions
-    const cleanedIngredients = ingredients.filter(ing => ing.trim());
-    const cleanedInstructions = instructions.filter(inst => inst.trim());
-
-    if (cleanedIngredients.length === 0) {
-      setStatusMessage("Please add at least one ingredient!");
-      setStatusType('error');
-      setShowStatusModal(true);
-      return;
-    }
-
-    if (cleanedInstructions.length === 0) {
-      setStatusMessage("Please add at least one cooking instruction!");
-      setStatusType('error');
-      setShowStatusModal(true);
+      toast.error("Please fill in all required fields!", {
+        position: "top-center",
+        autoClose: 2000,
+      });
       return;
     }
 
     const totalMinutes = parseInt(hours || 0) * 60 + parseInt(minutes || 0);
     if (totalMinutes === 0) {
-      setStatusMessage("Please specify cooking time!");
-      setStatusType('error');
-      setShowStatusModal(true);
+      toast.error("Please specify cooking time!", {
+        position: "top-center",
+        autoClose: 2000,
+      });
       return;
     }
 
+    // Validate image
+    if (!coverImage) {
+      toast.error("Please upload a recipe image!", {
+        position: "top-center",
+        autoClose: 2000,
+      });
+      return;
+    }
+
+    // Format time string
+    let timeString = "";
+    if (totalMinutes >= 60) {
+      const formattedHours = Math.floor(totalMinutes / 60);
+      const formattedMinutes = totalMinutes % 60;
+      timeString = formattedMinutes > 0
+        ? `${formattedHours} hr ${formattedMinutes} min`
+        : `${formattedHours} hr`;
+    } else {
+      timeString = `${totalMinutes} min`;
+    }
+
     try {
-      setIsSubmitting(true);
-      const timeString = totalMinutes >= 60
-        ? `${Math.floor(totalMinutes / 60)}hr ${totalMinutes % 60}`
-        : `${totalMinutes}`;
+      const loadingToast = toast.loading("Saving recipe...", {
+        position: "top-center",
+      });
 
       const formData = new FormData();
-      formData.append("title", recipeTitle.trim());
-      formData.append("description", description.trim());
+      formData.append("title", recipeTitle);
+      formData.append("description", description);
       formData.append("category", category);
       formData.append("servingSize", servingSize);
       
-      // Ensure ingredients and instructions are properly stringified
+      // Ensure ingredients and instructions are valid JSON arrays
+      const cleanedIngredients = ingredients
+        .filter(ing => ing && ing.trim())
+        .map(ing => ing.trim());
+      
+      const cleanedInstructions = instructions
+        .filter(inst => inst && inst.trim())
+        .map(inst => inst.trim());
+      
+      // Append as JSON strings
       formData.append("ingredients", JSON.stringify(cleanedIngredients));
       formData.append("cookingInstructions", JSON.stringify(cleanedInstructions));
-      formData.append("authorNotes", authorNotes ? authorNotes.trim() : "");
-      formData.append("isPublic", isPublic.toString());
+      
+      formData.append("authorNotes", authorNotes || '');
+      formData.append("isPublic", isPublic);
       formData.append("time", timeString);
       
       if (coverImage) {
@@ -112,87 +124,65 @@ const AddRecipeScreen = () => {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-        // Add timeout to handle network issues
         timeout: 30000 // 30 seconds
       });
 
-      setStatusMessage("Recipe saved successfully!");
-      setStatusType('success');
-      setShowStatusModal(true);
-      
-      // Navigate after a short delay to show success message
+      toast.dismiss(loadingToast);
+      toast.success("Recipe saved successfully!", {
+        position: "top-center",
+        autoClose: 2000,
+      });
+
       setTimeout(() => {
         navigate("/home");
       }, 2000);
+
     } catch (error) {
-      console.error("Full error object:", error);
-      
-      let errorMsg = "Failed to save recipe. Please try again.";
-      
-      // Handle different types of errors
+      console.error("FULL ERROR DETAILS:", {
+        name: error.name,
+        message: error.message,
+        response: error.response ? {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        } : null,
+        request: error.request ? 'Request exists' : null,
+        config: error.config ? 'Config exists' : null
+      });
+
+      // Detailed error handling
+      let errorMessage = "Failed to save recipe";
       if (error.response) {
-        // Server responded with an error
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
         if (error.response.data && error.response.data.message) {
-          errorMsg = error.response.data.message;
+          errorMessage = error.response.data.message;
         }
-        
-        // Log specific error details for debugging
-        if (error.response.data && error.response.data.errors) {
-          console.error("Validation errors:", error.response.data.errors);
-          errorMsg += `. Details: ${error.response.data.errors.join(', ')}`;
+
+        // Handle specific error scenarios
+        if (error.response.data.missingFields) {
+          const missingFields = Object.entries(error.response.data.missingFields)
+            .filter(([_, isMissing]) => isMissing)
+            .map(([field]) => field);
+          
+          errorMessage += `. Missing fields: ${missingFields.join(', ')}`;
         }
       } else if (error.request) {
-        // Request made but no response received
-        errorMsg = "No response from server. Please check your internet connection.";
-      } else if (error.code === 'ECONNABORTED') {
-        // Request timed out
-        errorMsg = "Request timed out. Please check your internet connection.";
+        // The request was made but no response was received
+        errorMessage = "No response from server. Please check your internet connection.";
       }
 
-      // Set error message and show modal
-      setStatusMessage(errorMsg);
-      setStatusType('error');
-      setShowStatusModal(true);
-    } finally {
-      setIsSubmitting(false);
+      toast.error(errorMessage, {
+        position: "top-center",
+        autoClose: 2000,
+      });
     }
   };
 
-  const closeModal = () => {
-    setShowStatusModal(false);
-  };
-
   return (
-    <div className="flex flex-col bg-gray-100 min-h-screen relative">
-      {isSubmitting && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 flex items-center space-x-4">
-            <div className="w-6 h-6 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-gray-700">Saving recipe...</p>
-          </div>
-        </div>
-      )}
-
-      {showStatusModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
-            <div className="text-center">
-              <h3 className={`text-xl font-semibold mb-2 ${statusType === 'success' ? 'text-green-600' : 'text-red-600'}`}>
-                {statusType === 'success' ? 'Success' : 'Error'}
-              </h3>
-              <p className="text-gray-600 mb-4">{statusMessage}</p>
-              {statusType === 'error' && (
-                <button
-                  onClick={closeModal}
-                  className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-                >
-                  Close
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="flex flex-col bg-gray-100 min-h-screen">
+      <ToastContainer />
+      
       {/* Header Section */}
       <div className="fixed top-0 p-4 left-0 w-full z-10 flex items-center bg-orange-500 shadow-lg">
       <button onClick={goBack} className="text-white text-2xl">
