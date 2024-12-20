@@ -9,7 +9,7 @@ const app = express();
 
 // Basic CORS configuration for local development
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5000'],
+  origin: ['http://localhost:5173', 'http://localhost:5000', 'https://mobile-app-plum-one.vercel.app', 'https://mobile-app-2-s9az.onrender.com'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
