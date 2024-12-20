@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import api from '../config/axios';
 import BottomNavbar from "./BottomNavbar";
 import Header from '../components/Header';
-import { toast, ToastContainer } from "react-toastify"; // Import toast and ToastContainer
+import { toast, ToastContainer } from "react-toastify"; 
 import "react-toastify/dist/ReactToastify.css"; 
 import {FaHeart,  FaRegHeart } from "react-icons/fa";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { Link, useNavigate } from "react-router-dom";
 import Slider from "react-slick";
+import { getImageUrl } from '../utils/imageUtils';
 
 const HomeScreen = () => {
   const navigate = useNavigate();
@@ -300,12 +301,9 @@ const HomeScreen = () => {
                   <div className="relative">
                   <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={recipe.image ? `http://localhost:5000/${recipe.image}` : 'http://localhost:5000/uploads/default-recipe.png'}
+                      src={getImageUrl(recipe.image || 'uploads/default-recipe.png')}
                       alt={recipe.title}
                       className="w-full h-56 object-cover"
-                      onError={(e) => {
-                        e.target.src = 'http://localhost:5000/uploads/default-recipe.png';
-                      }}
                     />
                     <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
                       {recipe.time}
@@ -328,15 +326,9 @@ const HomeScreen = () => {
                       <span className="text-white">{recipe.likes}</span>
                     </div>
                     <img
-                      src={recipe.user.profilePicture 
-                        ? `http://localhost:5000/${recipe.user.profilePicture}`
-                        : 'http://localhost:5000/uploads/default-profile.png'
-                      }
+                      src={getImageUrl(recipe.user.profilePicture || 'uploads/default-profile.png')}
                       alt={recipe.user.name}
                       className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
-                      onError={(e) => {
-                        e.target.src = 'http://localhost:5000/uploads/default-profile.png';
-                      }}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -414,12 +406,9 @@ const HomeScreen = () => {
                 <div className="relative">
                   <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={recipe.image ? `http://localhost:5000/${recipe.image}` : 'http://localhost:5000/uploads/default-recipe.png'}
+                      src={getImageUrl(recipe.image || 'uploads/default-recipe.png')}
                       alt={recipe.title}
                       className="w-full h-56 object-cover"
-                      onError={(e) => {
-                        e.target.src = 'http://localhost:5000/uploads/default-recipe.png';
-                      }}
                     />
                     <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
                       {recipe.time}
@@ -448,15 +437,9 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                        src={recipe.user.profilePicture 
-                          ? `http://localhost:5000/${recipe.user.profilePicture}`
-                          : 'http://localhost:5000/uploads/default-profile.png'
-                        }
+                        src={getImageUrl(recipe.user.profilePicture || 'uploads/default-profile.png')}
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
-                        onError={(e) => {
-                          e.target.src = 'http://localhost:5000/uploads/default-profile.png';
-                        }}
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -504,12 +487,9 @@ const HomeScreen = () => {
                 <div className="relative">
                   <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={recipe.image ? `http://localhost:5000/${recipe.image}` : 'http://localhost:5000/uploads/default-recipe.png'}
+                      src={getImageUrl(recipe.image || 'uploads/default-recipe.png')}
                       alt={recipe.title}
                       className="w-full h-56 object-cover"
-                      onError={(e) => {
-                        e.target.src = 'http://localhost:5000/uploads/default-recipe.png';
-                      }}
                     />
                     <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
                       {recipe.time}
@@ -538,15 +518,9 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                        src={recipe.user.profilePicture 
-                          ? `http://localhost:5000/${recipe.user.profilePicture}`
-                          : 'http://localhost:5000/uploads/default-profile.png'
-                        }
+                        src={getImageUrl(recipe.user.profilePicture || 'uploads/default-profile.png')}
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
-                        onError={(e) => {
-                          e.target.src = 'http://localhost:5000/uploads/default-profile.png';
-                        }}
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -594,12 +568,9 @@ const HomeScreen = () => {
                 <div className="relative">
                   <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={recipe.image ? `http://localhost:5000/${recipe.image}` : 'http://localhost:5000/uploads/default-recipe.png'}
+                      src={getImageUrl(recipe.image || 'uploads/default-recipe.png')}
                       alt={recipe.title}
                       className="w-full h-56 object-cover"
-                      onError={(e) => {
-                        e.target.src = 'http://localhost:5000/uploads/default-recipe.png';
-                      }}
                     />
                     <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
                       {recipe.time}
@@ -628,15 +599,9 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                        src={recipe.user.profilePicture 
-                          ? `http://localhost:5000/${recipe.user.profilePicture}`
-                          : 'http://localhost:5000/uploads/default-profile.png'
-                        }
+                        src={getImageUrl(recipe.user.profilePicture || 'uploads/default-profile.png')}
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
-                        onError={(e) => {
-                          e.target.src = 'http://localhost:5000/uploads/default-profile.png';
-                        }}
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -684,12 +649,9 @@ const HomeScreen = () => {
                 <div className="relative">
                 <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={recipe.image ? `http://localhost:5000/${recipe.image}` : 'http://localhost:5000/uploads/default-recipe.png'}
+                      src={getImageUrl(recipe.image || 'uploads/default-recipe.png')}
                       alt={recipe.title}
                       className="w-full h-56 object-cover"
-                      onError={(e) => {
-                        e.target.src = 'http://localhost:5000/uploads/default-recipe.png';
-                      }}
                     />
                     <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
                       {recipe.time}
@@ -718,15 +680,9 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                        src={recipe.user.profilePicture 
-                          ? `http://localhost:5000/${recipe.user.profilePicture}`
-                          : 'http://localhost:5000/uploads/default-profile.png'
-                        }
+                        src={getImageUrl(recipe.user.profilePicture || 'uploads/default-profile.png')}
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
-                        onError={(e) => {
-                          e.target.src = 'http://localhost:5000/uploads/default-profile.png';
-                        }}
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -774,12 +730,9 @@ const HomeScreen = () => {
                 <div className="relative">
                 <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={recipe.image ? `http://localhost:5000/${recipe.image}` : 'http://localhost:5000/uploads/default-recipe.png'}
+                      src={getImageUrl(recipe.image || 'uploads/default-recipe.png')}
                       alt={recipe.title}
                       className="w-full h-56 object-cover"
-                      onError={(e) => {
-                        e.target.src = 'http://localhost:5000/uploads/default-recipe.png';
-                      }}
                     />
                     <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
                       {recipe.time}
@@ -808,15 +761,9 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                        src={recipe.user.profilePicture 
-                          ? `http://localhost:5000/${recipe.user.profilePicture}`
-                          : 'http://localhost:5000/uploads/default-profile.png'
-                        }
+                        src={getImageUrl(recipe.user.profilePicture || 'uploads/default-profile.png')}
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
-                        onError={(e) => {
-                          e.target.src = 'http://localhost:5000/uploads/default-profile.png';
-                        }}
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -862,15 +809,9 @@ const HomeScreen = () => {
             >
               <div className="relative w-40 h-48 rounded-lg overflow-hidden bg-[#463C33]">
                 <img
-                  src={user.profilePicture 
-                    ? `http://localhost:5000/${user.profilePicture}`
-                    : 'http://localhost:5000/uploads/default-profile.png'
-                  }
+                  src={getImageUrl(user.profilePicture || 'uploads/default-profile.png')}
                   alt={user.name}
                   className="w-full h-32 object-cover"
-                  onError={(e) => {
-                    e.target.src = 'http://localhost:5000/uploads/default-profile.png';
-                  }}
                 />
                 <div className="absolute inset-x-0 bottom-0 p-3">
                   <h3 className="text-white font-bold text-sm mb-1 line-clamp-1">
