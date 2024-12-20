@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaChevronLeft, FaHeart } from 'react-icons/fa';
 import api from '../config/axios';
+import { getImageUrl } from '../utils/imageUtils';
 
 const UserProfile = () => {
   const { userId } = useParams();
@@ -58,13 +59,11 @@ const UserProfile = () => {
         <div className="flex flex-col items-center">
           <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-orange-500">
             <img
-              src={user.profilePicture 
-                ? `http://localhost:5000/${user.profilePicture}`
-                : `http://localhost:5000/uploads/default-profile.png`}
+              src={getImageUrl(user.profilePicture || 'uploads/default-profile.png')}
               alt={user.name}
               className="w-full h-full object-cover"
               onError={(e) => {
-                e.target.src = `http://localhost:5000/uploads/default-profile.png`;
+                e.target.src = getImageUrl('uploads/default-profile.png');
               }}
             />
           </div>
@@ -106,13 +105,11 @@ const UserProfile = () => {
               >
                 <div className="relative">
                   <img
-                    src={recipe.image 
-                      ? `http://localhost:5000/${recipe.image}`
-                      : `http://localhost:5000/uploads/default-recipe.png`}
+                    src={getImageUrl(recipe.image || 'uploads/default-recipe.png')}
                     alt={recipe.title}
                     className="w-full h-32 object-cover"
                     onError={(e) => {
-                      e.target.src = `http://localhost:5000/uploads/default-recipe.png`;
+                      e.target.src = getImageUrl('uploads/default-recipe.png');
                     }}
                   />
                   <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
