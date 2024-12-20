@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FaChevronLeft } from 'react-icons/fa';
 import api from '../config/axios';
+import { getImageUrl } from '../utils/imageUtils';
 
 const EditRecipeScreen = () => {
   const navigate = useNavigate();
@@ -56,7 +57,7 @@ const EditRecipeScreen = () => {
 
         // Handle image
         if (recipe.image) {
-          setImagePreview(`http://localhost:5000/${recipe.image}`);
+          setImagePreview(getImageUrl(recipe.image));
         }
 
         setLoading(false);
@@ -236,14 +237,14 @@ const EditRecipeScreen = () => {
           </label>
           {imagePreview && (
             <div className="mt-4 relative">
-              <img
-                src={imagePreview}
-                alt="Recipe Cover"
-                className="w-full rounded-md"
-                onError={(e) => {
-                  e.target.src = `http://localhost:5000/uploads/default-recipe.png`;
-                }}
-              />
+            <img
+              src={imagePreview || getImageUrl('uploads/default-recipe.png')}
+              alt="Recipe Preview"
+              className="w-full h-64 object-cover"
+              onError={(e) => {
+                e.target.src = getImageUrl('uploads/default-recipe.png');
+              }}
+            />
               <button
                 onClick={() => {
                   setCoverImage(null);
