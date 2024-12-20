@@ -5,6 +5,7 @@ import { FaChevronLeft, FaCheck, FaTrash } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { formatDistanceToNow } from 'date-fns';
+import { getImageUrl } from '../utils/imageUtils';
 
 const NotificationScreen = () => {
   const navigate = useNavigate();
@@ -146,13 +147,11 @@ const NotificationScreen = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
                     <img
-                      src={notification.sender?.profilePicture 
-                        ? `http://localhost:5000/${notification.sender.profilePicture}`
-                        : `http://localhost:5000/uploads/default-profile.png`}
+                      src={getImageUrl(notification.sender?.profilePicture || 'uploads/default-profile.png')}
                       alt={notification.sender?.name || 'User'}
                       className="w-10 h-10 rounded-full object-cover"
                       onError={(e) => {
-                        e.target.src = `http://localhost:5000/uploads/default-profile.png`;
+                        e.target.src = getImageUrl('uploads/default-profile.png');
                       }}
                     />
                     <div>
