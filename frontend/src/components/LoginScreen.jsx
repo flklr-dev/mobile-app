@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { FaGoogle, FaFacebook } from "react-icons/fa";
 import api from '../config/axios';
 
 const LoginScreen = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -54,26 +56,22 @@ const LoginScreen = () => {
       });
 
       if (response.status === 200) {
-        const { token, userId, name, email: userEmail, expiresIn } = response.data;
+        const { token, userId, name, email: userEmail } = response.data;
         
         // Store token and user info
         localStorage.setItem("token", token);
         localStorage.setItem("userId", userId);
         localStorage.setItem("userName", name);
         localStorage.setItem("userEmail", userEmail);
-        
-        // Set token expiration
-        const expirationTime = new Date().getTime() + expiresIn;
-        localStorage.setItem("tokenExpiration", expirationTime);
 
-        // Update axios default headers
+        // Set token in axios default headers
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
         setSuccessMessage("Login successful!");
 
         // Use navigate instead of window.location
         setTimeout(() => {
-          window.location.href = "/home";
+          navigate('/home');
         }, 1000);
       }
     } catch (err) {
@@ -136,20 +134,31 @@ const LoginScreen = () => {
         resetCode,
         newPassword
       });
-      setShowSuccessModal(true);
-      setSuccessMessage("Password reset successful!");
-      
+
       // Clear cooldown after successful reset
       localStorage.removeItem('resetEmailCooldown');
       localStorage.removeItem('resetTimeCooldown');
       setTimeRemaining(0);
       setLastCodeSentTime(null);
+
+      // Show success modal and clear it after delay
+      setShowSuccessModal(true);
+      setSuccessMessage("Password reset successful!");
       
-      setTimeout(() => {
-        setShowSuccessModal(false);
-        setShowForgotPassword(false);
-        setResetStep(1);
-      }, 3000);
+      // Use Promise.all to ensure both timeouts complete
+      await Promise.all([
+        new Promise(resolve => setTimeout(resolve, 2000)), // Wait for 2 seconds
+        new Promise(resolve => {
+          setTimeout(() => {
+            setShowSuccessModal(false);
+            setShowForgotPassword(false);
+            setResetStep(1);
+            setSuccessMessage(""); // Clear the success message
+            resolve();
+          }, 2000);
+        })
+      ]);
+
     } catch (err) {
       setErrorMessage(err.response?.data?.message || "Failed to reset password");
     }

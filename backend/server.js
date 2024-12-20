@@ -1,72 +1,63 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const multer = require('multer');
 require('dotenv').config();
 const path = require('path');
-const multer = require('multer');
 
 const app = express();
 
-// Define allowed origins
-const allowedOrigins = [
-  'https://mobile-app-plum-one.vercel.app',  // Vercel production URL
-  'https://mobile-app-2-s9az.onrender.com', // Backend production URL
-  'http://localhost:5173',                   // Local frontend
-  'http://localhost:5000',                   // Local backend
-  'capacitor://localhost',                   // Mobile app
-  'http://localhost:500'                     // Additional mobile app
-];
-
-// Updated CORS configuration
+// Basic CORS configuration for local development
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      console.log('Blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: ['http://localhost:5173', 'http://localhost:5000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: [
-    'Content-Type', 
-    'Authorization', 
-    'Origin', 
-    'Accept', 
-    'x-requested-with', 
-    'Access-Control-Allow-Origin'
-  ]
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
-// Additional headers for CORS
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 
-    'Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Allow-Origin'
-  );
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  
-  next();
-});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// Multer Configuration
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/')
+  },
+  filename: function (req, file, cb) {
+    // Create unique filename with original extension
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+// File filter for images
+const fileFilter = (req, file, cb) => {
+  // Accept images only
+  if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+    return cb(new Error('Only image files are allowed!'), false);
+  }
+  cb(null, true);
+};
+
+// Initialize multer with configuration
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB size limit
+  }
+});
+
+// Make upload middleware available globally
+app.locals.upload = upload;
+
+// Serve static files with proper CORS headers
+app.use("/uploads", (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+}, express.static(path.join(__dirname, "uploads")));
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, { 
@@ -89,32 +80,32 @@ app.use('/auth', authRoutes);
 app.use("/recipes", recipeRoutes);
 app.use("/notifications", notificationRoutes);
 
-// Add this before your routes
+// Simple logging middleware
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`, {
-    query: req.query,
-    params: req.params,
-    body: req.body
-  });
+  console.log(`${req.method} ${req.path}`);
   next();
 });
 
-// Add this after your routes
+// Error handling middleware
 app.use((err, req, res, next) => {
+  // Multer error handling
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        message: "File is too large. Maximum size is 5MB"
+      });
+    }
+    return res.status(400).json({
+      message: "File upload error",
+      error: err.message
+    });
+  }
+
   console.error('Server Error:', err);
   res.status(500).json({
     message: "Internal server error",
     error: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
-});
-
-console.log('Registered routes:', app._router.stack
-  .filter(r => r.route)
-  .map(r => `${Object.keys(r.route.methods)} ${r.route.path}`));
-
-console.log('Email Config:', {
-  user: process.env.EMAIL_USER,
-  pass: process.env.EMAIL_PASS?.substring(0, 4) + '...' // Show only first 4 chars for security
 });
 
 const PORT = process.env.PORT || 5000;

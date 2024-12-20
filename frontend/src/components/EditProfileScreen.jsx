@@ -25,7 +25,12 @@ const EditProfileScreen = () => {
           aboutMe: data.aboutMe || "",
           profilePicture: null,
         });
-        setImagePreview(`${import.meta.env.VITE_PROD_BASE_URL}/${data.profilePicture}`);
+
+        if (data.profilePicture) {
+          setImagePreview(`http://localhost:5000/${data.profilePicture}`);
+        } else {
+          setImagePreview(`http://localhost:5000/uploads/default-profile.png`);
+        }
       } catch (error) {
         console.error(error);
         setErrorMessage("Failed to fetch profile details");
@@ -69,11 +74,15 @@ const EditProfileScreen = () => {
         formData.append("profilePicture", userData.profilePicture);
       }
 
-      await api.put("/auth/update-profile", formData, {
+      const response = await api.put("/auth/update-profile", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
+
+      if (response.data.profilePicture) {
+        setImagePreview(`http://localhost:5000/${response.data.profilePicture}`);
+      }
 
       setShowSuccessModal(true);
       setTimeout(() => {
@@ -131,9 +140,12 @@ const EditProfileScreen = () => {
           <div className="flex justify-center mb-4">
             <div className="relative">
               <img
-                src={imagePreview || "https://via.placeholder.com/150"}
+                src={imagePreview || `http://localhost:5000/uploads/default-profile.png`}
                 alt="Profile"
                 className="w-32 h-32 object-cover rounded-full border-4 border-orange-500"
+                onError={(e) => {
+                  e.target.src = `http://localhost:5000/uploads/default-profile.png`;
+                }}
               />
               <label className="absolute bottom-0 right-0 bg-orange-500 p-2 rounded-full cursor-pointer">
                 <FaPen className="text-white" />

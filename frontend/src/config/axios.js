@@ -1,16 +1,10 @@
 import axios from 'axios';
-
-const baseURL = import.meta.env.VITE_ENV === 'production'
-  ? import.meta.env.VITE_PROD_BASE_URL
-  : import.meta.env.VITE_DEV_BASE_URL;
-
-console.log('API Base URL:', baseURL);
+import { toast } from 'react-toastify';
 
 const api = axios.create({
-  baseURL,
-  withCredentials: true,
+  baseURL: 'http://localhost:5000',
   headers: {
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json'
   }
 });
 
@@ -33,11 +27,19 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Check if we're not already on the login page
-      if (!window.location.pathname.includes('/login')) {
-        localStorage.clear(); // Clear all storage
+      // Clear localStorage
+      localStorage.clear();
+
+      // Show toast message
+      toast.error('Session expired. Please login again.', {
+        position: "top-center",
+        autoClose: 3000
+      });
+
+      // Redirect to login page
+      setTimeout(() => {
         window.location.href = '/login';
-      }
+      }, 1000);
     }
     return Promise.reject(error);
   }

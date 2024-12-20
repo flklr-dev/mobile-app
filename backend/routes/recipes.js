@@ -28,16 +28,8 @@ const storage = multer.diskStorage({
     },
     // Define how the filename will be stored
     filename: (req, file, cb) => {
-        // Get the original filename without extension
-        const originalNameWithoutExt = path.parse(file.originalname).name
-            .toLowerCase()
-            .replace(/[^a-z0-9]/g, '-')  // Replace non-alphanumeric chars with dash
-            .replace(/-+/g, '-')         // Replace multiple dashes with single dash
-            .substring(0, 20);           // Limit to 20 characters
-
-        // Create unique filename with timestamp and original name
-        const uniqueFilename = `${Date.now()}-${originalNameWithoutExt}${path.extname(file.originalname)}`;
-        cb(null, uniqueFilename);
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
     },
 });
 
@@ -490,7 +482,7 @@ router.post("/", authenticateToken, upload.single('image'), async (req, res) => 
       isPublic: isPublic === 'true' || isPublic === true,
       time,
       likes: 0,
-      image: req.file.filename
+      image: req.file ? `uploads/${req.file.filename}` : null
     });
 
     // Validate recipe before saving

@@ -192,9 +192,14 @@ const AddToMealPlan = () => {
         <div className="mb-6">
           <div className="relative w-full h-48 rounded-2xl overflow-hidden">
             <img
-              src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
+              src={recipe.image 
+                ? `http://localhost:5000/${recipe.image}`
+                : `http://localhost:5000/uploads/default-recipe.png`}
               alt={recipe.title}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.src = `http://localhost:5000/uploads/default-recipe.png`;
+              }}
             />
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
               <h2 className="text-xl font-bold text-white">{recipe.title}</h2>

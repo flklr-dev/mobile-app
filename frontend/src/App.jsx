@@ -24,6 +24,7 @@ import Onboarding2 from './components/Onboarding2';
 import Onboarding3 from './components/Onboarding3';
 import AuthChoice from './components/AuthChoice';
 import FeedbackScreen from './components/FeedbackScreen';
+import SettingsScreen from './components/SettingsScreen';
 
 const App = () => {
   return (
@@ -41,6 +42,7 @@ const App = () => {
         <Route path="/search" element={<SearchScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />
         <Route path="/edit-profile" element={<EditProfileScreen />} />
+        <Route path="/settings" element={<SettingsScreen />} />
         <Route path="/recipes/:id" element={<RecipePage />} />
         <Route path="/favorites" element={<FavoriteRecipes />} />
         <Route path="/meal-plan" element={<MealPlanScreen />} />

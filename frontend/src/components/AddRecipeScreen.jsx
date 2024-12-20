@@ -15,6 +15,7 @@ const AddRecipeScreen = () => {
   const [authorNotes, setAuthorNotes] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [coverImage, setCoverImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [hours, setHours] = useState(""); // New state for hours
   const [minutes, setMinutes] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -23,12 +24,18 @@ const AddRecipeScreen = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleImagePick = (e) => {
-    const file = e.target.files[0];  // Get the first selected file
+    const file = e.target.files[0];
     if (file) {
-      setCoverImage(file);  // Store the file object in state
+      setCoverImage(file);
+      // Create a local blob URL for preview
+      const objectUrl = URL.createObjectURL(file);
+      setImagePreview(objectUrl);
+      
+      // Clean up the blob URL when component unmounts
+      return () => URL.revokeObjectURL(objectUrl);
     }
-  };  
-  
+  };
+
   const addIngredient = () => setIngredients([...ingredients, '']);
   const updateIngredient = (text, index) =>
     setIngredients(ingredients.map((item, i) => (i === index ? text : item)));
@@ -36,8 +43,12 @@ const AddRecipeScreen = () => {
     setIngredients(ingredients.filter((_, i) => i !== index));
 
   const addInstruction = () => setInstructions([...instructions, '']);
-  const updateInstruction = (text, index) =>
-    setInstructions(instructions.map((item, i) => (i === index ? text : item)));
+  const updateInstruction = (text, index) => {
+    // Only update if the instruction is not just whitespace
+    if (text.trim() !== '' || text === '') {
+      setInstructions(instructions.map((item, i) => (i === index ? text : item)));
+    }
+  };
   const deleteInstruction = (index) =>
     setInstructions(instructions.filter((_, i) => i !== index));
 
@@ -60,27 +71,33 @@ const AddRecipeScreen = () => {
       return;
     }
 
-    // Validate image
-    if (!coverImage) {
-      setErrorMessage("Please upload a recipe image!");
+    // Check if ingredients and instructions are not empty
+    if (ingredients.length === 0 || ingredients.every(ing => ing.trim() === '')) {
+      setErrorMessage("Please add at least one ingredient!");
       setShowErrorModal(true);
       return;
     }
 
-    // Format time string
-    let timeString = "";
-    if (totalMinutes >= 60) {
-      const formattedHours = Math.floor(totalMinutes / 60);
-      const formattedMinutes = totalMinutes % 60;
-      timeString = formattedMinutes > 0
-        ? `${formattedHours} hr ${formattedMinutes} min`
-        : `${formattedHours} hr`;
-    } else {
-      timeString = `${totalMinutes} min`;
+    if (instructions.length === 0 || instructions.every(inst => inst.trim() === '')) {
+      setErrorMessage("Please add at least one cooking instruction!");
+      setShowErrorModal(true);
+      return;
     }
 
     try {
       setIsSubmitting(true);
+
+      // Format time string
+      let timeString = "";
+      if (totalMinutes >= 60) {
+        const formattedHours = Math.floor(totalMinutes / 60);
+        const formattedMinutes = totalMinutes % 60;
+        timeString = formattedMinutes > 0
+          ? `${formattedHours} hr ${formattedMinutes} min`
+          : `${formattedHours} hr`;
+      } else {
+        timeString = `${totalMinutes} min`;
+      }
 
       // Ensure ingredients and instructions are valid JSON arrays
       const cleanedIngredients = ingredients
@@ -90,52 +107,32 @@ const AddRecipeScreen = () => {
       const cleanedInstructions = instructions
         .filter(inst => inst && inst.trim())
         .map(inst => inst.trim());
-      
-      // Validate cleaned arrays
-      if (cleanedIngredients.length === 0) {
-        setErrorMessage("Please add at least one ingredient!");
-        setShowErrorModal(true);
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (cleanedInstructions.length === 0) {
-        setErrorMessage("Please add at least one cooking instruction!");
-        setShowErrorModal(true);
-        setIsSubmitting(false);
-        return;
-      }
 
       const formData = new FormData();
       formData.append("title", recipeTitle.trim());
       formData.append("description", description.trim());
       formData.append("category", category);
       formData.append("servingSize", servingSize);
-      
-      // Append as JSON strings
       formData.append("ingredients", JSON.stringify(cleanedIngredients));
       formData.append("cookingInstructions", JSON.stringify(cleanedInstructions));
-      
-      formData.append("authorNotes", authorNotes || '');
+      formData.append("authorNotes", authorNotes.trim());
       formData.append("isPublic", isPublic);
       formData.append("time", timeString);
       
-      if (coverImage) {
-        formData.append("image", coverImage);
-      }
+      // Append image if exists
+      if (coverImage) formData.append("image", coverImage);
 
       const response = await api.post("/recipes", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-        timeout: 30000 // 30 seconds
       });
 
       setShowSuccessModal(true);
 
       // Navigate after showing success message
       setTimeout(() => {
-        navigate("/home");
+        navigate("/my-recipes");
       }, 2000);
 
     } catch (apiError) {
@@ -229,11 +226,27 @@ const AddRecipeScreen = () => {
             Add Image
           </label>
           {coverImage && (
-            <img
-              src={URL.createObjectURL(coverImage)}  // Use createObjectURL to generate a preview URL
-              alt="Cover Preview"
-              className="w-full mt-4 rounded-md"
-            />
+            <div className="mt-4 relative">
+              <img
+                src={imagePreview || `http://localhost:5000/uploads/default-recipe.png`}
+                alt="Cover Preview"
+                className="w-full rounded-md"
+                onError={(e) => {
+                  e.target.src = `http://localhost:5000/uploads/default-recipe.png`;
+                  console.error('Image load error:', e);
+                }}
+              />
+              <button
+                onClick={() => {
+                  setCoverImage(null);
+                  setImagePreview(null);
+                }}
+                className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
+                aria-label="Remove image"
+              >
+                ×
+              </button>
+            </div>
           )}
         </div>
 

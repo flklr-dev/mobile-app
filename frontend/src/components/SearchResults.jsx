@@ -68,26 +68,59 @@ const SearchResults = () => {
       return;
     }
 
-    const searchTerms = query.toLowerCase().split(' ');
+    const searchTerms = query.toLowerCase().trim().split(' ');
     
     const filtered = recipeList.filter(recipe => {
-      const titleMatch = recipe.title.toLowerCase().includes(query.toLowerCase());
-      const categoryMatch = recipe.category?.toLowerCase() === query.toLowerCase();
-      const ingredientMatch = recipe.ingredients.some(ingredient =>
-        searchTerms.some(term => ingredient.toLowerCase().includes(term))
+      // Make sure title exists and convert to lowercase for comparison
+      const recipeTitle = recipe.title?.toLowerCase() || '';
+      const recipeCategory = recipe.category?.toLowerCase() || '';
+      const recipeIngredients = recipe.ingredients?.map(ing => ing.toLowerCase()) || [];
+
+      // Check for exact and partial matches in title
+      const titleExactMatch = recipeTitle.includes(query.toLowerCase());
+      const titlePartialMatch = searchTerms.some(term => recipeTitle.includes(term));
+
+      // Check for category match
+      const categoryMatch = recipeCategory === query.toLowerCase();
+
+      // Check for ingredient matches
+      const ingredientMatch = recipeIngredients.some(ingredient =>
+        searchTerms.some(term => ingredient.includes(term))
       );
+
+      // Debug logging
+      console.log('Search Debug:', {
+        query,
+        type,
+        recipeTitle,
+        titleExactMatch,
+        titlePartialMatch,
+        categoryMatch,
+        ingredientMatch
+      });
 
       switch (type) {
         case 'category':
           return categoryMatch;
         case 'ingredient':
           return ingredientMatch;
-        default:
-          return titleMatch || categoryMatch || ingredientMatch;
+        case 'title':
+          return titleExactMatch || titlePartialMatch;
+        default: // 'all'
+          return titleExactMatch || titlePartialMatch || categoryMatch || ingredientMatch;
       }
     });
 
     setFilteredRecipes(filtered);
+    
+    // Debug logging
+    console.log('Filtered Results:', {
+      searchTerms,
+      totalRecipes: recipeList.length,
+      filteredCount: filtered.length,
+      type,
+      results: filtered.map(r => r.title)
+    });
   };
 
   const handleSearchChange = (e) => {
@@ -176,9 +209,14 @@ const SearchResults = () => {
                 <div className="relative">
                   <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
+                      src={recipe.image 
+                        ? `http://localhost:5000/${recipe.image}`
+                        : `http://localhost:5000/uploads/default-recipe.png`}
                       alt={recipe.title}
                       className="w-full h-28 object-cover"
+                      onError={(e) => {
+                        e.target.src = `http://localhost:5000/uploads/default-recipe.png`;
+                      }}
                     />
                     <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
                       {recipe.time}
@@ -209,9 +247,14 @@ const SearchResults = () => {
                           <span className="text-white text-xs">{recipe.likes || 0}</span>
                         </div>
                         <img
-                          src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user?.profilePicture}`}
-                          alt={recipe.user?.name}
+                          src={recipe.user?.profilePicture 
+                            ? `http://localhost:5000/${recipe.user.profilePicture}`
+                            : `http://localhost:5000/uploads/default-profile.png`}
+                          alt={recipe.user?.name || 'User'}
                           className="w-6 h-6 rounded-full object-cover border-2 border-white cursor-pointer"
+                          onError={(e) => {
+                            e.target.src = `http://localhost:5000/uploads/default-profile.png`;
+                          }}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();

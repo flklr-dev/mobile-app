@@ -8,7 +8,10 @@ import 'react-toastify/dist/ReactToastify.css';
 
 const MyRecipesScreen = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState({ name: "", profilePicture: "" });
+  const [user, setUser] = useState({ 
+    name: "", 
+    profilePicture: "/uploads/default-profile.png"
+  });
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -17,17 +20,28 @@ const MyRecipesScreen = () => {
   useEffect(() => {
     const fetchUserAndRecipes = async () => {
       try {
-        // Fetch user data using the api instance
         const userResponse = await api.get("/auth/user");
         if (!userResponse.data || !userResponse.data._id) {
           throw new Error("User data not found");
         }
 
-        setUser(userResponse.data);
+        // Update user data with proper image URL
+        setUser({
+          ...userResponse.data,
+          profilePicture: userResponse.data.profilePicture
+            ? `http://localhost:5000/${userResponse.data.profilePicture}`
+            : `http://localhost:5000/uploads/default-profile.png`
+        });
 
-        // Fetch recipes using the user ID
+        // Fetch and update recipes with proper image URLs
         const recipesResponse = await api.get(`/recipes/user/${userResponse.data._id}`);
-        setRecipes(recipesResponse.data);
+        const recipesWithUrls = recipesResponse.data.map(recipe => ({
+          ...recipe,
+          image: recipe.image
+            ? `http://localhost:5000/${recipe.image}`
+            : `http://localhost:5000/uploads/default-recipe.png`
+        }));
+        setRecipes(recipesWithUrls);
         setLoading(false);
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -102,9 +116,12 @@ const MyRecipesScreen = () => {
           <div className="flex flex-col items-center">
             <div className="relative">
               <img
-                src={`${import.meta.env.VITE_PROD_BASE_URL}/${user.profilePicture}`}
+                src={user.profilePicture}
                 alt="User Avatar"
                 className="w-24 h-24 object-cover rounded-full ring-4 ring-orange-500/20"
+                onError={(e) => {
+                  e.target.src = `http://localhost:5000/uploads/default-profile.png`;
+                }}
               />
             </div>
             <h2 className="text-2xl font-bold text-gray-800 mt-4">{user.name || "Loading..."}</h2>
@@ -124,12 +141,24 @@ const MyRecipesScreen = () => {
                 className="bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between"
               >
                 <div className="flex items-center flex-1">
-                  <img
-                    src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
-                    alt={recipe.title}
-                    className="w-20 h-20 object-cover rounded-lg"
-                  />
-                  <h3 className="ml-4 font-semibold text-gray-800">{recipe.title}</h3>
+                  <div className="w-20 h-20 rounded-lg overflow-hidden">
+                    <img
+                      src={recipe.image}
+                      alt={recipe.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src = `http://localhost:5000/uploads/default-recipe.png`;
+                      }}
+                    />
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="font-semibold text-gray-800">{recipe.title}</h3>
+                    <p className="text-sm text-gray-500">
+                      {recipe.description?.length > 50 
+                        ? `${recipe.description.substring(0, 50)}...` 
+                        : recipe.description}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex items-center space-x-4">
                   <button 

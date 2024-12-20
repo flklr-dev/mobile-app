@@ -300,9 +300,12 @@ const HomeScreen = () => {
                   <div className="relative">
                   <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
+                      src={recipe.image ? `http://localhost:5000/${recipe.image}` : 'http://localhost:5000/uploads/default-recipe.png'}
                       alt={recipe.title}
                       className="w-full h-56 object-cover"
+                      onError={(e) => {
+                        e.target.src = 'http://localhost:5000/uploads/default-recipe.png';
+                      }}
                     />
                     <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
                       {recipe.time}
@@ -325,9 +328,15 @@ const HomeScreen = () => {
                       <span className="text-white">{recipe.likes}</span>
                     </div>
                     <img
-                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
+                      src={recipe.user.profilePicture 
+                        ? `http://localhost:5000/${recipe.user.profilePicture}`
+                        : 'http://localhost:5000/uploads/default-profile.png'
+                      }
                       alt={recipe.user.name}
                       className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
+                      onError={(e) => {
+                        e.target.src = 'http://localhost:5000/uploads/default-profile.png';
+                      }}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -405,9 +414,12 @@ const HomeScreen = () => {
                 <div className="relative">
                   <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
+                      src={recipe.image ? `http://localhost:5000/${recipe.image}` : 'http://localhost:5000/uploads/default-recipe.png'}
                       alt={recipe.title}
                       className="w-full h-56 object-cover"
+                      onError={(e) => {
+                        e.target.src = 'http://localhost:5000/uploads/default-recipe.png';
+                      }}
                     />
                     <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
                       {recipe.time}
@@ -436,9 +448,15 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                        src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
+                        src={recipe.user.profilePicture 
+                          ? `http://localhost:5000/${recipe.user.profilePicture}`
+                          : 'http://localhost:5000/uploads/default-profile.png'
+                        }
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
+                        onError={(e) => {
+                          e.target.src = 'http://localhost:5000/uploads/default-profile.png';
+                        }}
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -486,9 +504,12 @@ const HomeScreen = () => {
                 <div className="relative">
                   <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
+                      src={recipe.image ? `http://localhost:5000/${recipe.image}` : 'http://localhost:5000/uploads/default-recipe.png'}
                       alt={recipe.title}
                       className="w-full h-56 object-cover"
+                      onError={(e) => {
+                        e.target.src = 'http://localhost:5000/uploads/default-recipe.png';
+                      }}
                     />
                     <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
                       {recipe.time}
@@ -517,9 +538,15 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                        src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
+                        src={recipe.user.profilePicture 
+                          ? `http://localhost:5000/${recipe.user.profilePicture}`
+                          : 'http://localhost:5000/uploads/default-profile.png'
+                        }
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
+                        onError={(e) => {
+                          e.target.src = 'http://localhost:5000/uploads/default-profile.png';
+                        }}
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -567,9 +594,12 @@ const HomeScreen = () => {
                 <div className="relative">
                   <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
+                      src={recipe.image ? `http://localhost:5000/${recipe.image}` : 'http://localhost:5000/uploads/default-recipe.png'}
                       alt={recipe.title}
                       className="w-full h-56 object-cover"
+                      onError={(e) => {
+                        e.target.src = 'http://localhost:5000/uploads/default-recipe.png';
+                      }}
                     />
                     <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
                       {recipe.time}
@@ -598,9 +628,15 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                        src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
+                        src={recipe.user.profilePicture 
+                          ? `http://localhost:5000/${recipe.user.profilePicture}`
+                          : 'http://localhost:5000/uploads/default-profile.png'
+                        }
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
+                        onError={(e) => {
+                          e.target.src = 'http://localhost:5000/uploads/default-profile.png';
+                        }}
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -648,9 +684,12 @@ const HomeScreen = () => {
                 <div className="relative">
                 <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
+                      src={recipe.image ? `http://localhost:5000/${recipe.image}` : 'http://localhost:5000/uploads/default-recipe.png'}
                       alt={recipe.title}
                       className="w-full h-56 object-cover"
+                      onError={(e) => {
+                        e.target.src = 'http://localhost:5000/uploads/default-recipe.png';
+                      }}
                     />
                     <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
                       {recipe.time}
@@ -679,9 +718,15 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                        src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
+                        src={recipe.user.profilePicture 
+                          ? `http://localhost:5000/${recipe.user.profilePicture}`
+                          : 'http://localhost:5000/uploads/default-profile.png'
+                        }
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
+                        onError={(e) => {
+                          e.target.src = 'http://localhost:5000/uploads/default-profile.png';
+                        }}
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -729,9 +774,12 @@ const HomeScreen = () => {
                 <div className="relative">
                 <Link to={`/recipes/${recipe._id}`}>
                     <img
-                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
+                      src={recipe.image ? `http://localhost:5000/${recipe.image}` : 'http://localhost:5000/uploads/default-recipe.png'}
                       alt={recipe.title}
                       className="w-full h-56 object-cover"
+                      onError={(e) => {
+                        e.target.src = 'http://localhost:5000/uploads/default-recipe.png';
+                      }}
                     />
                     <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
                       {recipe.time}
@@ -760,9 +808,15 @@ const HomeScreen = () => {
                     </div>
                     <div className="flex items-center">
                       <img
-                          src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
+                        src={recipe.user.profilePicture 
+                          ? `http://localhost:5000/${recipe.user.profilePicture}`
+                          : 'http://localhost:5000/uploads/default-profile.png'
+                        }
                         alt={recipe.user.name}
                         className="w-8 h-8 rounded-full object-cover border-2 border-white cursor-pointer"
+                        onError={(e) => {
+                          e.target.src = 'http://localhost:5000/uploads/default-profile.png';
+                        }}
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -808,9 +862,15 @@ const HomeScreen = () => {
             >
               <div className="relative w-40 h-48 rounded-lg overflow-hidden bg-[#463C33]">
                 <img
-                  src={`${import.meta.env.VITE_PROD_BASE_URL}/${user.profilePicture}`}
+                  src={user.profilePicture 
+                    ? `http://localhost:5000/${user.profilePicture}`
+                    : 'http://localhost:5000/uploads/default-profile.png'
+                  }
                   alt={user.name}
                   className="w-full h-32 object-cover"
+                  onError={(e) => {
+                    e.target.src = 'http://localhost:5000/uploads/default-profile.png';
+                  }}
                 />
                 <div className="absolute inset-x-0 bottom-0 p-3">
                   <h3 className="text-white font-bold text-sm mb-1 line-clamp-1">

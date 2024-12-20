@@ -183,9 +183,14 @@ const MealPlanScreen = () => {
                     >
                       <div className="flex items-center space-x-3">
                         <img
-                          src={`${import.meta.env.VITE_PROD_BASE_URL}/${meal.image}`}
+                          src={meal.image 
+                            ? `http://localhost:5000/${meal.image}`
+                            : `http://localhost:5000/uploads/default-recipe.png`}
                           alt={meal.title}
                           className="w-12 h-12 rounded-lg object-cover"
+                          onError={(e) => {
+                            e.target.src = `http://localhost:5000/uploads/default-recipe.png`;
+                          }}
                         />
                         <div>
                           <h4 className="font-medium text-gray-800">{meal.title}</h4>

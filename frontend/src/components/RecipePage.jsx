@@ -342,9 +342,14 @@ Enjoy cooking!
       {/* Cover Image Section */}
       <div className="relative h-[40vh]">
         <img
-          src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
+          src={recipe.image 
+            ? `http://localhost:5000/${recipe.image}`
+            : `http://localhost:5000/uploads/default-recipe.png`}
           alt={recipe.title}
           className="w-full h-full object-cover"
+          onError={(e) => {
+            e.target.src = `http://localhost:5000/uploads/default-recipe.png`;
+          }}
         />
         <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center">
           <button
@@ -460,9 +465,14 @@ Enjoy cooking!
                 onClick={() => navigate(`/user/${recipe.user?._id}`)}
               >
                 <img
-                  src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user?.profilePicture}`}
-                  alt={recipe.user?.name}
+                  src={recipe.user?.profilePicture 
+                    ? `http://localhost:5000/${recipe.user.profilePicture}`
+                    : `http://localhost:5000/uploads/default-profile.png`}
+                  alt={recipe.user?.name || 'User'}
                   className="w-20 h-20 rounded-full object-cover border-4 border-orange-500"
+                  onError={(e) => {
+                    e.target.src = `http://localhost:5000/uploads/default-profile.png`;
+                  }}
                 />
                 <div className="mt-3 text-center">
                   <h3 className="font-bold text-lg text-[#463C33] break-words">{recipe.user?.name}</h3>
@@ -505,9 +515,14 @@ Enjoy cooking!
               >
                 <div className="relative h-40">
                   <img
-                    src={`${import.meta.env.VITE_PROD_BASE_URL}/${moreRecipe.image}`}
+                    src={moreRecipe.image 
+                      ? `http://localhost:5000/${moreRecipe.image}`
+                      : `http://localhost:5000/uploads/default-recipe.png`}
                     alt={moreRecipe.title}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.src = `http://localhost:5000/uploads/default-recipe.png`;
+                    }}
                   />
                   <div className="absolute top-0 left-0 right-0 p-3 flex justify-between items-start">
                     <span className="text-white text-xs bg-black/50 px-2 py-1 rounded-full">
@@ -592,9 +607,14 @@ Enjoy cooking!
                   onClick={() => navigate(`/user/${comment.user._id}`)}
                 >
                   <img
-                    src={`${import.meta.env.VITE_PROD_BASE_URL}/${comment.user.profilePicture}`}
-                    alt={comment.user.name}
+                    src={comment.user?.profilePicture 
+                      ? `http://localhost:5000/${comment.user.profilePicture}`
+                      : `http://localhost:5000/uploads/default-profile.png`}
+                    alt={comment.user?.name || 'User'}
                     className="w-8 h-8 rounded-full object-cover"
+                    onError={(e) => {
+                      e.target.src = `http://localhost:5000/uploads/default-profile.png`;
+                    }}
                   />
                   <span className="font-semibold hover:text-orange-500 transition-colors">
                     {comment.user.name}

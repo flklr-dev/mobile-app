@@ -21,28 +21,53 @@ import {
 
 const ProfileScreen = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState({ name: "", profilePicture: "" });
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showContactSupportModal, setShowContactSupportModal] = useState(false);
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const { data } = await api.get("/auth/profile");
-        setUser(data);
-      } catch (err) {
-        setError("Failed to fetch user profile. Please log in again.");
-        console.error(err);
-        if (err.response?.status === 401) {
-          navigate('/login');
-        }
+    checkAuthAndFetchProfile();
+  }, []);
+
+  const checkAuthAndFetchProfile = async () => {
+    try {
+      // Check if token exists
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
       }
-    };
-  
-    fetchUserProfile();
-  }, [navigate]);
+
+      // Fetch user profile
+      const response = await api.get('/auth/profile');
+      setUserData(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Profile fetch error:', error);
+      
+      // Handle token expiration or authentication errors
+      if (error.response?.status === 401 || error.message === 'No token found') {
+        // Clear local storage
+        localStorage.clear();
+        
+        // Show toast message
+        toast.error('Session expired. Please login again.', {
+          position: "top-center",
+          autoClose: 3000
+        });
+
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          navigate('/login');
+        }, 1000);
+      } else {
+        toast.error('Failed to load profile');
+      }
+      setLoading(false);
+    }
+  };
 
   const goBack = () => {
     navigate("/home");
@@ -228,12 +253,17 @@ const ProfileScreen = () => {
           <div className="flex flex-col items-center">
             <div className="relative">
               <img
-                src={`${import.meta.env.VITE_PROD_BASE_URL}/${user.profilePicture}`}
+                src={userData?.profilePicture}
                 alt="User Avatar"
                 className="w-24 h-24 object-cover rounded-full ring-4 ring-orange-500/20"
+                onError={(e) => {
+                  e.target.src = `http://localhost:5000/uploads/default-profile.png`;
+                }}
               />
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mt-4">{user.name || "Loading..."}</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mt-4">
+              {userData?.name || "Loading..."}
+            </h2>
             <button
               onClick={handleEditProfile}
               className="mt-2 text-orange-500 text-sm font-medium hover:text-orange-600 transition-colors"
@@ -273,7 +303,7 @@ const ProfileScreen = () => {
         {/* Settings List */}
         <div className="mt-6 bg-white rounded-2xl shadow-sm overflow-hidden">
           {[/* eslint-disable react/jsx-key */
-            { icon: FaCog, text: "Settings" },
+            { icon: FaCog, text: "Settings", onClick: () => navigate('/settings') },
             { icon: FaPhone, text: "Contact Support", onClick: handleContactSupportClick },
             { icon: FaRegCommentDots, text: "Submit Feedback" },
             { icon: FaInfoCircle, text: "About PantryPals" },

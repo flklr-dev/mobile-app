@@ -58,9 +58,14 @@ const UserProfile = () => {
         <div className="flex flex-col items-center">
           <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-orange-500">
             <img
-              src={`${import.meta.env.VITE_PROD_BASE_URL}/${user.profilePicture}`}
+              src={user.profilePicture 
+                ? `http://localhost:5000/${user.profilePicture}`
+                : `http://localhost:5000/uploads/default-profile.png`}
               alt={user.name}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.src = `http://localhost:5000/uploads/default-profile.png`;
+              }}
             />
           </div>
           
@@ -101,9 +106,14 @@ const UserProfile = () => {
               >
                 <div className="relative">
                   <img
-                    src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
+                    src={recipe.image 
+                      ? `http://localhost:5000/${recipe.image}`
+                      : `http://localhost:5000/uploads/default-recipe.png`}
                     alt={recipe.title}
                     className="w-full h-32 object-cover"
+                    onError={(e) => {
+                      e.target.src = `http://localhost:5000/uploads/default-recipe.png`;
+                    }}
                   />
                   <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
                     {recipe.time}

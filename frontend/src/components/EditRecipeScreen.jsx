@@ -17,7 +17,7 @@ const EditRecipeScreen = () => {
   const [authorNotes, setAuthorNotes] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [coverImage, setCoverImage] = useState(null);
-  const [currentImage, setCurrentImage] = useState('');
+  const [imagePreview, setImagePreview] = useState(null);
   const [hours, setHours] = useState("");
   const [minutes, setMinutes] = useState("");
   const [loading, setLoading] = useState(true);
@@ -41,7 +41,6 @@ const EditRecipeScreen = () => {
         setInstructions(recipe.cookingInstructions);
         setAuthorNotes(recipe.authorNotes || '');
         setIsPublic(recipe.isPublic);
-        setCurrentImage(recipe.image);
 
         // Parse time string
         const timeStr = recipe.time;
@@ -53,6 +52,11 @@ const EditRecipeScreen = () => {
           const mins = parseInt(timeStr);
           setHours("");
           setMinutes(mins || "");
+        }
+
+        // Handle image
+        if (recipe.image) {
+          setImagePreview(`http://localhost:5000/${recipe.image}`);
         }
 
         setLoading(false);
@@ -73,6 +77,7 @@ const EditRecipeScreen = () => {
     const file = e.target.files[0];
     if (file) {
       setCoverImage(file);
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
@@ -213,8 +218,8 @@ const EditRecipeScreen = () => {
           rows="3"
         />
 
-        {/* Add Image Button */}
-        <label className="text-orange-500 font-bold mb-2">Add Cover Image</label>
+        {/* Image Section */}
+        <label className="text-orange-500 font-bold mb-2">Cover Image</label>
         <div className="mb-4">
           <input
             type="file"
@@ -227,13 +232,30 @@ const EditRecipeScreen = () => {
             htmlFor="imageUpload"
             className="block w-full text-center bg-orange-500 text-white py-3 rounded-md cursor-pointer"
           >
-            Change Image
+            {imagePreview ? 'Change Image' : 'Add Image'}
           </label>
-          <img
-            src={coverImage ? URL.createObjectURL(coverImage) : `${import.meta.env.VITE_PROD_BASE_URL}/${currentImage}`}
-            alt="Recipe Cover"
-            className="w-full mt-4 rounded-md"
-          />
+          {imagePreview && (
+            <div className="mt-4 relative">
+              <img
+                src={imagePreview}
+                alt="Recipe Cover"
+                className="w-full rounded-md"
+                onError={(e) => {
+                  e.target.src = `http://localhost:5000/uploads/default-recipe.png`;
+                }}
+              />
+              <button
+                onClick={() => {
+                  setCoverImage(null);
+                  setImagePreview(null);
+                }}
+                className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
+                aria-label="Remove image"
+              >
+                ×
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Category and Serving Size */}

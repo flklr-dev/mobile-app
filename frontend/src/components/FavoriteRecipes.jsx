@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaHeart, FaRegHeart } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { ToastContainer } from 'react-toastify';
@@ -10,6 +10,7 @@ import Header from './Header';
 const FavoriteRecipes = () => {
   const [favoriteRecipes, setFavoriteRecipes] = useState([]);
   const [heartStates, setHeartStates] = useState({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchFavorites = async () => {
@@ -85,9 +86,14 @@ const FavoriteRecipes = () => {
               <div className="relative">
                 <Link to={`/recipes/${recipe._id}`}>
                   <img
-                    src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.image}`}
+                    src={recipe.image 
+                      ? `http://localhost:5000/${recipe.image}`
+                      : `http://localhost:5000/uploads/default-recipe.png`}
                     alt={recipe.title}
                     className="w-full h-28 object-cover"
+                    onError={(e) => {
+                      e.target.src = `http://localhost:5000/uploads/default-recipe.png`;
+                    }}
                   />
                   <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs py-1 px-2 rounded">
                     {recipe.time}
@@ -125,7 +131,11 @@ const FavoriteRecipes = () => {
                     
                     <button 
                       className="bg-white text-[#463C33] text-xs font-bold rounded-full py-1.5 px-3 w-full"
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        navigate('/add-to-meal-plan', { state: { recipe } });
+                      }}
                     >
                       Add to Meal Plan
                     </button>

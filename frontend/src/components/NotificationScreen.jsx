@@ -146,9 +146,14 @@ const NotificationScreen = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
                     <img
-                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${notification.sender.profilePicture}`}
-                      alt=""
+                      src={notification.sender?.profilePicture 
+                        ? `http://localhost:5000/${notification.sender.profilePicture}`
+                        : `http://localhost:5000/uploads/default-profile.png`}
+                      alt={notification.sender?.name || 'User'}
                       className="w-10 h-10 rounded-full object-cover"
+                      onError={(e) => {
+                        e.target.src = `http://localhost:5000/uploads/default-profile.png`;
+                      }}
                     />
                     <div>
                       <p className="text-gray-800">
