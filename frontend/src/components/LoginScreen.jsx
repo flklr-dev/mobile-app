@@ -50,7 +50,7 @@ const LoginScreen = () => {
     setSuccessMessage("");
 
     try {
-      const response = await api.post("/login", {
+      const response = await api.post("/auth/login", {
         email,
         password,
       });
