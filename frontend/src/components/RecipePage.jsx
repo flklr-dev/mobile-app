@@ -20,6 +20,7 @@ import {
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { formatDistanceToNow, isWithinInterval, subMinutes } from 'date-fns';
+import { getImageUrl } from '../utils/imageUtils';
 
 const RecipePage = () => {
   const { id } = useParams();
@@ -342,13 +343,11 @@ Enjoy cooking!
       {/* Cover Image Section */}
       <div className="relative h-[40vh]">
         <img
-          src={recipe.image 
-            ? `http://localhost:5000/${recipe.image}`
-            : `http://localhost:5000/uploads/default-recipe.png`}
+          src={getImageUrl(recipe.image || 'uploads/default-recipe.png')}
           alt={recipe.title}
           className="w-full h-full object-cover"
           onError={(e) => {
-            e.target.src = `http://localhost:5000/uploads/default-recipe.png`;
+            e.target.src = getImageUrl('uploads/default-recipe.png');
           }}
         />
         <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center">
@@ -465,13 +464,11 @@ Enjoy cooking!
                 onClick={() => navigate(`/user/${recipe.user?._id}`)}
               >
                 <img
-                  src={recipe.user?.profilePicture 
-                    ? `http://localhost:5000/${recipe.user.profilePicture}`
-                    : `http://localhost:5000/uploads/default-profile.png`}
+                  src={getImageUrl(recipe.user?.profilePicture || 'uploads/default-profile.png')}
                   alt={recipe.user?.name || 'User'}
                   className="w-20 h-20 rounded-full object-cover border-4 border-orange-500"
                   onError={(e) => {
-                    e.target.src = `http://localhost:5000/uploads/default-profile.png`;
+                    e.target.src = getImageUrl('uploads/default-profile.png');
                   }}
                 />
                 <div className="mt-3 text-center">
@@ -515,13 +512,11 @@ Enjoy cooking!
               >
                 <div className="relative h-40">
                   <img
-                    src={moreRecipe.image 
-                      ? `http://localhost:5000/${moreRecipe.image}`
-                      : `http://localhost:5000/uploads/default-recipe.png`}
+                    src={getImageUrl(moreRecipe.image || 'uploads/default-recipe.png')}
                     alt={moreRecipe.title}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      e.target.src = `http://localhost:5000/uploads/default-recipe.png`;
+                      e.target.src = getImageUrl('uploads/default-recipe.png');
                     }}
                   />
                   <div className="absolute top-0 left-0 right-0 p-3 flex justify-between items-start">
@@ -607,13 +602,11 @@ Enjoy cooking!
                   onClick={() => navigate(`/user/${comment.user._id}`)}
                 >
                   <img
-                    src={comment.user?.profilePicture 
-                      ? `http://localhost:5000/${comment.user.profilePicture}`
-                      : `http://localhost:5000/uploads/default-profile.png`}
-                    alt={comment.user?.name || 'User'}
+                    src={getImageUrl(comment.user?.profilePicture || 'uploads/default-profile.png')}
+                    alt={comment.user?.name}
                     className="w-8 h-8 rounded-full object-cover"
                     onError={(e) => {
-                      e.target.src = `http://localhost:5000/uploads/default-profile.png`;
+                      e.target.src = getImageUrl('uploads/default-profile.png');
                     }}
                   />
                   <span className="font-semibold hover:text-orange-500 transition-colors">
@@ -662,9 +655,12 @@ Enjoy cooking!
                 <div className="mt-2 ml-4 p-2 bg-white rounded-lg">
                   <div className="flex items-center gap-2 mb-1">
                     <img
-                      src={`${import.meta.env.VITE_PROD_BASE_URL}/${recipe.user.profilePicture}`}
+                      src={getImageUrl(recipe.user.profilePicture || 'uploads/default-profile.png')}
                       alt={recipe.user.name}
                       className="w-6 h-6 rounded-full object-cover"
+                      onError={(e) => {
+                        e.target.src = getImageUrl('uploads/default-profile.png');
+                      }}
                     />
                     <span className="font-semibold text-sm">{recipe.user.name}</span>
                     <span className="text-xs text-gray-500">
