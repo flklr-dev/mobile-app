@@ -5,6 +5,7 @@ import { FaChevronLeft, FaPencilAlt, FaTrash } from "react-icons/fa";
 import { toast } from 'react-toastify';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { getImageUrl } from '../utils/imageUtils';
 
 const MyRecipesScreen = () => {
   const navigate = useNavigate();
@@ -28,18 +29,14 @@ const MyRecipesScreen = () => {
         // Update user data with proper image URL
         setUser({
           ...userResponse.data,
-          profilePicture: userResponse.data.profilePicture
-            ? `http://localhost:5000/${userResponse.data.profilePicture}`
-            : `http://localhost:5000/uploads/default-profile.png`
+          profilePicture: getImageUrl(userResponse.data.profilePicture || 'uploads/default-profile.png')
         });
 
         // Fetch and update recipes with proper image URLs
         const recipesResponse = await api.get(`/recipes/user/${userResponse.data._id}`);
         const recipesWithUrls = recipesResponse.data.map(recipe => ({
           ...recipe,
-          image: recipe.image
-            ? `http://localhost:5000/${recipe.image}`
-            : `http://localhost:5000/uploads/default-recipe.png`
+          image: getImageUrl(recipe.image || 'uploads/default-recipe.png')
         }));
         setRecipes(recipesWithUrls);
         setLoading(false);
@@ -116,11 +113,11 @@ const MyRecipesScreen = () => {
           <div className="flex flex-col items-center">
             <div className="relative">
               <img
-                src={user.profilePicture}
+                src={getImageUrl(user.profilePicture || 'uploads/default-profile.png')}
                 alt="User Avatar"
                 className="w-24 h-24 object-cover rounded-full ring-4 ring-orange-500/20"
                 onError={(e) => {
-                  e.target.src = `http://localhost:5000/uploads/default-profile.png`;
+                  e.target.src = getImageUrl('uploads/default-profile.png');
                 }}
               />
             </div>
@@ -143,11 +140,11 @@ const MyRecipesScreen = () => {
                 <div className="flex items-center flex-1">
                   <div className="w-20 h-20 rounded-lg overflow-hidden">
                     <img
-                      src={recipe.image}
+                      src={getImageUrl(recipe.image || 'uploads/default-recipe.png')}
                       alt={recipe.title}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        e.target.src = `http://localhost:5000/uploads/default-recipe.png`;
+                        e.target.src = getImageUrl('uploads/default-recipe.png');
                       }}
                     />
                   </div>

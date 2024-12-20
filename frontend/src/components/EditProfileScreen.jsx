@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from '../config/axios';
 import { FaPen, FaChevronLeft } from "react-icons/fa";
+import { getImageUrl } from '../utils/imageUtils';
 
 const EditProfileScreen = () => {
   const navigate = useNavigate();
@@ -27,9 +28,9 @@ const EditProfileScreen = () => {
         });
 
         if (data.profilePicture) {
-          setImagePreview(`http://localhost:5000/${data.profilePicture}`);
+          setImagePreview(getImageUrl(data.profilePicture));
         } else {
-          setImagePreview(`http://localhost:5000/uploads/default-profile.png`);
+          setImagePreview(getImageUrl('uploads/default-profile.png'));
         }
       } catch (error) {
         console.error(error);
@@ -59,7 +60,7 @@ const EditProfileScreen = () => {
         ...prev,
         profilePicture: file,
       }));
-      setImagePreview(URL.createObjectURL(file));
+      setImagePreview(getImageUrl(file));
     }
   };
 
@@ -81,7 +82,7 @@ const EditProfileScreen = () => {
       });
 
       if (response.data.profilePicture) {
-        setImagePreview(`http://localhost:5000/${response.data.profilePicture}`);
+        setImagePreview(getImageUrl(response.data.profilePicture));
       }
 
       setShowSuccessModal(true);
@@ -140,11 +141,11 @@ const EditProfileScreen = () => {
           <div className="flex justify-center mb-4">
             <div className="relative">
               <img
-                src={imagePreview || `http://localhost:5000/uploads/default-profile.png`}
+                src={getImageUrl(imagePreview || 'uploads/default-profile.png')}
                 alt="Profile"
                 className="w-32 h-32 object-cover rounded-full border-4 border-orange-500"
                 onError={(e) => {
-                  e.target.src = `http://localhost:5000/uploads/default-profile.png`;
+                  e.target.src = getImageUrl('uploads/default-profile.png');
                 }}
               />
               <label className="absolute bottom-0 right-0 bg-orange-500 p-2 rounded-full cursor-pointer">

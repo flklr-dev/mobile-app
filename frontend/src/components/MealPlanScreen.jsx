@@ -5,6 +5,7 @@ import Header from './Header';
 import BottomNavbar from './BottomNavbar';
 import api from '../config/axios';
 import { ToastContainer, toast } from 'react-toastify';
+import { getImageUrl } from '../utils/imageUtils';
 
 const MealPlanScreen = () => {
   const location = useLocation();
@@ -59,6 +60,7 @@ const MealPlanScreen = () => {
   const handleAddToMealPlan = (mealType) => {
     if (recipeToAdd) {
       setMealPlan(prev => ({
+
         ...prev,
         [mealType]: [...prev[mealType], recipeToAdd]
       }));
@@ -85,7 +87,7 @@ const MealPlanScreen = () => {
         ...prev,
         [mealToDelete.mealType]: prev[mealToDelete.mealType].filter((_, i) => i !== mealToDelete.index)
       }));
-      
+
       toast.dismiss(loadingToast);
       toast.success('Meal removed from plan');
 
@@ -165,7 +167,7 @@ const MealPlanScreen = () => {
                   <h3 className="text-lg font-bold text-gray-800">{title}</h3>
                   <p className="text-sm text-gray-500">{time}</p>
                 </div>
-                <button 
+                <button
                   className="bg-orange-50 p-2 rounded-full text-orange-500 hover:bg-orange-100 transition-colors"
                   onClick={() => navigate('/category-recipes', { state: { category: title } })}
                 >
@@ -176,27 +178,25 @@ const MealPlanScreen = () => {
               {mealPlan[key.toLowerCase()].length > 0 ? (
                 <div className="space-y-2">
                   {mealPlan[key.toLowerCase()].map((meal, index) => (
-                    <div 
-                      key={`${key}-${meal.planId}-${index}`} 
+                    <div
+                      key={`${key}-${meal.planId}-${index}`}
                       className="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
                       onClick={() => navigate(`/recipes/${meal._id}`)}
                     >
                       <div className="flex items-center space-x-3">
                         <img
-                          src={meal.image 
-                            ? `http://localhost:5000/${meal.image}`
-                            : `http://localhost:5000/uploads/default-recipe.png`}
+                          src={getImageUrl(meal.image || 'uploads/default-recipe.png')}
                           alt={meal.title}
                           className="w-12 h-12 rounded-lg object-cover"
                           onError={(e) => {
-                            e.target.src = `http://localhost:5000/uploads/default-recipe.png`;
+                            e.target.src = getImageUrl('uploads/default-recipe.png');
                           }}
                         />
                         <div>
                           <h4 className="font-medium text-gray-800">{meal.title}</h4>
                         </div>
                       </div>
-                      <button 
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteMeal(key.toLowerCase(), index, meal.planId);
@@ -211,7 +211,7 @@ const MealPlanScreen = () => {
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 bg-gray-50 rounded-xl">
                   <p className="text-gray-400 text-sm">No meals planned</p>
-                  <button 
+                  <button
                     className="mt-2 text-orange-500 text-sm font-medium"
                     onClick={() => navigate('/category-recipes', { state: { category: title } })}
                   >
@@ -295,4 +295,4 @@ const MealPlanScreen = () => {
   );
 };
 
-export default MealPlanScreen; 
+export default MealPlanScreen;
